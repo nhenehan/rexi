@@ -1,0 +1,41 @@
+SD
+SE {urn:rexi:interop:poly}Envelope
+AT {}batchId batch-2026-04-15
+SE {urn:rexi:interop:poly}Entry
+AT {}source sensor-1
+SE {urn:rexi:interop:poly}TempReading
+SE {urn:rexi:interop:poly}Value
+CH 195E-1
+EE
+SE {urn:rexi:interop:poly}Unit
+CH C
+EE
+EE
+EE
+SE {urn:rexi:interop:poly}Entry
+AT {}source gateway-1
+SE {urn:rexi:interop:poly}StatusMessage
+AT {}lang en
+CH operational
+EE
+EE
+SE {urn:rexi:interop:poly}Entry
+AT {}source sensor-9
+SE {urn:rexi:interop:poly}Alert
+AT {}ticket INC-77
+SE {urn:rexi:interop:poly}Code
+CH OVERHEAT
+EE
+SE {urn:rexi:interop:poly}Severity
+CH high
+EE
+SE {urn:rexi:interop:poly}Acknowledged
+CH false
+EE
+EE
+EE
+SE {urn:rexi:interop:poly}Summary
+CH 3 entries processed
+EE
+EE
+ED

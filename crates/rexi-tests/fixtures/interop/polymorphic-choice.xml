@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Envelope xmlns="urn:rexi:interop:poly" batchId="batch-2026-04-15">
+  <Entry source="sensor-1">
+    <TempReading>
+      <Value>19.5</Value>
+      <Unit>C</Unit>
+    </TempReading>
+  </Entry>
+  <Entry source="gateway-1">
+    <StatusMessage lang="en">operational</StatusMessage>
+  </Entry>
+  <Entry source="sensor-9">
+    <Alert ticket="INC-77">
+      <Code>OVERHEAT</Code>
+      <Severity>high</Severity>
+      <Acknowledged>false</Acknowledged>
+    </Alert>
+  </Entry>
+  <Summary>3 entries processed</Summary>
+</Envelope>

@@ -1,0 +1,14 @@
+# Third-party sources used by rexi's judges and interop work, fetched by
+# scripts/fetch-third-party.sh into ${REXI_THIRD_PARTY:-${XDG_CACHE_HOME:-~/.cache}/rexi/third_party}
+# (never into the working tree). Each line: <name> <git url, or a path relative to
+# this repository> <40-char commit>.
+# Pins change only through `scripts/fetch-third-party.sh --update <name>`.
+#
+# exip: C reference implementation; exipd judge, the exip test-set, and the
+#   EXIficient oracle (utils/xsd2exip).
+# exi-testsuite: W3C EXI test suite (interop runs; Nagasena jar).
+# EXIficient is not cloned: the oracle (exip utils/xsd2exip) takes 1.0.7 from
+# Maven Central.
+
+exip https://github.com/nhenehan/exip.git b2870c106f0cc88fd199208f724ce575df150444
+exi-testsuite https://github.com/w3c/exi-testsuite.git 23d5f587ba3ec281f1a6a8182c1450cb870b469e

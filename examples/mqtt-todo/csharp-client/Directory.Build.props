@@ -1,0 +1,6 @@
+<!-- Keeps intermediate files out of the source tree; the two projects here need separate obj dirs. -->
+<Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)../build/csharp-client/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,18 @@
+[package]
+name = "todo-rust-client"
+description = "Command line todo client in Rust (rumqttc + rexi)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "todo-rust-client"
+path = "src/main.rs"
+
+[dependencies]
+todo-model.workspace = true
+rumqttc.workspace = true
+
+[lints]
+workspace = true

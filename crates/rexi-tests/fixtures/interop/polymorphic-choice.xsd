@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:interop:poly"
+           xmlns="urn:rexi:interop:poly"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:element name="Envelope" type="EnvelopeType"/>
+
+  <xs:complexType name="EnvelopeType">
+    <xs:sequence>
+      <xs:element name="Entry" type="EntryType" maxOccurs="unbounded"/>
+      <xs:element name="Summary" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="batchId" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="EntryType">
+    <xs:choice>
+      <xs:element name="TempReading" type="TempReadingType"/>
+      <xs:element name="StatusMessage" type="StatusMessageType"/>
+      <xs:element name="Alert" type="AlertType"/>
+    </xs:choice>
+    <xs:attribute name="source" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="TempReadingType">
+    <xs:sequence>
+      <xs:element name="Value" type="xs:double"/>
+      <xs:element name="Unit" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StatusMessageType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="lang" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="AlertType">
+    <xs:sequence>
+      <xs:element name="Code" type="xs:string"/>
+      <xs:element name="Severity" type="xs:string"/>
+      <xs:element name="Acknowledged" type="xs:boolean" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="ticket" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+</xs:schema>

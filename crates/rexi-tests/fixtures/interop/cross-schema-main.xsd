@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:interop:main"
+           xmlns="urn:rexi:interop:main"
+           xmlns:c="urn:rexi:interop:common"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:import namespace="urn:rexi:interop:common" schemaLocation="cross-schema-common.xsd"/>
+
+  <xs:element name="IncidentReport" type="IncidentReportType"/>
+
+  <xs:complexType name="IncidentReportType">
+    <xs:sequence>
+      <xs:element name="Id" type="xs:string"/>
+      <xs:element name="Severity" type="c:SeverityType"/>
+      <xs:element name="Location" type="c:LocationType"/>
+      <xs:element ref="c:AuditInfo"/>
+    </xs:sequence>
+    <xs:attribute name="status" type="xs:string" use="required"/>
+  </xs:complexType>
+</xs:schema>

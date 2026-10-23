@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The todo list example's messages. Every client and the server build their EXI
+  grammars from this file (Nagasena for .NET reads todo.xsc, compiled from it).
+
+  todo/cmd carries a <command>; todo/list carries a <todoList>.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:example:todo"
+           xmlns="urn:rexi:example:todo"
+           elementFormDefault="qualified">
+
+  <!-- One change to the list, sent by a client. "from" names the client. -->
+  <xs:element name="command">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element name="add">
+          <xs:complexType>
+            <xs:attribute name="title" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="done" type="ItemRef"/>
+        <xs:element name="remove" type="ItemRef"/>
+      </xs:choice>
+      <xs:attribute name="from" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="ItemRef">
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+  <!-- The whole list, published by the server after every change. "revision"
+       goes up by one each time, so a client can tell a new list from an old one. -->
+  <xs:element name="todoList">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:string">
+                <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+                <xs:attribute name="done" type="xs:boolean" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="revision" type="xs:unsignedInt" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

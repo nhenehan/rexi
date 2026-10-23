@@ -1,0 +1,25 @@
+name: rexi-ci
+
+on:
+  push:
+    paths:
+      - 'rexi/**'
+  pull_request:
+    paths:
+      - 'rexi/**'
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rexi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets
+      - name: Tests
+        run: cargo test --workspace

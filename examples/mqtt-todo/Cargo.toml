@@ -1,0 +1,27 @@
+# The Rust half of the MQTT todo example: its own workspace, so the rexi
+# workspace build never compiles it (the root Cargo.toml excludes examples/).
+[workspace]
+members = ["model", "server", "rust-client"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "BSD-3-Clause"
+version = "0.1.0"
+publish = false
+
+[workspace.dependencies]
+todo-model = { path = "model" }
+rexi-core = { path = "../../crates/rexi-core" }
+rexi-schema = { path = "../../crates/rexi-schema" }
+rexi-serde = { path = "../../crates/rexi-serde" }
+serde = { version = "1", features = ["derive"] }
+rumqttc = { version = "0.25", default-features = false }
+rumqttd = { version = "0.20", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

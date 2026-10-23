@@ -1,0 +1,23 @@
+[package]
+name = "rexi-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "Dependency-free EXI (Efficient XML Interchange) codec core: bit I/O, datatypes, string tables, grammar runtime"
+
+[features]
+default = ["std"]
+# std::io interoperability: blanket ByteSource/ByteSink impls for std::io::Read/Write.
+std = []
+trace = []
+
+[dependencies]
+
+[lints]
+workspace = true

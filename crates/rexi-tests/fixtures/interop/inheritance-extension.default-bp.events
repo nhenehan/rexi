@@ -1,0 +1,27 @@
+SD
+SE {urn:rexi:interop:inheritance}ReadingEvent
+AT {}category telemetry
+AT {}sensorId sensor-17
+SE {urn:rexi:interop:inheritance}EventId
+CH evt-2026-04-15-001
+EE
+SE {urn:rexi:interop:inheritance}Timestamp
+CH 2026-04-15T17:00:00Z
+EE
+SE {urn:rexi:interop:inheritance}Source
+CH edge-gateway-2
+EE
+SE {urn:rexi:interop:inheritance}Metric
+CH temperature
+EE
+SE {urn:rexi:interop:inheritance}Value
+CH 7325E-2
+EE
+SE {urn:rexi:interop:inheritance}Unit
+CH F
+EE
+SE {urn:rexi:interop:inheritance}Quality
+CH good
+EE
+EE
+ED

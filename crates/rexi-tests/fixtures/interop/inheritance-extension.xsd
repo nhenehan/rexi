@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:interop:inheritance"
+           xmlns="urn:rexi:interop:inheritance"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+  <xs:complexType name="BaseEventType">
+    <xs:sequence>
+      <xs:element name="EventId" type="xs:string"/>
+      <xs:element name="Timestamp" type="xs:string"/>
+      <xs:element name="Source" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="category" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ReadingEventType">
+    <xs:complexContent>
+      <xs:extension base="BaseEventType">
+        <xs:sequence>
+          <xs:element name="Metric" type="xs:string"/>
+          <xs:element name="Value" type="xs:double"/>
+          <xs:element name="Unit" type="xs:string"/>
+          <xs:element name="Quality" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="sensorId" type="xs:string" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:element name="ReadingEvent" type="ReadingEventType"/>
+</xs:schema>

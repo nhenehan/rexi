@@ -1,0 +1,37 @@
+<!--
+  Nagasena for .NET (OpenEXI's C# port) built with today's .NET SDK. Upstream
+  builds it with NAnt for .NET Framework 4.0 (nagasena.build); this project
+  compiles the same sources and embeds the same resources.
+
+  NagasenaCsDir is the svn checkout made by scripts/fetch-third-party.sh
+  (<cache>/nagasenacs; see ../third-party.lock). Warnings in the upstream code are not ours to fix.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>OpenEXI.Nagasena</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <WarningLevel>0</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0162;CS0168;CS0169;CS0219;CS0414;CS0612;CS0618;CS0649;SYSLIB0011</NoWarn>
+  </PropertyGroup>
+  <Target Name="CheckNagasenaCsDir" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(NagasenaCsDir)' == '' Or !Exists('$(NagasenaCsDir)/src/Nagasena')"
+           Text="set NagasenaCsDir to the nagasenacs checkout (scripts/fetch-third-party.sh)" />
+  </Target>
+  <ItemGroup>
+    <Compile Include="$(NagasenaCsDir)/src/**/*.cs" />
+    <!-- Nagasena looks its resources up by the end of the name (EndsWith). -->
+    <EmbeddedResource Include="$(NagasenaCsDir)/resources/Nagasena/**/*.xml;$(NagasenaCsDir)/resources/Nagasena/**/*.xsc;$(NagasenaCsDir)/resources/Nagasena/**/*.exi"
+                      LogicalName="OpenEXI.Nagasena.%(RecursiveDir)%(Filename)%(Extension)" />
+    <Reference Include="Sax">
+      <HintPath>$(NagasenaCsDir)/lib/saxdotnet/Sax.dll</HintPath>
+    </Reference>
+    <!-- Upstream ships SharpZipLib 0.86 in lib/; 1.4.2 keeps the same Inflater/Deflater API. -->
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+</Project>

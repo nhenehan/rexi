@@ -1,0 +1,43 @@
+[package]
+name = "rexi-capi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+# Not on crates.io: build.rs writes rexi.h into the source tree; C users build
+# it from the repository.
+publish = false
+description = "C ABI over the rexi strict EXI codec (exip-style encoder and callback parser)"
+build = "build.rs"
+
+[lib]
+name = "rexi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+rexi-core = { workspace = true, features = ["std"] }
+rexi-schema.workspace = true
+
+[dev-dependencies]
+rexi-tests = { path = "../rexi-tests" }
+rexi-xml.workspace = true
+
+[build-dependencies]
+cbindgen.workspace = true
+
+# The workspace lints, except that this is the one crate allowed `unsafe` (the
+# C ABI). Keep in sync with `[workspace.lints]`.
+[lints.rust]
+unsafe_code = "allow"
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+todo = "deny"
+unimplemented = "deny"

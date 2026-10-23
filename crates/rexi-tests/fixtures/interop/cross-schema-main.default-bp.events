@@ -1,0 +1,27 @@
+SD
+SE {urn:rexi:interop:main}IncidentReport
+AT {}status open
+SE {urn:rexi:interop:main}Id
+CH INC-2026-0109
+EE
+SE {urn:rexi:interop:main}Severity
+CH high
+EE
+SE {urn:rexi:interop:main}Location
+SE {urn:rexi:interop:common}Site
+CH plant-7
+EE
+SE {urn:rexi:interop:common}Zone
+CH north
+EE
+EE
+SE {urn:rexi:interop:common}AuditInfo
+SE {urn:rexi:interop:common}CreatedBy
+CH operator-12
+EE
+SE {urn:rexi:interop:common}CreatedAt
+CH 2026-04-15T17:45:00Z
+EE
+EE
+EE
+ED

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:interop:order"
+           xmlns="urn:rexi:interop:order"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+  <xs:element name="Order" type="OrderType"/>
+
+  <xs:complexType name="OrderType">
+    <xs:sequence>
+      <xs:element name="Customer" type="CustomerType"/>
+      <xs:element name="Item" type="ItemType" maxOccurs="unbounded"/>
+      <xs:element name="Notes" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="orderId" type="xs:string" use="required"/>
+    <xs:attribute name="priority" type="xs:boolean" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="CustomerType">
+    <xs:sequence>
+      <xs:element name="Name" type="xs:string"/>
+      <xs:element name="Tier" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="loyaltyId" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="ItemType">
+    <xs:sequence>
+      <xs:element name="Description" type="xs:string"/>
+      <xs:element name="Quantity" type="xs:int"/>
+      <xs:element name="Price" type="xs:decimal"/>
+    </xs:sequence>
+    <xs:attribute name="sku" type="xs:string" use="required"/>
+  </xs:complexType>
+</xs:schema>

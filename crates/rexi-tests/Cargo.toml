@@ -1,0 +1,36 @@
+[package]
+name = "rexi-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+# Test fixtures and tables only.
+publish = false
+description = "Conformance and interop tests for rexi (reference bytes from EXIficient, exipd as judge)"
+
+[dependencies]
+rexi-core = { workspace = true, features = ["std"] }
+rexi-schema.workspace = true
+rexi-xml.workspace = true
+
+[dev-dependencies]
+rexi-schema-gen.workspace = true
+rexi-serde = { workspace = true, features = ["std"] }
+serde = { workspace = true, features = ["std"] }
+
+# The workspace lints, except `unsafe_code` is `deny` rather than `forbid` so the
+# counting allocator in tests/static_alloc.rs can opt out (`GlobalAlloc` is an
+# unsafe trait). Keep in sync with the workspace `[workspace.lints]`.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+todo = "deny"
+unimplemented = "deny"

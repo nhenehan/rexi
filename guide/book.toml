@@ -1,0 +1,23 @@
+[book]
+title = "rexi User Guide"
+description = "Encode and decode EXI from Rust and C with rexi, one example at a time."
+authors = ["Nathan Henehan"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
+
+[output.html.search]
+enable = true
+
+[preprocessor]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"

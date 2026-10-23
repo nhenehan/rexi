@@ -1,0 +1,46 @@
+[workspace]
+members = [
+    "crates/rexi-core",
+    "crates/rexi-schema",
+    "crates/rexi-schema-gen",
+    "crates/rexi-xml",
+    "crates/rexi-tests",
+    "crates/rexi-serde",
+    "crates/rexi-capi",
+    "crates/rexi-nostd-check",
+]
+resolver = "2"
+# Examples (examples/*/build.sh) and fuzz/ (cargo-fuzz, nightly) are separate
+# workspaces, built only on request.
+exclude = ["examples", "fuzz"]
+
+[workspace.package]
+edition = "2024"
+# Oldest supported Rust; scripts/gate.sh tests with it.
+rust-version = "1.88"
+license = "BSD-3-Clause"
+version = "0.1.0"
+authors = ["Nathan Henehan <nhenehan@acm.org>"]
+repository = "https://github.com/nhenehan/rexi"
+keywords = ["exi", "xml", "binary", "encoding", "no-std"]
+categories = ["encoding", "parser-implementations", "no-std", "embedded"]
+
+[workspace.dependencies]
+rexi-core = { version = "0.1.0", path = "crates/rexi-core", default-features = false }
+rexi-schema = { version = "0.1.0", path = "crates/rexi-schema" }
+rexi-xml = { version = "0.1.0", path = "crates/rexi-xml" }
+rexi-schema-gen = { version = "0.1.0", path = "crates/rexi-schema-gen" }
+rexi-serde = { version = "0.1.0", path = "crates/rexi-serde", default-features = false }
+roxmltree = "0.21"
+quick-xml = "0.42"
+serde = { version = "1", default-features = false, features = ["derive"] }
+cbindgen = { version = "0.29", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+todo = "deny"
+unimplemented = "deny"

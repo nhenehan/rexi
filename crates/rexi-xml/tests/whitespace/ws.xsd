@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- Mixed content with xml:space, for tests/whitespace.rs (EXIficient 1.0.7 vectors). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:w" xmlns="urn:w"
+    xmlns:xml="http://www.w3.org/XML/1998/namespace" elementFormDefault="qualified">
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
+  <xs:complexType name="M" mixed="true">
+    <xs:sequence><xs:element name="e" type="M" minOccurs="0" maxOccurs="unbounded"/></xs:sequence>
+    <xs:attribute ref="xml:space"/>
+  </xs:complexType>
+  <xs:element name="m" type="M"/>
+</xs:schema>

@@ -1,0 +1,40 @@
+[package]
+name = "rexi-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+rexi-core = { path = "../crates/rexi-core" }
+rexi-schema = { path = "../crates/rexi-schema" }
+rexi-xml = { path = "../crates/rexi-xml" }
+rexi-tests = { path = "../crates/rexi-tests" }
+
+# Not part of the main workspace: cargo-fuzz needs nightly and its own lock.
+[workspace]
+
+[[bin]]
+name = "decode"
+path = "fuzz_targets/decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "compile_schema"
+path = "fuzz_targets/compile_schema.rs"
+test = false
+doc = false
+bench = false
+
+# Writes the seed corpus from the EXIficient fixtures (run.sh does this).
+[[bin]]
+name = "make_seeds"
+path = "src/bin/make_seeds.rs"
+test = false
+doc = false
+bench = false

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Słownik xmlns="urn:interop:utf8">
+  <Wpis język="中文" autor="李白">
+    <Tytuł>静夜思</Tytuł>
+    <Текст>床前明月光，疑是地上霜。</Текст>
+    <Λέξεις>月光 霜 𠀋𠀋 𝄞</Λέξεις>
+  </Wpis>
+  <Wpis język="русский" autor="Пушкин">
+    <Tytuł>Зимнее утро</Tytuł>
+    <Текст>Мороз и солнце; день чудесный!</Текст>
+    <Notiz>ёлка <強調>Ж</強調> ЁЛКА</Notiz>
+  </Wpis>
+  <Wpis język="ελληνικά" autor="Όμηρος">
+    <Tytuł>Ὀδύσσεια</Tytuł>
+    <Текст>Ἄνδρα μοι ἔννεπε, Μοῦσα</Текст>
+    <Λέξεις>αβγ ΑΒΓ ϐϑϕ</Λέξεις>
+  </Wpis>
+  <Wpis język="français" autor="Molière">
+    <Tytuł>L’Avare</Tytuł>
+    <Текст>Où est l’été ? Œuvre, naïveté, ça, garçon, « guillemets » — déjà.</Текст>
+    <Notiz>e&#x301; décomposé et é précomposé</Notiz>
+  </Wpis>
+  <Wpis język="Deutsch" autor="Goethe">
+    <Tytuł>Faust</Tytuł>
+    <Текст>Größe, Straße, Übermaß, Ärger, Öl — ẞ</Текст>
+  </Wpis>
+  <Wpis język="polski" autor="Mickiewicz">
+    <Tytuł>Pan Tadeusz</Tytuł>
+    <Текст>Zażółć gęślą jaźń. ĄĆĘŁŃÓŚŹŻ ąćęłńóśźż</Текст>
+    <Λέξεις>źdźbło żółw 😀</Λέξεις>
+  </Wpis>
+  <Wpis język="中文" autor="李白">
+    <Tytuł>静夜思</Tytuł>
+    <Текст>举头望明月，低头思故乡。🌕</Текст>
+    <Notiz>𝄞 音乐 🎵<強調>強</強調></Notiz>
+  </Wpis>
+</Słownik>

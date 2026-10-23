@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TelemetryBatch xmlns="urn:rexi:interop:telemetry" site="north-hub" generatedAt="2026-04-15T12:00:00Z">
+  <Device id="dev-01" model="alpha">
+    <Reading sample="1">
+      <Type>temperature</Type>
+      <Value>21.75</Value>
+      <Unit>C</Unit>
+    </Reading>
+    <Reading sample="2">
+      <Type>humidity</Type>
+      <Value>44.10</Value>
+      <Unit>percent</Unit>
+    </Reading>
+    <Healthy>true</Healthy>
+  </Device>
+  <Device id="dev-02">
+    <Reading sample="1">
+      <Type>temperature</Type>
+      <Value>85.00</Value>
+      <Unit>C</Unit>
+    </Reading>
+    <Alarm>
+      <Code>OVER_TEMP</Code>
+      <Severity>critical</Severity>
+    </Alarm>
+    <Healthy>false</Healthy>
+  </Device>
+</TelemetryBatch>

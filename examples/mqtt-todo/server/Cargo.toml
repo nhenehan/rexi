@@ -1,0 +1,15 @@
+[package]
+name = "todo-server"
+description = "MQTT broker plus the todo service, in one process"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+todo-model.workspace = true
+rumqttc.workspace = true
+rumqttd.workspace = true
+
+[lints]
+workspace = true

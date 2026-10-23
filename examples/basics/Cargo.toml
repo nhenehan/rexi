@@ -1,0 +1,25 @@
+# Small examples of the rexi API, one program each in src/bin. Its own workspace,
+# so the rexi workspace build never compiles it (the root Cargo.toml excludes
+# examples/). The same examples in Julia are in jexi/examples/basics.
+[workspace]
+
+[package]
+name = "rexi-basics"
+edition = "2024"
+license = "BSD-3-Clause"
+version = "0.1.0"
+publish = false
+
+[dependencies]
+rexi-core = { path = "../../crates/rexi-core" }
+rexi-schema = { path = "../../crates/rexi-schema" }
+rexi-xml = { path = "../../crates/rexi-xml" }
+rexi-serde = { path = "../../crates/rexi-serde" }
+serde = { version = "1", features = ["derive"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

@@ -1,0 +1,348 @@
+# exificient 1.0.7 grammar dump
+schema-informed true
+schema-id <none>
+uri-contexts 6
+qname-contexts 65
+
+# string table (Appendix D initial uri / prefix / local-name partitions)
+uri 0 "" prefixes=[""]
+  local 0 "status"
+uri 1 "http://www.w3.org/XML/1998/namespace" prefixes=["xml"]
+  local 0 "base"
+  local 1 "id"
+  local 2 "lang"
+  local 3 "space"
+uri 2 "http://www.w3.org/2001/XMLSchema-instance" prefixes=["xsi"]
+  local 0 "nil"
+  local 1 "type"
+uri 3 "http://www.w3.org/2001/XMLSchema" prefixes=[]
+  local 0 "ENTITIES" type-grammar=28
+  local 1 "ENTITY" type-grammar=30
+  local 2 "ID" type-grammar=32
+  local 3 "IDREF" type-grammar=34
+  local 4 "IDREFS" type-grammar=36
+  local 5 "NCName" type-grammar=38
+  local 6 "NMTOKEN" type-grammar=40
+  local 7 "NMTOKENS" type-grammar=42
+  local 8 "NOTATION" type-grammar=44
+  local 9 "Name" type-grammar=46
+  local 10 "QName" type-grammar=48
+  local 11 "anySimpleType" type-grammar=50
+  local 12 "anyType" type-grammar=52
+  local 13 "anyURI" type-grammar=56
+  local 14 "base64Binary" type-grammar=58
+  local 15 "boolean" type-grammar=60
+  local 16 "byte" type-grammar=62
+  local 17 "date" type-grammar=64
+  local 18 "dateTime" type-grammar=66
+  local 19 "decimal" type-grammar=68
+  local 20 "double" type-grammar=70
+  local 21 "duration" type-grammar=72
+  local 22 "float" type-grammar=74
+  local 23 "gDay" type-grammar=76
+  local 24 "gMonth" type-grammar=78
+  local 25 "gMonthDay" type-grammar=80
+  local 26 "gYear" type-grammar=82
+  local 27 "gYearMonth" type-grammar=84
+  local 28 "hexBinary" type-grammar=86
+  local 29 "int" type-grammar=88
+  local 30 "integer" type-grammar=90
+  local 31 "language" type-grammar=92
+  local 32 "long" type-grammar=94
+  local 33 "negativeInteger" type-grammar=96
+  local 34 "nonNegativeInteger" type-grammar=98
+  local 35 "nonPositiveInteger" type-grammar=100
+  local 36 "normalizedString" type-grammar=102
+  local 37 "positiveInteger" type-grammar=104
+  local 38 "short" type-grammar=106
+  local 39 "string" type-grammar=108
+  local 40 "time" type-grammar=109
+  local 41 "token" type-grammar=111
+  local 42 "unsignedByte" type-grammar=113
+  local 43 "unsignedInt" type-grammar=115
+  local 44 "unsignedLong" type-grammar=117
+  local 45 "unsignedShort" type-grammar=119
+uri 4 "urn:rexi:interop:common" prefixes=[]
+  local 0 "AuditInfo" global-element=2
+  local 1 "CreatedAt"
+  local 2 "CreatedBy"
+  local 3 "LocationType" type-grammar=19
+  local 4 "SeverityType" type-grammar=16
+  local 5 "Site"
+  local 6 "Zone"
+uri 5 "urn:rexi:interop:main" prefixes=[]
+  local 0 "Id"
+  local 1 "IncidentReport" global-element=12
+  local 2 "IncidentReportType" type-grammar=12
+  local 3 "Location"
+  local 4 "Severity"
+
+# grammars
+document-grammar 0
+fragment-grammar 121
+grammar 0 type=DOCUMENT declared-attributes=0 label="Document" has-EE=false
+  0: SD -> 1
+grammar 1 type=SCHEMA_INFORMED_DOC_CONTENT declared-attributes=0 label="DocContent" has-EE=false
+  0: SE {urn:rexi:interop:common}AuditInfo grammar=2 -> 11
+  1: SE {urn:rexi:interop:main}IncidentReport grammar=12 -> 11
+  2: SE * -> 11
+grammar 2 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=10
+  0: SE {urn:rexi:interop:common}CreatedBy grammar=3 -> 7
+grammar 3 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=true declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 4 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: EE -> 5
+grammar 5 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 label="<END>" has-EE=false
+grammar 6 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 7 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:common}CreatedAt grammar=8 -> 9
+grammar 8 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=true declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 9 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: EE -> 5
+grammar 10 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:common}CreatedBy grammar=3 -> 7
+grammar 11 type=DOC_END declared-attributes=0 label="DocEnd" has-EE=false
+  0: ED -> 5
+grammar 12 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=1 has-EE=false element-content=27
+  0: AT {}status [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 13
+grammar 13 type=SCHEMA_INFORMED_START_TAG_CONTENT declared-attributes=0 has-EE=false element-content=27
+  0: SE {urn:rexi:interop:main}Id grammar=14 -> 15
+grammar 14 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=true declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 15 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:main}Severity grammar=16 -> 18
+grammar 16 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=17
+  0: CH [ENUMERATION schema-type={urn:rexi:interop:common}SeverityType id=exi_string bits=2 values=[low|medium|high] ws=collapse] -> 4
+grammar 17 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [ENUMERATION schema-type={urn:rexi:interop:common}SeverityType id=exi_string bits=2 values=[low|medium|high] ws=collapse] -> 4
+grammar 18 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:main}Location grammar=19 -> 25
+grammar 19 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=24
+  0: SE {urn:rexi:interop:common}Site grammar=20 -> 21
+grammar 20 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=true declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 21 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:common}Zone grammar=22 -> 23
+grammar 22 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=true declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 23 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: EE -> 5
+grammar 24 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:common}Site grammar=20 -> 21
+grammar 25 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:common}AuditInfo grammar=2 -> 26
+grammar 26 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: EE -> 5
+grammar 27 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: SE {urn:rexi:interop:main}Id grammar=14 -> 15
+grammar 28 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=29
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}ENTITIES id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}ENTITY id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 29 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}ENTITIES id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}ENTITY id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 30 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=31
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}ENTITY id=exi_string ws=collapse] -> 4
+grammar 31 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}ENTITY id=exi_string ws=collapse] -> 4
+grammar 32 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=33
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}ID id=exi_string ws=collapse] -> 4
+grammar 33 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}ID id=exi_string ws=collapse] -> 4
+grammar 34 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=35
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}IDREF id=exi_string ws=collapse] -> 4
+grammar 35 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}IDREF id=exi_string ws=collapse] -> 4
+grammar 36 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=37
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}IDREFS id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}IDREF id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 37 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}IDREFS id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}IDREF id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 38 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=39
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NCName id=exi_string ws=collapse] -> 4
+grammar 39 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NCName id=exi_string ws=collapse] -> 4
+grammar 40 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=41
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NMTOKEN id=exi_string ws=collapse] -> 4
+grammar 41 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NMTOKEN id=exi_string ws=collapse] -> 4
+grammar 42 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=43
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}NMTOKENS id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}NMTOKEN id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 43 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [LIST schema-type={http://www.w3.org/2001/XMLSchema}NMTOKENS id=exi_string item=[STRING schema-type={http://www.w3.org/2001/XMLSchema}NMTOKEN id=exi_string ws=collapse] ws=collapse] -> 4
+grammar 44 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=45
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NOTATION id=exi_string ws=collapse] -> 4
+grammar 45 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}NOTATION id=exi_string ws=collapse] -> 4
+grammar 46 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=47
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}Name id=exi_string ws=collapse] -> 4
+grammar 47 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}Name id=exi_string ws=collapse] -> 4
+grammar 48 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=49
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}QName id=exi_string ws=collapse] -> 4
+grammar 49 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}QName id=exi_string ws=collapse] -> 4
+grammar 50 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=51
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}anySimpleType id=exi_string ws=preserve] -> 4
+grammar 51 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}anySimpleType id=exi_string ws=preserve] -> 4
+grammar 52 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=true element-content=55
+  0: AT * -> 52
+  1: SE * -> 53
+  2: EE -> 5
+  3: CH * -> 54
+grammar 53 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: SE * -> 53
+  1: EE -> 5
+  2: CH * -> 53
+grammar 54 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: SE * -> 53
+  1: EE -> 5
+  2: CH * -> 54
+grammar 55 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=true
+  0: SE * -> 53
+  1: EE -> 5
+  2: CH * -> 54
+grammar 56 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=57
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}anyURI id=exi_string ws=collapse] -> 4
+grammar 57 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}anyURI id=exi_string ws=collapse] -> 4
+grammar 58 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=59
+  0: CH [BINARY_BASE64 schema-type={http://www.w3.org/2001/XMLSchema}base64Binary id=exi_base64Binary ws=collapse] -> 4
+grammar 59 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [BINARY_BASE64 schema-type={http://www.w3.org/2001/XMLSchema}base64Binary id=exi_base64Binary ws=collapse] -> 4
+grammar 60 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=61
+  0: CH [BOOLEAN schema-type={http://www.w3.org/2001/XMLSchema}boolean id=exi_boolean ws=collapse] -> 4
+grammar 61 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [BOOLEAN schema-type={http://www.w3.org/2001/XMLSchema}boolean id=exi_boolean ws=collapse] -> 4
+grammar 62 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=63
+  0: CH [NBIT_UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}byte id=exi_integer lower=-128 upper=127 bits=8 ws=collapse] -> 4
+grammar 63 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [NBIT_UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}byte id=exi_integer lower=-128 upper=127 bits=8 ws=collapse] -> 4
+grammar 64 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=65
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}date id=exi_date ws=collapse] -> 4
+grammar 65 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}date id=exi_date ws=collapse] -> 4
+grammar 66 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=67
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}dateTime id=exi_dateTime ws=collapse] -> 4
+grammar 67 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}dateTime id=exi_dateTime ws=collapse] -> 4
+grammar 68 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=69
+  0: CH [DECIMAL schema-type={http://www.w3.org/2001/XMLSchema}decimal id=exi_decimal ws=collapse] -> 4
+grammar 69 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DECIMAL schema-type={http://www.w3.org/2001/XMLSchema}decimal id=exi_decimal ws=collapse] -> 4
+grammar 70 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=71
+  0: CH [FLOAT schema-type={http://www.w3.org/2001/XMLSchema}double id=exi_double ws=collapse] -> 4
+grammar 71 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [FLOAT schema-type={http://www.w3.org/2001/XMLSchema}double id=exi_double ws=collapse] -> 4
+grammar 72 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=73
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}duration id=exi_string ws=collapse] -> 4
+grammar 73 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}duration id=exi_string ws=collapse] -> 4
+grammar 74 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=75
+  0: CH [FLOAT schema-type={http://www.w3.org/2001/XMLSchema}float id=exi_double ws=collapse] -> 4
+grammar 75 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [FLOAT schema-type={http://www.w3.org/2001/XMLSchema}float id=exi_double ws=collapse] -> 4
+grammar 76 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=77
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gDay id=exi_gDay ws=collapse] -> 4
+grammar 77 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gDay id=exi_gDay ws=collapse] -> 4
+grammar 78 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=79
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gMonth id=exi_gMonth ws=collapse] -> 4
+grammar 79 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gMonth id=exi_gMonth ws=collapse] -> 4
+grammar 80 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=81
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gMonthDay id=exi_gMonthDay ws=collapse] -> 4
+grammar 81 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gMonthDay id=exi_gMonthDay ws=collapse] -> 4
+grammar 82 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=83
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gYear id=exi_gYear ws=collapse] -> 4
+grammar 83 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gYear id=exi_gYear ws=collapse] -> 4
+grammar 84 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=85
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gYearMonth id=exi_gYearMonth ws=collapse] -> 4
+grammar 85 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}gYearMonth id=exi_gYearMonth ws=collapse] -> 4
+grammar 86 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=87
+  0: CH [BINARY_HEX schema-type={http://www.w3.org/2001/XMLSchema}hexBinary id=exi_hexBinary ws=collapse] -> 4
+grammar 87 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [BINARY_HEX schema-type={http://www.w3.org/2001/XMLSchema}hexBinary id=exi_hexBinary ws=collapse] -> 4
+grammar 88 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=89
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}int id=exi_integer ws=collapse] -> 4
+grammar 89 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}int id=exi_integer ws=collapse] -> 4
+grammar 90 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=91
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}integer id=exi_integer ws=collapse] -> 4
+grammar 91 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}integer id=exi_integer ws=collapse] -> 4
+grammar 92 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=93
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}language id=exi_string ws=collapse] -> 4
+grammar 93 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}language id=exi_string ws=collapse] -> 4
+grammar 94 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=95
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}long id=exi_integer ws=collapse] -> 4
+grammar 95 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}long id=exi_integer ws=collapse] -> 4
+grammar 96 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=97
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}negativeInteger id=exi_integer ws=collapse] -> 4
+grammar 97 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}negativeInteger id=exi_integer ws=collapse] -> 4
+grammar 98 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=99
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}nonNegativeInteger id=exi_integer ws=collapse] -> 4
+grammar 99 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}nonNegativeInteger id=exi_integer ws=collapse] -> 4
+grammar 100 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=101
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}nonPositiveInteger id=exi_integer ws=collapse] -> 4
+grammar 101 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}nonPositiveInteger id=exi_integer ws=collapse] -> 4
+grammar 102 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=103
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}normalizedString id=exi_string ws=replace] -> 4
+grammar 103 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}normalizedString id=exi_string ws=replace] -> 4
+grammar 104 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=105
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}positiveInteger id=exi_integer ws=collapse] -> 4
+grammar 105 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}positiveInteger id=exi_integer ws=collapse] -> 4
+grammar 106 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=107
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}short id=exi_integer ws=collapse] -> 4
+grammar 107 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [INTEGER schema-type={http://www.w3.org/2001/XMLSchema}short id=exi_integer ws=collapse] -> 4
+grammar 108 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=6
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}string id=exi_string ws=preserve] -> 4
+grammar 109 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=110
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}time id=exi_time ws=collapse] -> 4
+grammar 110 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [DATETIME schema-type={http://www.w3.org/2001/XMLSchema}time id=exi_time ws=collapse] -> 4
+grammar 111 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=112
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}token id=exi_string ws=collapse] -> 4
+grammar 112 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [STRING schema-type={http://www.w3.org/2001/XMLSchema}token id=exi_string ws=collapse] -> 4
+grammar 113 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=114
+  0: CH [NBIT_UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedByte id=exi_integer lower=0 upper=255 bits=8 ws=collapse] -> 4
+grammar 114 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [NBIT_UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedByte id=exi_integer lower=0 upper=255 bits=8 ws=collapse] -> 4
+grammar 115 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=116
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedInt id=exi_integer ws=collapse] -> 4
+grammar 116 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedInt id=exi_integer ws=collapse] -> 4
+grammar 117 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=118
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedLong id=exi_integer ws=collapse] -> 4
+grammar 118 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedLong id=exi_integer ws=collapse] -> 4
+grammar 119 type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable=false typecastable=false declared-attributes=0 has-EE=false element-content=120
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedShort id=exi_integer ws=collapse] -> 4
+grammar 120 type=SCHEMA_INFORMED_ELEMENT_CONTENT declared-attributes=0 has-EE=false
+  0: CH [UNSIGNED_INTEGER schema-type={http://www.w3.org/2001/XMLSchema}unsignedShort id=exi_integer ws=collapse] -> 4
+grammar 121 type=FRAGMENT declared-attributes=0 label="Fragment" has-EE=false
+  0: SD -> 122
+grammar 122 type=SCHEMA_INFORMED_FRAGMENT_CONTENT declared-attributes=0 label="FragmentContent" has-EE=false
+  0: SE {urn:rexi:interop:common}AuditInfo grammar=2 -> 122
+  1: SE {urn:rexi:interop:common}CreatedAt grammar=8 -> 122
+  2: SE {urn:rexi:interop:common}CreatedBy grammar=3 -> 122
+  3: SE {urn:rexi:interop:main}Id grammar=14 -> 122
+  4: SE {urn:rexi:interop:main}IncidentReport grammar=12 -> 122
+  5: SE {urn:rexi:interop:main}Location grammar=19 -> 122
+  6: SE {urn:rexi:interop:main}Severity grammar=16 -> 122
+  7: SE {urn:rexi:interop:common}Site grammar=20 -> 122
+  8: SE {urn:rexi:interop:common}Zone grammar=22 -> 122
+  9: SE * -> 122
+  10: ED -> 5

@@ -1,0 +1,18 @@
+# Libraries of the MQTT todo example that come from neither crates.io, Maven
+# Central nor NuGet. scripts/fetch-third-party.sh checks them out into
+# ${REXI_EXAMPLES_THIRD_PARTY:-${XDG_CACHE_HOME:-~/.cache}/rexi/examples/mqtt-todo}
+# (never into the working tree).
+#
+# Each line: <name> <git url | svn:url> <commit | revision> [path]
+# For svn the path is the folder inside the repository to check out. For git it
+# is optional: when given, only that folder is checked out (a sparse checkout).
+#
+# paho.mqtt.c: Eclipse Paho MQTT C client, release v1.3.15 (the C client).
+# nagasenacs:  Nagasena for .NET, OpenEXI's C# port, on SourceForge in Subversion
+#              only. r1188 is its last change (version 0000.0002.0056.1).
+# exi-testsuite: the W3C EXI test suite, only its Java Nagasena and Xerces 2.11
+#              jars (candidates/openexi/lib), for scripts/gen-xsc.sh.
+
+paho.mqtt.c https://github.com/eclipse-paho/paho.mqtt.c.git 62782406bcf511ee8e22bc34e826f8c6b8254c7c
+nagasenacs svn:https://svn.code.sf.net/p/openexi/code 1188 trunk/nagasenacs
+exi-testsuite https://github.com/w3c/exi-testsuite.git 23d5f587ba3ec281f1a6a8182c1450cb870b469e candidates/openexi/lib

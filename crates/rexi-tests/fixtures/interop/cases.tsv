@@ -1,0 +1,7 @@
+name	xml	main_xsd	import_xsds
+order-complex	order-complex.xml	order-complex.xsd	
+telemetry-complex	telemetry-complex.xml	telemetry-complex.xsd	
+polymorphic-choice	polymorphic-choice.xml	polymorphic-choice.xsd	
+inheritance-extension	inheritance-extension.xml	inheritance-extension.xsd	
+cross-schema-main	cross-schema-main.xml	cross-schema-main.xsd	cross-schema-common.xsd
+multilingual	multilingual.xml	multilingual.xsd	

@@ -1,0 +1,28 @@
+[package]
+name = "rexi-serde"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "Serde Serializer/Deserializer over the strict schema-informed EXI codec"
+
+[features]
+default = ["std"]
+# std::io readers and writers in from_reader / to_writer (via rexi-core's std).
+std = ["rexi-core/std", "serde/std"]
+
+[dependencies]
+rexi-core.workspace = true
+serde = { workspace = true, features = ["alloc"] }
+
+[dev-dependencies]
+rexi-schema.workspace = true
+rexi-xml.workspace = true
+
+[lints]
+workspace = true

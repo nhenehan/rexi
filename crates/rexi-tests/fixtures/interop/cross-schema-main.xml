@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<IncidentReport xmlns="urn:rexi:interop:main"
+                xmlns:c="urn:rexi:interop:common"
+                status="open">
+  <Id>INC-2026-0109</Id>
+  <Severity>high</Severity>
+  <Location>
+    <c:Site>plant-7</c:Site>
+    <c:Zone>north</c:Zone>
+  </Location>
+  <c:AuditInfo>
+    <c:CreatedBy>operator-12</c:CreatedBy>
+    <c:CreatedAt>2026-04-15T17:45:00Z</c:CreatedAt>
+  </c:AuditInfo>
+</IncidentReport>

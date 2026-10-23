@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- UTF-8 text in every place EXI codes a string: element and attribute values (typed
+     string, enumeration, list, untyped mixed content), local names, and value-table hits
+     (a repeated value is coded by its index, so its length must be counted in code
+     points, not bytes). Scripts: Chinese, Japanese, Russian, Greek, French, German,
+     Polish, plus combining marks and characters outside the BMP (4-byte UTF-8). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:interop:utf8"
+           xmlns="urn:interop:utf8" elementFormDefault="qualified">
+  <xs:simpleType name="Język">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="中文"/>
+      <xs:enumeration value="русский"/>
+      <xs:enumeration value="ελληνικά"/>
+      <xs:enumeration value="français"/>
+      <xs:enumeration value="Deutsch"/>
+      <xs:enumeration value="polski"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Słowa">
+    <xs:list itemType="xs:string"/>
+  </xs:simpleType>
+  <xs:complexType name="Wpis">
+    <xs:sequence>
+      <xs:element name="Tytuł" type="xs:string"/>
+      <xs:element name="Текст" type="xs:string"/>
+      <xs:element name="Λέξεις" type="Słowa" minOccurs="0"/>
+      <xs:element name="Notiz" minOccurs="0">
+        <xs:complexType mixed="true">
+          <xs:sequence>
+            <xs:element name="強調" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="język" type="Język" use="required"/>
+    <xs:attribute name="autor" type="xs:string"/>
+  </xs:complexType>
+  <xs:element name="Słownik">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Wpis" type="Wpis" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

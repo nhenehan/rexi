@@ -1,0 +1,8 @@
+/target
+**/target
+# NetBeans per-project IDE settings
+nb-configuration.xml
+# Legacy in-tree third-party location; third parties now live in the cache
+# (scripts/fetch-third-party.sh). Kept ignored so a stale copy is never added.
+/third_party
+

@@ -1,0 +1,16 @@
+[package]
+name = "todo-model"
+description = "Messages of the MQTT todo example and their EXI form"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+rexi-core.workspace = true
+rexi-schema.workspace = true
+rexi-serde.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true

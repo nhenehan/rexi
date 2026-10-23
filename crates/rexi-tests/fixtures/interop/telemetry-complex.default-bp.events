@@ -1,0 +1,63 @@
+SD
+SE {urn:rexi:interop:telemetry}TelemetryBatch
+AT {}generatedAt 2026-04-15T12:00:00Z
+AT {}site north-hub
+SE {urn:rexi:interop:telemetry}Device
+AT {}id dev-01
+AT {}model alpha
+SE {urn:rexi:interop:telemetry}Reading
+AT {}sample 1
+SE {urn:rexi:interop:telemetry}Type
+CH temperature
+EE
+SE {urn:rexi:interop:telemetry}Value
+CH 2175E-2
+EE
+SE {urn:rexi:interop:telemetry}Unit
+CH C
+EE
+EE
+SE {urn:rexi:interop:telemetry}Reading
+AT {}sample 2
+SE {urn:rexi:interop:telemetry}Type
+CH humidity
+EE
+SE {urn:rexi:interop:telemetry}Value
+CH 441E-1
+EE
+SE {urn:rexi:interop:telemetry}Unit
+CH percent
+EE
+EE
+SE {urn:rexi:interop:telemetry}Healthy
+CH true
+EE
+EE
+SE {urn:rexi:interop:telemetry}Device
+AT {}id dev-02
+SE {urn:rexi:interop:telemetry}Reading
+AT {}sample 1
+SE {urn:rexi:interop:telemetry}Type
+CH temperature
+EE
+SE {urn:rexi:interop:telemetry}Value
+CH 85E0
+EE
+SE {urn:rexi:interop:telemetry}Unit
+CH C
+EE
+EE
+SE {urn:rexi:interop:telemetry}Alarm
+SE {urn:rexi:interop:telemetry}Code
+CH OVER_TEMP
+EE
+SE {urn:rexi:interop:telemetry}Severity
+CH critical
+EE
+EE
+SE {urn:rexi:interop:telemetry}Healthy
+CH false
+EE
+EE
+EE
+ED

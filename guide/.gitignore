@@ -1,0 +1,4 @@
+/book/
+# Run `mdbook-mermaid install guide` (from the repo root) to get these back.
+/mermaid.min.js
+/mermaid-init.js

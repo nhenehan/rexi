@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ReadingEvent xmlns="urn:rexi:interop:inheritance" category="telemetry" sensorId="sensor-17">
+  <EventId>evt-2026-04-15-001</EventId>
+  <Timestamp>2026-04-15T17:00:00Z</Timestamp>
+  <Source>edge-gateway-2</Source>
+  <Metric>temperature</Metric>
+  <Value>73.25</Value>
+  <Unit>F</Unit>
+  <Quality>good</Quality>
+</ReadingEvent>

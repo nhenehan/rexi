@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Order xmlns="urn:rexi:interop:order" orderId="ORD-2026-0007" priority="true">
+  <Customer loyaltyId="L-8821">
+    <Name>Raven Bookstore</Name>
+    <Tier>gold</Tier>
+  </Customer>
+  <Item sku="BK-001">
+    <Description>Distributed Systems Patterns</Description>
+    <Quantity>2</Quantity>
+    <Price>42.95</Price>
+  </Item>
+  <Item sku="BK-014">
+    <Description>Practical EXI</Description>
+    <Quantity>1</Quantity>
+    <Price>31.50</Price>
+  </Item>
+  <Notes>gift-wrap requested</Notes>
+</Order>

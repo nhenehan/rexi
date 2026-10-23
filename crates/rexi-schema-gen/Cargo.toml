@@ -1,0 +1,26 @@
+[package]
+name = "rexi-schema-gen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "Generates static Rust grammar tables from XSD (gSOAP-style codegen)"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "rexi-schema-gen"
+path = "src/main.rs"
+
+[dependencies]
+rexi-core = { workspace = true, features = ["std"] }
+rexi-schema.workspace = true
+
+[lints]
+workspace = true

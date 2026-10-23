@@ -1,0 +1,42 @@
+SD
+SE {urn:rexi:interop:order}Order
+AT {}orderId ORD-2026-0007
+AT {}priority true
+SE {urn:rexi:interop:order}Customer
+AT {}loyaltyId L-8821
+SE {urn:rexi:interop:order}Name
+CH Raven Bookstore
+EE
+SE {urn:rexi:interop:order}Tier
+CH gold
+EE
+EE
+SE {urn:rexi:interop:order}Item
+AT {}sku BK-001
+SE {urn:rexi:interop:order}Description
+CH Distributed Systems Patterns
+EE
+SE {urn:rexi:interop:order}Quantity
+CH 2
+EE
+SE {urn:rexi:interop:order}Price
+CH 42.95
+EE
+EE
+SE {urn:rexi:interop:order}Item
+AT {}sku BK-014
+SE {urn:rexi:interop:order}Description
+CH Practical EXI
+EE
+SE {urn:rexi:interop:order}Quantity
+CH 1
+EE
+SE {urn:rexi:interop:order}Price
+CH 31.5
+EE
+EE
+SE {urn:rexi:interop:order}Notes
+CH gift-wrap requested
+EE
+EE
+ED

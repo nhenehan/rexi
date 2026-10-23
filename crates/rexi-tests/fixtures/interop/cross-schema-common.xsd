@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:rexi:interop:common"
+           xmlns="urn:rexi:interop:common"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+  <xs:simpleType name="SeverityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="medium"/>
+      <xs:enumeration value="high"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="LocationType">
+    <xs:sequence>
+      <xs:element name="Site" type="xs:string"/>
+      <xs:element name="Zone" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="AuditInfo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="CreatedBy" type="xs:string"/>
+        <xs:element name="CreatedAt" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
