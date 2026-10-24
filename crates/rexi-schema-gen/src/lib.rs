@@ -326,8 +326,11 @@ fn datatype(d: DatatypeKind) -> String {
         DatatypeKind::String { whitespace } => {
             format!("DatatypeKind::String {{ whitespace: {} }}", ws(whitespace))
         }
-        DatatypeKind::RestrictedString { whitespace } => format!(
-            "DatatypeKind::RestrictedString {{ whitespace: {} }}",
+        DatatypeKind::RestrictedString {
+            whitespace,
+            alphabet,
+        } => format!(
+            "DatatypeKind::RestrictedString {{ whitespace: {}, alphabet: {alphabet:?} }}",
             ws(whitespace)
         ),
         DatatypeKind::NBit { min, bits } => {

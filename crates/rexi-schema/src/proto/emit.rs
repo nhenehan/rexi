@@ -15,7 +15,7 @@ use rexi_core::grammar::{
     ElementDecl, GlobalAttribute, Grammar, GrammarSetBuf, Production, Rule, Span, Terminal,
     TypeDecl,
 };
-use rexi_core::{ElemIdx, GrammarIdx, NONE, QNameId, TypeIdx};
+use rexi_core::{DatatypeKind, ElemIdx, GrammarIdx, NONE, QNameId, TypeIdx};
 
 use super::string_table::StringTable;
 use super::{
@@ -137,6 +137,20 @@ pub fn emit_with(model: &Model, max_grammar_size: Option<usize>) -> Result<Gramm
             datatype: mapper.kind(t)?,
             typecastable: has_named_subtype[t] || is_union,
         });
+    }
+
+    // Each alphabet goes into the string pool, and its kind points at it (the
+    // same order as JExi, so the two compilers' tables stay equal).
+    for t in 0..buf.types.len() {
+        if let Some(DatatypeKind::RestrictedString { whitespace, .. }) = buf.types[t].datatype
+            && let Some(a) = mapper.alphabet(t)
+        {
+            let alphabet = Some(buf.intern(a));
+            buf.types[t].datatype = Some(DatatypeKind::RestrictedString {
+                whitespace,
+                alphabet,
+            });
+        }
     }
 
     for set in &mapper.enum_sets {

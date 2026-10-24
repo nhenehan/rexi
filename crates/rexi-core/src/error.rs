@@ -28,16 +28,14 @@ pub enum Feature {
     ///
     /// A pattern like `[A-Z]{2}[0-9]{4}` has a small alphabet. EXI then writes
     /// each character as a small index into that alphabet instead of a full code
-    /// point, so the bytes change. Writing such a value as a plain string gives
-    /// bytes that EXIficient and other spec readers decode to garbage, without any
-    /// error. Until that form is implemented, the encoder and decoder refuse these
-    /// values instead of writing or reading wrong bytes.
+    /// point, and rexi does so. This refusal is for a restricted type whose pattern
+    /// rexi cannot read: its alphabet is unknown, and writing the value as a plain
+    /// string would give bytes that EXIficient and other spec readers decode to
+    /// garbage, without any error.
     ///
     /// The refusal only happens when a value of that type is written or read. The
     /// schema still compiles, because grammars and event codes do not depend on the
-    /// character set. Patterns with a large alphabet (`\d+`, `\p{L}+`, `.*`,
-    /// `[^x]`, or anything outside the Basic Multilingual Plane) are not restricted
-    /// and work as usual. See
+    /// character set. See
     /// [`DatatypeKind::RestrictedString`](crate::datatype::DatatypeKind::RestrictedString).
     RestrictedCharacterSet,
     /// EXI fragments: several root elements in one body

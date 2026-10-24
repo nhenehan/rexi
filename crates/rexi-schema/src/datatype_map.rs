@@ -17,9 +17,9 @@
 //! - patterns on a type derived from `xs:string` may give a restricted character
 //!   set ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)), worked out
 //!   in [`crate::charset`]. Such a type maps to
-//!   [`DatatypeKind::RestrictedString`]. The schema still compiles, but the encoder
-//!   and decoder refuse a value of that type, because rexi does not write that form
-//!   yet. Patterns it cannot read map there too, so nothing is guessed.
+//!   [`DatatypeKind::RestrictedString`], whose alphabet the table builder puts in
+//!   the string pool. Patterns it cannot read map there too, with no alphabet, and
+//!   the encoder and decoder refuse their values, so nothing is guessed.
 
 use std::collections::HashMap;
 
@@ -38,6 +38,11 @@ pub struct DatatypeMapper<'m> {
     /// Enumeration value sets, in the order they were made. The `set` field of
     /// `DatatypeKind::Enumeration` is an index into this list.
     pub enum_sets: Vec<Vec<String>>,
+    /// The alphabet of each type whose kind is `DatatypeKind::RestrictedString`
+    /// with a readable pattern, in its code point order. The kind's `alphabet` is
+    /// `None` until the tables are built, which put each alphabet in the string
+    /// pool (see [`DatatypeMapper::alphabet`]).
+    alphabets: HashMap<TypeId, String>,
 }
 
 impl<'m> DatatypeMapper<'m> {
@@ -47,6 +52,7 @@ impl<'m> DatatypeMapper<'m> {
             model,
             cache: HashMap::new(),
             enum_sets: Vec::new(),
+            alphabets: HashMap::new(),
         }
     }
 
@@ -145,7 +151,7 @@ impl<'m> DatatypeMapper<'m> {
     /// - Integers: each `minInclusive`, `minExclusive`, `maxInclusive` or
     ///   `maxExclusive` can only narrow the range. Exclusive bounds are turned into
     ///   inclusive ones by adding or taking away 1.
-    fn atomic(&self, t: TypeId) -> Result<DatatypeKind> {
+    fn atomic(&mut self, t: TypeId) -> Result<DatatypeKind> {
         let b = self
             .model
             .closest_builtin(t)
@@ -167,8 +173,12 @@ impl<'m> DatatypeMapper<'m> {
                     })
                     .unwrap_or(ws);
                 if self.restricted_charset(&chain, &below) {
+                    if let Some(a) = self.type_alphabet(&below) {
+                        self.alphabets.insert(t, a);
+                    }
                     DatatypeKind::RestrictedString {
                         whitespace: effective,
+                        alphabet: None,
                     }
                 } else {
                     DatatypeKind::String {
@@ -236,6 +246,23 @@ impl<'m> DatatypeMapper<'m> {
     ///
     /// `chain` is `t` and all its base types, nearest first; `below` is the part
     /// of `chain` before the nearest built-in.
+    /// The alphabet of type `t`, when its kind is a restricted string whose
+    /// patterns could be read.
+    pub fn alphabet(&self, t: TypeId) -> Option<&str> {
+        self.alphabets.get(&t).map(String::as_str)
+    }
+
+    /// The alphabet the patterns of the nearest type in `below` that has any give.
+    fn type_alphabet(&self, below: &[TypeId]) -> Option<String> {
+        let patterns = below.iter().find_map(|&a| {
+            self.model.types[a]
+                .simple()
+                .map(|s| &s.facets.patterns)
+                .filter(|p| !p.is_empty())
+        })?;
+        charset::alphabet(patterns)
+    }
+
     fn restricted_charset(&self, chain: &[TypeId], below: &[TypeId]) -> bool {
         if !chain.contains(&builtin::STRING) {
             return false;

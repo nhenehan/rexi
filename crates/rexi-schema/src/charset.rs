@@ -39,20 +39,39 @@ const LIMIT: u64 = 256;
 /// The character set of a type whose own patterns are `patterns`. Several
 /// patterns on one type mean "any of them", so their sets are joined.
 pub fn analyze<S: AsRef<str>>(patterns: &[S]) -> CharSet {
+    analyze_set(patterns).0
+}
+
+/// The alphabet of a restricted set: its characters in code point order, the
+/// order EXI numbers them in. `None` when the set is not restricted or a
+/// pattern could not be read.
+pub fn alphabet<S: AsRef<str>>(patterns: &[S]) -> Option<String> {
+    match analyze_set(patterns) {
+        (CharSet::Restricted(_), set) => Some(
+            set.0
+                .iter()
+                .flat_map(|&(lo, hi)| (lo..=hi).filter_map(char::from_u32))
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+fn analyze_set<S: AsRef<str>>(patterns: &[S]) -> (CharSet, Ranges) {
     let mut all = Ranges::default();
     let mut unreadable = false;
     for p in patterns {
         match pattern_set(p.as_ref()) {
             Ok(set) => all.extend(set),
-            Err(Stop::NotRestricted) => return CharSet::NotRestricted,
+            Err(Stop::NotRestricted) => return (CharSet::NotRestricted, all),
             Err(Stop::Unreadable) => unreadable = true,
         }
     }
     if unreadable {
-        return CharSet::Unreadable;
+        return (CharSet::Unreadable, all);
     }
     all.normalize();
-    classify(&all)
+    (classify(&all), all)
 }
 
 /// Decides the answer for a finished set.

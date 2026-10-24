@@ -382,10 +382,24 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     /// Reads one value in the datatype `kind`; the reverse of `Encoder::write_value`.
     fn read_value(&mut self, kind: DatatypeKind, context: QNameId) -> ExiResult<OwnedValue> {
         match kind {
-            // Refused before the string table is touched: see
-            // `DatatypeKind::RestrictedString` (EXI 7.1.10.1).
-            DatatypeKind::RestrictedString { .. } => {
-                Err(ExiError::Unsupported(Feature::RestrictedCharacterSet))
+            // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
+            // refused before the string table is touched.
+            DatatypeKind::RestrictedString { alphabet, .. } => {
+                let alphabet =
+                    alphabet.ok_or(ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
+                let mut buf = match core::mem::replace(&mut self.value, OwnedValue::Boolean(false))
+                {
+                    OwnedValue::String(s) => s,
+                    _ => core::mem::take(&mut self.text),
+                };
+                self.strings.read_value_restricted(
+                    &mut self.inp,
+                    context,
+                    &mut buf,
+                    self.tables.string(alphabet),
+                )?;
+                self.count_string_bytes(buf.len())?;
+                Ok(OwnedValue::String(buf))
             }
             k if k.is_string_like() => {
                 // Read into the last string value's buffer, keeping its capacity,

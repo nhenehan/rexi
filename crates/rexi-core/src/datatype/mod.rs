@@ -29,7 +29,7 @@ pub(crate) mod unsigned;
 use crate::io::{ByteSink, ByteSource};
 
 use crate::error::ExiResult;
-use crate::ids::{EnumSetIdx, TypeIdx};
+use crate::ids::{EnumSetIdx, StrIdx, TypeIdx};
 use crate::io::{BitReader, BitWriter};
 use crate::value::{DateTimeKind, OwnedValue, Value};
 
@@ -66,20 +66,24 @@ pub enum DatatypeKind {
     /// in one 16-bit unit). EXI calls this a restricted character set
     /// ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)).
     ///
-    /// For such a type, EXI writes each character as a small index into the set
-    /// instead of a full code point, so the bytes differ from a plain string. This
-    /// crate does not implement that form yet. Writing the value as a plain string
-    /// would give bytes that EXIficient and other readers that follow the spec turn
-    /// into garbage, with no error. So the encoder and the decoder refuse a value of
-    /// this kind with
-    /// [`Feature::RestrictedCharacterSet`](crate::error::Feature::RestrictedCharacterSet).
+    /// For such a type, EXI writes each character of a string-table miss as an
+    /// n-bit index into the set instead of a full code point, so the bytes differ
+    /// from a plain string. A character outside the set is the escape index (the
+    /// set's size) followed by its code point. String-table hits are as usual.
     ///
-    /// Only the value is refused. Grammars and event codes do not depend on the
-    /// character set, so every document that does not hold a value of this type
-    /// still works.
+    /// `alphabet` is `None` when a pattern could not be read, so the set is
+    /// unknown. Writing such a value as a plain string would give bytes that
+    /// EXIficient and other readers that follow the spec turn into garbage, with no
+    /// error, so the encoder and the decoder refuse it with
+    /// [`Feature::RestrictedCharacterSet`](crate::error::Feature::RestrictedCharacterSet).
+    /// Only the value is refused: grammars and event codes do not depend on the
+    /// character set.
     RestrictedString {
         /// How whitespace in the text is handled before encoding.
         whitespace: WhiteSpace,
+        /// The set, as a string of its characters in code point order (the
+        /// order EXI numbers them in), in the string pool; `None` if unknown.
+        alphabet: Option<StrIdx>,
     },
     /// One bit ([EXI 7.1.2](https://www.w3.org/TR/exi/#encodingBoolean)).
     Boolean,

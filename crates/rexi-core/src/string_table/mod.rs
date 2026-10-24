@@ -777,6 +777,30 @@ impl StringTable {
     ) -> ExiResult<()> {
         self.values.read(r, context, out)
     }
+
+    /// [`StringTable::write_value`] for a type with a restricted character set
+    /// ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)): a literal's
+    /// characters are indexes into `alphabet`. Hits are written as usual.
+    pub fn write_value_restricted<W: ByteSink>(
+        &mut self,
+        w: &mut BitWriter<W>,
+        context: QNameId,
+        value: &str,
+        alphabet: &str,
+    ) -> ExiResult<()> {
+        self.values.write_with(w, context, value, Some(alphabet))
+    }
+
+    /// [`StringTable::read_value`] for a type with a restricted character set.
+    pub fn read_value_restricted<R: ByteSource>(
+        &mut self,
+        r: &mut BitReader<R>,
+        context: QNameId,
+        out: &mut String,
+        alphabet: &str,
+    ) -> ExiResult<()> {
+        self.values.read_with(r, context, out, Some(alphabet))
+    }
 }
 
 #[cfg(test)]

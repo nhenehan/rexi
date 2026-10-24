@@ -93,12 +93,13 @@ fail. The rest of EXI 1.0 is planned for later releases.
 - **Wildcards** (`xs:any`, `xs:anyAttribute`). The stream must then carry the
   name of the element or attribute, and that path is not built yet. Documents
   that don't use the wildcard work.
-- **Restricted character sets.** A string type whose `xs:pattern` allows fewer
-  than 256 characters, such as `[A-Z]{2}[0-9]{4}`, has its own compact form in
-  EXI ([7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)). Writing it as a
-  plain string would give bytes that EXIficient misreads with no error, so rexi
-  refuses those values on encode and decode. Patterns with a large alphabet
-  (`\d+`, `\p{L}+`, `.*`, `[^x]`) work as usual.
+- **Unreadable patterns on restricted strings.** A string type whose
+  `xs:pattern` allows fewer than 256 characters, such as `[A-Z]{2}[0-9]{4}`, has
+  its own compact form in EXI
+  ([7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)), which rexi writes.
+  When rexi cannot parse the pattern, the alphabet is unknown, and writing the
+  value as a plain string would give bytes that EXIficient misreads with no
+  error, so those values are refused on encode and decode.
 - **Fragments** (more than one root element in a stream). rexi handles whole
   documents.
 - **selfContained.** EXI doesn't allow it in strict mode.

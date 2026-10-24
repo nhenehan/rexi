@@ -16,8 +16,9 @@
 //! else is either supported or refused with [`ExiError::Unsupported`]. Nothing is
 //! quietly encoded in some "close enough" way. For example, a string type whose
 //! pattern gives a restricted character set
-//! ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) is refused when
-//! one of its values is written or read; see [`DatatypeKind::RestrictedString`].
+//! ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) is written as
+//! EXI says, but when the pattern cannot be read, so the set is unknown, its values
+//! are refused; see [`DatatypeKind::RestrictedString`].
 //!
 //! The decoder is meant to be safe on input you do not trust. [`DecodeLimits`]
 //! caps nesting depth, list length, integer size and the total bytes of decoded

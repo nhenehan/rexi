@@ -10,7 +10,7 @@ use crate::prelude::*;
 
 use super::unsigned::{read_unsigned, write_unsigned};
 use crate::error::{ExiError, ExiResult};
-use crate::io::{BitReader, BitWriter};
+use crate::io::{BitReader, BitWriter, ceil_log2};
 
 /// Writes `length` and nothing else. The caller adds any offset first.
 pub fn write_length<W: ByteSink>(w: &mut BitWriter<W>, length: u64) -> ExiResult<()> {
@@ -21,6 +21,65 @@ pub fn write_length<W: ByteSink>(w: &mut BitWriter<W>, length: u64) -> ExiResult
 pub fn write_chars<W: ByteSink>(w: &mut BitWriter<W>, s: &str) -> ExiResult<()> {
     for ch in s.chars() {
         write_unsigned(w, u64::from(u32::from(ch)))?;
+    }
+    Ok(())
+}
+
+/// Writes the characters of `s` against a restricted character set
+/// ([EXI 7.1.10](https://www.w3.org/TR/exi/#encodingString)): each one as an n-bit
+/// index into `alphabet` (its characters in code point order), where n is
+/// ceil(log2(N + 1)) for N characters; index N escapes a character outside the
+/// set, whose code point follows as an Unsigned Integer. No length prefix.
+pub fn write_rcs_chars<W: ByteSink>(
+    w: &mut BitWriter<W>,
+    s: &str,
+    alphabet: &str,
+) -> ExiResult<()> {
+    let n = alphabet.chars().count();
+    let bits = ceil_log2(n + 1);
+    for ch in s.chars() {
+        match alphabet.chars().position(|a| a == ch) {
+            Some(i) => w.write_nbit_unsigned(i as u64, bits)?,
+            None => {
+                w.write_nbit_unsigned(n as u64, bits)?;
+                write_unsigned(w, u64::from(u32::from(ch)))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Reads `count` characters written by [`write_rcs_chars`] into `out`. An index
+/// past the escape, or an escaped value that is not a code point, is an error.
+pub fn read_rcs_chars<R: ByteSource>(
+    r: &mut BitReader<R>,
+    count: u64,
+    alphabet: &str,
+    out: &mut String,
+) -> ExiResult<()> {
+    let n = alphabet.chars().count();
+    let bits = ceil_log2(n + 1);
+    out.reserve(count.min(4096) as usize);
+    for _ in 0..count {
+        let i = r.read_nbit_unsigned(bits)?;
+        let ch = if (i as usize) < n {
+            alphabet
+                .chars()
+                .nth(i as usize)
+                .ok_or(ExiError::Internal("alphabet index"))?
+        } else if i as usize == n {
+            let value = read_unsigned(r)?;
+            u32::try_from(value)
+                .ok()
+                .and_then(char::from_u32)
+                .ok_or_else(|| ExiError::value("String", format!("invalid code point {value}")))?
+        } else {
+            return Err(ExiError::value(
+                "String",
+                format!("restricted character index {i} is past the escape {n}"),
+            ));
+        };
+        out.push(ch);
     }
     Ok(())
 }

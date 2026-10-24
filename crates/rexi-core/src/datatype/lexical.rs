@@ -160,9 +160,11 @@ pub fn parse_lexical(
     types: &dyn TypeResolver,
 ) -> ExiResult<OwnedValue> {
     match kind {
-        DatatypeKind::String { whitespace } | DatatypeKind::RestrictedString { whitespace } => Ok(
-            OwnedValue::String(apply_whitespace(whitespace, s).into_owned()),
-        ),
+        DatatypeKind::String { whitespace } | DatatypeKind::RestrictedString { whitespace, .. } => {
+            Ok(OwnedValue::String(
+                apply_whitespace(whitespace, s).into_owned(),
+            ))
+        }
         DatatypeKind::Untyped => Ok(OwnedValue::String(s.to_string())),
         DatatypeKind::QName => Err(ExiError::value(
             kind.name(),

@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+- Restricted character sets
+  ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) are encoded
+  and decoded instead of refused. `DatatypeKind::RestrictedString` gains an
+  `alphabet: Option<StrIdx>`, the set's characters in code point order in the
+  string pool, and each character of a string-table miss is an n-bit index into
+  it, or the escape index and the code point. The bytes equal EXIficient
+  1.0.7's and JExi's, bit-packed and byte-aligned, on new test vectors. A
+  character outside the BMP is one escaped code point, as the spec counts
+  characters; EXIficient writes it as two UTF-16 units.
+- A restricted string whose pattern does not parse has `alphabet: None`, and its
+  values are still refused with `Unsupported(RestrictedCharacterSet)`.
+- `dump-grammar` prints the alphabet's string index, and stays equal to JExi's
+  `grammar_listing`. Tables made by `rexi-schema-gen` before this change have no
+  alphabet field; regenerate them. Matching `RestrictedString { whitespace }`
+  without `..` no longer compiles.
+
 ## 0.1.0
 
 The first release of rexi.

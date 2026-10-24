@@ -52,7 +52,9 @@ use crate::io::{ByteSink, ByteSource};
 use crate::prelude::*;
 use alloc::collections::BTreeMap;
 
-use crate::datatype::string::{read_chars, write_chars, write_length};
+use crate::datatype::string::{
+    read_chars, read_rcs_chars, write_chars, write_length, write_rcs_chars,
+};
 use crate::datatype::unsigned::{read_unsigned, write_unsigned};
 use crate::error::{ExiError, ExiResult};
 use crate::ids::{LocalId, QNameId};
@@ -406,6 +408,18 @@ impl ValuePartitions {
         context: QNameId,
         value: &str,
     ) -> ExiResult<()> {
+        self.write_with(w, context, value, None)
+    }
+
+    /// [`ValuePartitions::write`], with the literal's characters written against
+    /// `alphabet` when the value's type has a restricted character set.
+    pub(crate) fn write_with<W: ByteSink>(
+        &mut self,
+        w: &mut BitWriter<W>,
+        context: QNameId,
+        value: &str,
+        alphabet: Option<&str>,
+    ) -> ExiResult<()> {
         if self.hash.is_empty() && self.entries.len() > SMALL {
             self.rehash();
         }
@@ -429,7 +443,10 @@ impl ValuePartitions {
         } else {
             let length = value.chars().count();
             write_length(w, length as u64 + 2)?;
-            write_chars(w, value)?;
+            match alphabet {
+                Some(a) => write_rcs_chars(w, value, a)?,
+                None => write_chars(w, value)?,
+            }
             if self.is_addable(length) {
                 self.add(context, value);
             }
@@ -447,6 +464,18 @@ impl ValuePartitions {
         r: &mut BitReader<R>,
         context: QNameId,
         out: &mut String,
+    ) -> ExiResult<()> {
+        self.read_with(r, context, out, None)
+    }
+
+    /// [`ValuePartitions::read`], with a literal's characters read against
+    /// `alphabet` when the value's type has a restricted character set.
+    pub(crate) fn read_with<R: ByteSource>(
+        &mut self,
+        r: &mut BitReader<R>,
+        context: QNameId,
+        out: &mut String,
+        alphabet: Option<&str>,
     ) -> ExiResult<()> {
         out.clear();
         match read_unsigned(r)? {
@@ -481,7 +510,10 @@ impl ValuePartitions {
             }
             len_plus_two => {
                 let length = len_plus_two - 2;
-                read_chars(r, length, out)?;
+                match alphabet {
+                    Some(a) => read_rcs_chars(r, length, a, out)?,
+                    None => read_chars(r, length, out)?,
+                }
                 let length = usize::try_from(length)
                     .map_err(|_| ExiError::StringTable("value length exceeds address space"))?;
                 // Added as EXIficient's decoder does, without a search: a literal

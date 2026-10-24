@@ -593,10 +593,27 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         context: QNameId,
     ) -> ExiResult<()> {
         match kind {
-            // Refused before the string table is touched: see
-            // `DatatypeKind::RestrictedString` (EXI 7.1.10.1).
-            DatatypeKind::RestrictedString { .. } => {
-                Err(ExiError::Unsupported(Feature::RestrictedCharacterSet))
+            // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
+            // refused before the string table is touched.
+            DatatypeKind::RestrictedString {
+                whitespace,
+                alphabet,
+            } => {
+                let alphabet =
+                    alphabet.ok_or(ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
+                let alphabet = self.tables.string(alphabet);
+                match value {
+                    Value::Lexical(s) => {
+                        let s = lexical::apply_whitespace(whitespace, s);
+                        self.strings
+                            .write_value_restricted(&mut self.out, context, &s, alphabet)
+                    }
+                    Value::String(s) => {
+                        self.strings
+                            .write_value_restricted(&mut self.out, context, s, alphabet)
+                    }
+                    _ => Err(ExiError::value("String", "a restricted string needs text")),
+                }
             }
             k if k.is_string_like() => {
                 let ws = match k {
