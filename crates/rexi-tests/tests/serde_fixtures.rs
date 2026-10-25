@@ -405,7 +405,9 @@ fn serde_matches_exificient_runtime_tables() {
 
 #[test]
 fn serde_matches_exificient_generated_tables() {
-    check_all(checker!(
-        |n: &str| *generated::by_case(n).unwrap_or_else(|| panic!("no generated tables for {n}"))
-    ));
+    check_all(checker!(|n: &str| rexi_core::GrammarSet {
+        // Named after the case, as the `strict-bp-opts` streams' schemaId says.
+        schema_id: Some(&*Box::leak(n.to_string().into_boxed_str())),
+        ..*generated::by_case(n).unwrap_or_else(|| panic!("no generated tables for {n}"))
+    }));
 }

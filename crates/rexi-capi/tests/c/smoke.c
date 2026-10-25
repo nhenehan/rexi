@@ -222,9 +222,14 @@ static void run_case(const char *dir, const char *name, const char *main_xsd,
         }
     }
 
-    RexiTables *tables = NULL;
-    RexiStatus s = rexi_tables_from_xsd(paths, npaths, &tables);
+    RexiTables *compiled = NULL, *tables = NULL;
+    RexiStatus s = rexi_tables_from_xsd(paths, npaths, &compiled);
     CHECK(s == REXI_STATUS_OK, "%s: tables: %s", name, rexi_last_error());
+    if (s != REXI_STATUS_OK) return;
+    /* The vectors with options in the header say schemaId = the case name. */
+    s = rexi_tables_with_schema_id(compiled, name, &tables);
+    rexi_tables_free(compiled);
+    CHECK(s == REXI_STATUS_OK, "%s: schema id: %s", name, rexi_last_error());
     if (s != REXI_STATUS_OK) return;
 
     for (size_t p = 0; p < sizeof PROFILES / sizeof PROFILES[0]; p++) {
@@ -392,6 +397,62 @@ static void static_tables_and_errors(void) {
     printf("ok static options grammar and error paths\n");
 }
 
+/* ---- schemaId ----------------------------------------------------------- */
+
+/* Encodes <a/> with options in the header and the given schemaId, then decodes
+   it with `t`, returning the status. */
+static RexiStatus decode_with_id(const RexiTables *enc_tables, const RexiTables *t,
+                                 const char *id, bool nil) {
+    RexiOptions o = rexi_options_strict();
+    o.include_options = true;
+    o.schema_id = id;
+    o.schema_id_nil = nil;
+    RexiEncoder *enc = NULL;
+    CHECK(rexi_encoder_new(enc_tables, &o, &enc) == REXI_STATUS_OK, "encoder: %s",
+          rexi_last_error());
+    rexi_start_document(enc);
+    rexi_start_element(enc, "", "a");
+    rexi_end_element(enc);
+    rexi_end_document(enc);
+    RexiBuffer out = {0};
+    CHECK(rexi_encoder_finish(enc, &out) == REXI_STATUS_OK, "finish: %s", rexi_last_error());
+    RexiContentHandler h;
+    memset(&h, 0, sizeof h);
+    RexiStatus s = rexi_decode(t, out.data, out.len, NULL, &h, NULL);
+    rexi_buffer_free(out);
+    return s;
+}
+
+static void schema_id_check(void) {
+    static const char *XSD = "<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'>"
+                             "<xs:element name='a'/></xs:schema>";
+    RexiTables *t = NULL, *named = NULL, *other = NULL;
+    CHECK(rexi_tables_from_xsd_string(XSD, NULL, &t) == REXI_STATUS_OK, "tables: %s",
+          rexi_last_error());
+    CHECK(rexi_tables_with_schema_id(t, "urn:a", &named) == REXI_STATUS_OK, "named: %s",
+          rexi_last_error());
+    CHECK(rexi_tables_with_schema_id(t, "urn:b", &other) == REXI_STATUS_OK, "other: %s",
+          rexi_last_error());
+    CHECK(rexi_tables_with_schema_id(t, NULL, &other) == REXI_STATUS_ERR_NULL_ARGUMENT,
+          "NULL id");
+    RexiStatus s = decode_with_id(t, named, "urn:a", false);
+    CHECK(s == REXI_STATUS_OK, "same id: %d %s", (int)s, rexi_last_error());
+    s = decode_with_id(t, t, NULL, false);
+    CHECK(s == REXI_STATUS_OK, "no id in the stream: %d %s", (int)s, rexi_last_error());
+    s = decode_with_id(t, other, "urn:a", false);
+    CHECK(s == REXI_STATUS_ERR_SCHEMA_ID &&
+              strstr(rexi_last_error(), "the stream names \"urn:a\", the grammar is \"urn:b\""),
+          "other id: %d %s", (int)s, rexi_last_error());
+    s = decode_with_id(t, t, "urn:a", false);
+    CHECK(s == REXI_STATUS_ERR_SCHEMA_ID, "unnamed tables: %d %s", (int)s, rexi_last_error());
+    s = decode_with_id(t, named, NULL, true);
+    CHECK(s == REXI_STATUS_ERR_SCHEMA_ID, "nil: %d %s", (int)s, rexi_last_error());
+    rexi_tables_free(t);
+    rexi_tables_free(named);
+    rexi_tables_free(other);
+    printf("ok schemaId\n");
+}
+
 /* ---- decoder limits ---------------------------------------------------- */
 
 static void decoder_limits(void) {
@@ -510,6 +571,7 @@ int main(int argc, char **argv) {
     CHECK(cases == 6, "expected 6 cases, found %d", cases);
     static_tables_and_errors();
     decoder_limits();
+    schema_id_check();
     if (failures) {
         fprintf(stderr, "%d failure(s)\n", failures);
         return 1;

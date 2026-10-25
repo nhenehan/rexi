@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- The decoder checks the stream's `schemaId` option against the tables'
+  ([EXI 5.4](https://www.w3.org/TR/exi/#options)) and fails with
+  `ExiError::SchemaIdMismatch` (C: `REXI_STATUS_ERR_SCHEMA_ID`) when they
+  differ. An absent `schemaId` is not checked. `xsi:nil` (no schema) is always
+  refused, since rexi's tables are schema-informed. `""` and any other id must
+  equal the tables' id exactly, and tables with no id refuse a stream that names
+  one. Tables compiled from XSD have no id: give them one with
+  `GrammarSetBuf::with_schema_id`, `rexi_tables_with_schema_id`, or the CLI's
+  `--schema-id`. `header::check_schema_id` is the rule on its own. JExi
+  applies the same rule.
 - Restricted character sets
   ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) are encoded
   and decoded instead of refused. `DatatypeKind::RestrictedString` gains an

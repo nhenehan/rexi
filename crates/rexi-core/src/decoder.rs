@@ -68,7 +68,8 @@ pub struct Decoder<R: ByteSource, G: GrammarTables> {
 impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     /// Reads the EXI header ([EXI 5](https://www.w3.org/TR/exi/#header)). Options
     /// found in the stream win over `out_of_band`. If the stream has none,
-    /// `out_of_band` must be given.
+    /// `out_of_band` must be given. The options' `schemaId` must name `tables`
+    /// (see [`header::check_schema_id`]).
     ///
     /// Uses the safe [`DecodeLimits::default`]. Call [`Decoder::with_limits`] to
     /// pick others.
@@ -97,6 +98,7 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             ))?
         };
         options.validate()?;
+        header::check_schema_id(&options.schema_id, tables.schema_id())?;
         if options.byte_aligned() {
             reader.set_byte_aligned(true);
         }

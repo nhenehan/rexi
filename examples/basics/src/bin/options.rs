@@ -13,7 +13,9 @@ use rexi_core::{Alignment, ExiError, ExiOptions, HeaderConfig};
 
 // ANCHOR: main
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let tables = rexi_schema::compile_files(&[&data("order.xsd")])?;
+    // Named, so a decoder can check a stream's schemaId against it.
+    let tables =
+        rexi_schema::compile_files(&[&data("order.xsd")])?.with_schema_id("urn:rexi:interop:order");
     let xml = std::fs::read(data("order.xml"))?;
 
     let plain = HeaderConfig::default();

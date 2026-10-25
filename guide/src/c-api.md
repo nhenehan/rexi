@@ -76,3 +76,17 @@ limits.max_depth = 1024;
 RexiDecoder *dec = NULL;
 RexiStatus s = rexi_decoder_new_with_limits(tables, data, len, &opts, &limits, &dec);
 ```
+
+## schemaId
+
+Tables compiled from XSD have no `schemaId`. To have the decoder check a
+stream's, make a named handle with `rexi_tables_with_schema_id`; it shares the
+tables, and you free both handles. A stream that names another schema, says
+`xsi:nil`, or names one when the tables have no id gives
+`REXI_STATUS_ERR_SCHEMA_ID`. A stream without a `schemaId` is not checked.
+
+```c
+RexiTables *named = NULL;
+rexi_tables_with_schema_id(tables, "urn:example:order", &named);
+RexiStatus s = rexi_decoder_new(named, data, len, NULL, &dec);
+```

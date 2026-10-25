@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use rexi_core::encoder::init_string_table;
 use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
 use rexi_core::{
-    Decoder, Encoder, ExiOptions, GrammarSetBuf, GrammarTables, HeaderConfig, SchemaId,
+    Decoder, Encoder, ExiOptions, GrammarSet, GrammarSetBuf, GrammarTables, HeaderConfig, SchemaId,
 };
 use rexi_tests::{cases, generated};
 
@@ -97,6 +97,7 @@ fn every_grammar_lends_its_initial_entries() {
     }
 }
 
+/// `tables` must be named "s", the schemaId the stream carries.
 fn check_setup(name: &str, tables: &impl GrammarTables) {
     let header = HeaderConfig::new().with_include_options(true);
     let (n, enc) =
@@ -115,13 +116,17 @@ fn check_setup(name: &str, tables: &impl GrammarTables) {
 
 #[test]
 fn starting_a_stream_stays_within_the_allocation_budget() {
-    check_setup("options grammar", &OPTIONS_GRAMMARS);
+    let named = |set: &GrammarSet<'static>| GrammarSet {
+        schema_id: Some("s"),
+        ..*set
+    };
+    check_setup("options grammar", &named(&OPTIONS_GRAMMARS));
     for case in cases() {
         let statics = generated::by_case(&case.name).unwrap_or_else(|| panic!("{}", case.name));
-        check_setup(&case.name, statics);
+        check_setup(&case.name, &named(statics));
         check_setup(
             &format!("{} (runtime)", case.name),
-            &compile(&case.xsd_paths()),
+            &compile(&case.xsd_paths()).with_schema_id("s"),
         );
     }
 }

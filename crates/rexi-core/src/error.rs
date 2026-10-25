@@ -4,6 +4,7 @@ use alloc::string::String;
 use core::fmt;
 
 use crate::limits::Limit;
+use crate::options::SchemaId;
 
 /// An EXI feature this crate does not implement, on purpose.
 ///
@@ -179,6 +180,15 @@ pub enum ExiError {
         /// The limit's value.
         max: u64,
     },
+    /// The stream's `schemaId` option does not name the schema of the grammar
+    /// tables it is decoded with ([EXI 5.4](https://www.w3.org/TR/exi/#options)).
+    /// See [`check_schema_id`](crate::header::check_schema_id) for the rule.
+    SchemaIdMismatch {
+        /// What the stream's options say (never [`SchemaId::Absent`]).
+        stream: SchemaId,
+        /// The tables' own id, `None` if they have none.
+        tables: Option<String>,
+    },
 }
 
 impl fmt::Display for ExiError {
@@ -199,6 +209,19 @@ impl fmt::Display for ExiError {
             ExiError::Internal(msg) => write!(f, "internal error: {msg}"),
             ExiError::LimitExceeded { limit, max } => {
                 write!(f, "decoder limit exceeded: {limit} is over {max}")
+            }
+            ExiError::SchemaIdMismatch { stream, tables } => {
+                f.write_str("schemaId mismatch: the stream names ")?;
+                match stream {
+                    SchemaId::Absent => f.write_str("nothing")?,
+                    SchemaId::Nil => f.write_str("no schema (nil)")?,
+                    SchemaId::Empty => f.write_str("the built-in types (\"\")")?,
+                    SchemaId::Id(id) => write!(f, "{id:?}")?,
+                }
+                match tables {
+                    Some(id) => write!(f, ", the grammar is {id:?}"),
+                    None => f.write_str(", the grammar has no schemaId"),
+                }
             }
         }
     }

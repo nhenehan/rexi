@@ -159,3 +159,103 @@ fn bad_headers() {
         Err(ExiError::Unsupported(Feature::FormatVersion))
     );
 }
+
+/// The schemaId rule, case by case. JExi's `test/header.jl` has the same table.
+#[test]
+fn schema_id_is_checked_against_the_tables() {
+    use rexi_core::header::check_schema_id;
+    let id = |s: &str| SchemaId::Id(s.to_string());
+    let cases = [
+        (SchemaId::Absent, None, true),
+        (SchemaId::Absent, Some("urn:a"), true),
+        (id("urn:a"), Some("urn:a"), true),
+        (id("urn:a"), Some("urn:b"), false),
+        (id("urn:a"), None, false),
+        (SchemaId::Nil, Some("urn:a"), false),
+        (SchemaId::Nil, None, false),
+        (SchemaId::Empty, Some(""), true),
+        (SchemaId::Empty, Some("urn:a"), false),
+        (SchemaId::Empty, None, false),
+    ];
+    for (stream, tables, ok) in cases {
+        let got = check_schema_id(&stream, tables);
+        if ok {
+            assert_eq!(got, Ok(()), "{stream:?} with {tables:?}");
+        } else {
+            assert_eq!(
+                got,
+                Err(ExiError::SchemaIdMismatch {
+                    stream: stream.clone(),
+                    tables: tables.map(String::from),
+                }),
+                "{stream:?} with {tables:?}"
+            );
+        }
+    }
+    let message = |r: Result<(), ExiError>| r.err().map(|e| e.to_string());
+    assert_eq!(
+        message(check_schema_id(&id("urn:a"), Some("urn:b"))).as_deref(),
+        Some(r#"schemaId mismatch: the stream names "urn:a", the grammar is "urn:b""#)
+    );
+    assert_eq!(
+        message(check_schema_id(&SchemaId::Nil, None)).as_deref(),
+        Some("schemaId mismatch: the stream names no schema (nil), the grammar has no schemaId")
+    );
+}
+
+/// The decoder applies the rule to the options in the header, and to options
+/// given out of band. The stream is an options document whose body is another
+/// options document, decoded with the options grammar under a chosen name.
+#[test]
+fn decoder_checks_schema_id() {
+    use rexi_core::Decoder;
+    use rexi_core::grammar::GrammarSet;
+    use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
+    let named = |id: Option<&'static str>| GrammarSet {
+        schema_id: id,
+        ..OPTIONS_GRAMMARS
+    };
+    let stream = |options: &ExiOptions| {
+        let mut w = BitWriter::new(Vec::new());
+        write_header_bits(&mut w, HeaderConfig::default().with_include_options(true))
+            .unwrap_or_default();
+        let w = write_options_document(w, options).unwrap_or_else(|e| panic!("{e}"));
+        let w = write_options_document(w, &ExiOptions::strict()).unwrap_or_else(|e| panic!("{e}"));
+        w.finish().unwrap_or_default()
+    };
+    let a = stream(&ExiOptions::strict().with_schema_id("urn:a"));
+    let mut dec =
+        Decoder::new(&a[..], named(Some("urn:a")), None).unwrap_or_else(|e| panic!("{e}"));
+    let mut events = 0;
+    while dec.next_event().unwrap_or_else(|e| panic!("{e}")).is_some() {
+        events += 1;
+    }
+    assert!(events > 2);
+    for tables in [named(Some("urn:b")), named(None)] {
+        assert!(matches!(
+            Decoder::new(&a[..], tables, None),
+            Err(ExiError::SchemaIdMismatch { .. })
+        ));
+    }
+    let mut nil = ExiOptions::strict();
+    nil.schema_id = SchemaId::Nil;
+    assert!(matches!(
+        Decoder::new(&stream(&nil)[..], named(Some("urn:a")), None),
+        Err(ExiError::SchemaIdMismatch { .. })
+    ));
+    // Absent: nothing to check, whatever the tables are called.
+    assert!(Decoder::new(&stream(&ExiOptions::strict())[..], named(None), None).is_ok());
+    // Out of band: the same rule.
+    let mut bare = BitWriter::new(Vec::new());
+    write_header_bits(&mut bare, HeaderConfig::default()).unwrap_or_default();
+    let bare = write_options_document(bare, &ExiOptions::strict())
+        .unwrap_or_else(|e| panic!("{e}"))
+        .finish()
+        .unwrap_or_default();
+    let oob = Some(ExiOptions::strict().with_schema_id("urn:a"));
+    assert!(Decoder::new(&bare[..], named(Some("urn:a")), oob.clone()).is_ok());
+    assert!(matches!(
+        Decoder::new(&bare[..], named(Some("urn:b")), oob),
+        Err(ExiError::SchemaIdMismatch { .. })
+    ));
+}

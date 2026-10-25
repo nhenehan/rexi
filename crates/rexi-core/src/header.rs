@@ -69,6 +69,34 @@ pub fn write_header_bits<W: ByteSink>(w: &mut BitWriter<W>, header: HeaderConfig
     Ok(())
 }
 
+/// Checks a stream's `schemaId` option against the `schemaId` of the grammar
+/// tables that will decode it ([EXI 5.4](https://www.w3.org/TR/exi/#options)).
+///
+/// - Absent: the schema was agreed out of band, so there is nothing to check.
+/// - `xsi:nil="true"` (no schema, built-in grammars): always refused, because
+///   these tables are schema-informed.
+/// - `""` (built-in types only) and any other value: the tables' id must be
+///   exactly that string. Tables with no id are refused, because a stream that
+///   names its schema cannot be checked against tables that do not.
+///
+/// JExi applies the same rule (`check_schema_id`).
+pub fn check_schema_id(stream: &SchemaId, tables: Option<&str>) -> ExiResult<()> {
+    let claimed = match stream {
+        SchemaId::Absent => return Ok(()),
+        SchemaId::Nil => None,
+        SchemaId::Empty => Some(""),
+        SchemaId::Id(id) => Some(id.as_str()),
+    };
+    if claimed.is_some() && claimed == tables {
+        Ok(())
+    } else {
+        Err(ExiError::SchemaIdMismatch {
+            stream: stream.clone(),
+            tables: tables.map(String::from),
+        })
+    }
+}
+
 /// Reads the header bits, with or without the cookie.
 ///
 /// The first two bits tell the cases apart: `10` is the distinguishing bits (no

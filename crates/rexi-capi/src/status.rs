@@ -52,6 +52,9 @@ pub enum RexiStatus {
     /// The stream went over one of the decoder limits (`RexiLimits`): too deep,
     /// a list too long, an integer too big, or too many bytes of strings.
     ErrLimit = -15,
+    /// The stream's `schemaId` option does not name the schema of the tables it
+    /// is decoded with (see `rexi_tables_with_schema_id`).
+    ErrSchemaId = -16,
 }
 
 /// A failure on its way back to the C caller: the status to return and the
@@ -91,6 +94,7 @@ impl From<ExiError> for Fail {
             ExiError::Schema(_) => RexiStatus::ErrSchema,
             ExiError::Internal(_) => RexiStatus::ErrInternal,
             ExiError::LimitExceeded { .. } => RexiStatus::ErrLimit,
+            ExiError::SchemaIdMismatch { .. } => RexiStatus::ErrSchemaId,
             // An error kind added to rexi-core later.
             _ => RexiStatus::ErrInternal,
         };

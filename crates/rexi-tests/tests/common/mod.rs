@@ -35,12 +35,14 @@ pub const PROFILES: &[Profile] = &[
     },
 ];
 
-/// Compiles a case's schemas at runtime.
+/// Compiles a case's schemas at runtime. The tables are named after the case,
+/// as the `strict-bp-opts` streams' schemaId says.
 pub fn compile(case: &Case) -> rexi_core::GrammarSetBuf {
     let paths = case.xsd_paths();
     let refs: Vec<&std::path::Path> = paths.iter().map(std::path::PathBuf::as_path).collect();
     rexi_schema::compile_files(&refs)
         .unwrap_or_else(|e| panic!("{}: schema compile failed: {e}", case.name))
+        .with_schema_id(case.name.clone())
 }
 
 /// The EXIficient reference bytes for a case and profile.

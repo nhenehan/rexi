@@ -24,11 +24,13 @@ enum Tables {
 
 /// Shared ownership of tables (a reference-counted `Arc`), so encoders and
 /// decoders stay valid if the C caller frees the `RexiTables` handle first.
+/// The second field, when set, is the `schemaId` given with
+/// `rexi_tables_with_schema_id`, in place of the tables' own.
 #[derive(Clone)]
-pub(crate) struct SharedTables(Arc<Tables>);
+pub(crate) struct SharedTables(Arc<Tables>, Option<Arc<str>>);
 
 // Implements `GrammarTables` for `SharedTables` by forwarding each listed method
-// to the owned or static tables inside.
+// to the owned or static tables inside; `schema_id` is written out below it.
 macro_rules! delegate {
     ($($name:ident($($arg:ident: $ty:ty),*) -> $ret:ty;)*) => {
         impl GrammarTables for SharedTables {
@@ -38,6 +40,14 @@ macro_rules! delegate {
                     Tables::Static(t) => t.$name($($arg),*),
                 }
             })*
+
+            fn schema_id(&self) -> Option<&str> {
+                match (&self.1, &*self.0) {
+                    (Some(id), _) => Some(id),
+                    (None, Tables::Owned(t)) => t.schema_id(),
+                    (None, Tables::Static(t)) => t.schema_id(),
+                }
+            }
         }
     };
 }
@@ -56,7 +66,6 @@ delegate! {
     types() -> &[rexi_core::grammar::TypeDecl];
     enum_sets() -> &[Span];
     enum_values() -> &[StrIdx];
-    schema_id() -> Option<&str>;
 }
 
 /// Compiled grammar tables for one schema. C sees only an opaque pointer.
@@ -74,20 +83,20 @@ impl RexiTables {
     /// through `Box::into_raw`; C frees it with `rexi_tables_free`.
     pub fn from_static(set: &'static GrammarSet<'static>) -> Box<RexiTables> {
         Box::new(RexiTables {
-            tables: SharedTables(Arc::new(Tables::Static(set))),
+            tables: SharedTables(Arc::new(Tables::Static(set)), None),
         })
     }
 
     /// Wraps tables compiled at runtime.
     pub fn from_owned(buf: GrammarSetBuf) -> Box<RexiTables> {
         Box::new(RexiTables {
-            tables: SharedTables(Arc::new(Tables::Owned(Box::new(buf)))),
+            tables: SharedTables(Arc::new(Tables::Owned(Box::new(buf))), None),
         })
     }
 }
 
 static EXI_OPTIONS: LazyLock<RexiTables> = LazyLock::new(|| RexiTables {
-    tables: SharedTables(Arc::new(Tables::Static(&OPTIONS_GRAMMARS))),
+    tables: SharedTables(Arc::new(Tables::Static(&OPTIONS_GRAMMARS)), None),
 });
 
 /// Borrows a tables handle. Returns `ErrNullArgument` for NULL.
@@ -247,6 +256,35 @@ pub unsafe extern "C" fn rexi_tables_from_xsd_string_with_root(
         let options = unsafe { load_options(root) }?;
         let buf = rexi_schema::compile_str_with(xsd, base, &options).map_err(schema_fail)?;
         store(out, RexiTables::from_owned(buf))
+    })
+}
+
+/// Makes a new handle for the same tables, with `schema_id` as their `schemaId`.
+/// A decoder made from it refuses a stream whose `schemaId` option names
+/// another schema, says `xsi:nil`, or names one when the tables have none; a
+/// stream with no `schemaId` is not checked. Tables compiled from XSD have no
+/// `schemaId` until given one here. The new handle shares the tables (nothing
+/// is copied) and is freed with `rexi_tables_free`; `tables` stays valid.
+///
+/// # Safety
+/// - `tables` is a live handle from this library. NULL returns `ErrNullArgument`.
+/// - `schema_id` is a NUL-terminated UTF-8 string (`""` is allowed). NULL
+///   returns `ErrNullArgument`.
+/// - `out` points to writable storage for one pointer. NULL returns
+///   `ErrNullArgument`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rexi_tables_with_schema_id(
+    tables: *const RexiTables,
+    schema_id: *const c_char,
+    out: *mut *mut RexiTables,
+) -> RexiStatus {
+    guard(|| {
+        // SAFETY: per this function's contract.
+        let t = unsafe { tables_ref(tables) }?;
+        // SAFETY: per this function's contract.
+        let id = unsafe { c_str(schema_id, "schema_id") }?;
+        let shared = SharedTables(t.tables.0.clone(), Some(Arc::from(id)));
+        store(out, Box::new(RexiTables { tables: shared }))
     })
 }
 

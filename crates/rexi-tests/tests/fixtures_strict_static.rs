@@ -8,13 +8,19 @@ mod common;
 use rexi_core::GrammarSet;
 use rexi_tests::{Case, generated};
 
-fn statics(case: &Case) -> &'static GrammarSet<'static> {
-    generated::by_case(&case.name).unwrap_or_else(|| {
+/// The generated tables, named after the case as the `strict-bp-opts` streams'
+/// schemaId says (leaked: a test, and the tables hold `&'static str`).
+fn statics(case: &Case) -> GrammarSet<'static> {
+    let set = generated::by_case(&case.name).unwrap_or_else(|| {
         panic!(
             "{}: no generated tables; run scripts/gen-tables.sh",
             case.name
         )
-    })
+    });
+    GrammarSet {
+        schema_id: Some(Box::leak(case.name.clone().into_boxed_str())),
+        ..*set
+    }
 }
 
 #[test]

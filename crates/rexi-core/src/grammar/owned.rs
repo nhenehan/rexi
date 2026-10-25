@@ -53,6 +53,13 @@ impl GrammarSetBuf {
         (self.strings.len() - 1) as StrIdx
     }
 
+    /// Gives the tables a `schemaId`, which a decoder checks the stream's against
+    /// ([`check_schema_id`](crate::header::check_schema_id)).
+    pub fn with_schema_id(mut self, id: impl Into<String>) -> Self {
+        self.schema_id = Some(id.into());
+        self
+    }
+
     /// Copies borrowed tables into an owned buffer.
     pub fn from_set(set: &GrammarSet<'_>) -> Self {
         Self {

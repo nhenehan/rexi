@@ -100,6 +100,11 @@ typedef enum RexiStatus {
    * a list too long, an integer too big, or too many bytes of strings.
    */
   REXI_STATUS_ERR_LIMIT = -15,
+  /**
+   * The stream's `schemaId` option does not name the schema of the tables it
+   * is decoded with (see `rexi_tables_with_schema_id`).
+   */
+  REXI_STATUS_ERR_SCHEMA_ID = -16,
 } RexiStatus;
 
 /**
@@ -788,6 +793,25 @@ enum RexiStatus rexi_tables_from_xsd_string_with_root(const char *xsd,
                                                       const char *base_dir,
                                                       const char *root,
                                                       struct RexiTables **out);
+
+/**
+ * Makes a new handle for the same tables, with `schema_id` as their `schemaId`.
+ * A decoder made from it refuses a stream whose `schemaId` option names
+ * another schema, says `xsi:nil`, or names one when the tables have none; a
+ * stream with no `schemaId` is not checked. Tables compiled from XSD have no
+ * `schemaId` until given one here. The new handle shares the tables (nothing
+ * is copied) and is freed with `rexi_tables_free`; `tables` stays valid.
+ *
+ * # Safety
+ * - `tables` is a live handle from this library. NULL returns `ErrNullArgument`.
+ * - `schema_id` is a NUL-terminated UTF-8 string (`""` is allowed). NULL
+ *   returns `ErrNullArgument`.
+ * - `out` points to writable storage for one pointer. NULL returns
+ *   `ErrNullArgument`.
+ */
+enum RexiStatus rexi_tables_with_schema_id(const struct RexiTables *tables,
+                                           const char *schema_id,
+                                           struct RexiTables **out);
 
 /**
  * The grammar of the EXI Options document, built from the schema in

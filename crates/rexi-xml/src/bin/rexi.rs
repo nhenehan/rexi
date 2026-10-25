@@ -33,7 +33,8 @@ the stream carries none):
   --alignment bit-packed|byte-aligned
   --include-options                 write the EXI options document into the header
   --cookie                          write the $EXI cookie
-  --schema-id ID | --schema-id-nil  schemaId option (default: absent)
+  --schema-id ID | --schema-id-nil  schemaId option (default: absent); --schema-id also
+                                    names the schema, which a stream's schemaId must match
   --value-max-length N
   --value-partition-capacity N
 
@@ -206,7 +207,14 @@ fn tables_of(args: &Args) -> Result<GrammarSetBuf, String> {
     if args.xsd.is_empty() {
         return Err("--xsd is required".into());
     }
-    compile_schemas(&args.xsd, args.schema_root.as_deref()).map_err(|e| e.to_string())
+    let tables =
+        compile_schemas(&args.xsd, args.schema_root.as_deref()).map_err(|e| e.to_string())?;
+    // `--schema-id` names the schema too: a decoder checks the stream's schemaId
+    // against it.
+    Ok(match &args.schema_id {
+        Some(SchemaId::Id(id)) => tables.with_schema_id(id.clone()),
+        _ => tables,
+    })
 }
 
 fn read_file(path: &str) -> Result<Vec<u8>, String> {
