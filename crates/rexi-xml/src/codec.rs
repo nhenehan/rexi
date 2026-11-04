@@ -14,7 +14,13 @@ pub fn encode_xml<G: GrammarTables>(
     options: &ExiOptions,
     header: HeaderConfig,
 ) -> Result<Vec<u8>> {
-    let mut enc = Encoder::new(Vec::new(), tables, options.clone(), header)?;
+    // EXI is nearly always smaller than its XML, so this is room enough.
+    let mut enc = Encoder::new(
+        Vec::with_capacity(xml.len()),
+        tables,
+        options.clone(),
+        header,
+    )?;
     push_xml(xml, &mut enc)?;
     Ok(enc.finish()?)
 }

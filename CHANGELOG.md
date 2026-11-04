@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Encoding from XML is about 40 % faster. The XML reader hands borrowed events
+  straight to the encoder, reuses its buffers and resolves namespaces itself,
+  so it no longer allocates for each element (a new test holds this). The
+  encoder reuses its text buffer too. Duplicate attributes and duplicate
+  namespace declarations are still refused.
+- `ExiError::SchemaIdMismatch` boxes its fields, so the error type is back to
+  48 bytes; the larger error had made decoding up to 20 % slower on small
+  documents.
 - The decoder checks the stream's `schemaId` option against the tables'
   ([EXI 5.4](https://www.w3.org/TR/exi/#options)) and fails with
   `ExiError::SchemaIdMismatch` (C: `REXI_STATUS_ERR_SCHEMA_ID`) when they

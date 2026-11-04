@@ -198,4 +198,39 @@ mod tests {
         let mut r = BitReader::new(bytes.as_slice());
         assert_eq!(read_string(&mut r), Ok("héllo €".to_string()));
     }
+
+    /// Long strings mixing one- to three-octet code points, read on and off a
+    /// byte boundary. The bits after each must still be there.
+    #[test]
+    fn long_mixed_strings_round_trip() {
+        let pieces = ["a", "é", "€", "𝄞", "ж"];
+        for n in [255, 256, 257, 300, 1000] {
+            let text: String = (0..n).map(|i| pieces[i % pieces.len()]).collect();
+            for offset in [0u8, 3] {
+                let mut w = BitWriter::new(Vec::new());
+                w.write_raw_bits(0, offset).unwrap_or_default();
+                write_string(&mut w, &text).unwrap_or_default();
+                w.write_raw_bits(0b101, 3).unwrap_or_default();
+                let bytes = w.finish().unwrap_or_default();
+                let mut r = BitReader::new(bytes.as_slice());
+                assert_eq!(r.read_raw_bits(offset), Ok(0));
+                assert_eq!(
+                    read_string(&mut r),
+                    Ok(text.clone()),
+                    "{n} chars, {offset} bits"
+                );
+                assert_eq!(r.read_raw_bits(3), Ok(0b101));
+            }
+        }
+    }
+
+    #[test]
+    fn code_point_over_three_octets_is_refused() {
+        // One character: 0x80 0x80 0x80 0x01 is 2^21, above U+10FFFF.
+        let mut r = BitReader::new([0x01u8, 0x80, 0x80, 0x80, 0x01].as_slice());
+        assert!(matches!(read_string(&mut r), Err(ExiError::Value { .. })));
+        // Truncated inside a character.
+        let mut r = BitReader::new([0x02u8, 0x41, 0xC3].as_slice());
+        assert_eq!(read_string(&mut r), Err(ExiError::Truncated));
+    }
 }

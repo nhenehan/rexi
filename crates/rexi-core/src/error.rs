@@ -1,5 +1,6 @@
 //! Error type shared by every layer of `rexi-core`.
 
+use alloc::boxed::Box;
 use alloc::string::String;
 use core::fmt;
 
@@ -185,9 +186,11 @@ pub enum ExiError {
     /// See [`check_schema_id`](crate::header::check_schema_id) for the rule.
     SchemaIdMismatch {
         /// What the stream's options say (never [`SchemaId::Absent`]).
-        stream: SchemaId,
+        /// Boxed, like `tables`, so that this rare error does not make every
+        /// `ExiResult` bigger.
+        stream: Box<SchemaId>,
         /// The tables' own id, `None` if they have none.
-        tables: Option<String>,
+        tables: Option<Box<str>>,
     },
 }
 
@@ -212,7 +215,7 @@ impl fmt::Display for ExiError {
             }
             ExiError::SchemaIdMismatch { stream, tables } => {
                 f.write_str("schemaId mismatch: the stream names ")?;
-                match stream {
+                match &**stream {
                     SchemaId::Absent => f.write_str("nothing")?,
                     SchemaId::Nil => f.write_str("no schema (nil)")?,
                     SchemaId::Empty => f.write_str("the built-in types (\"\")")?,

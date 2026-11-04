@@ -80,6 +80,7 @@ extern crate std;
 /// The `alloc` names that the `std` prelude would bring in on its own.
 mod prelude {
     pub(crate) use alloc::borrow::ToOwned;
+    pub(crate) use alloc::boxed::Box;
     pub(crate) use alloc::format;
     pub(crate) use alloc::string::{String, ToString};
     pub(crate) use alloc::vec;

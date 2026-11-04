@@ -526,8 +526,17 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         if !self.has_pending_chars {
             return Ok(());
         }
-        let text = core::mem::take(&mut self.pending_chars);
+        // Taken out and put back, so its memory is reused for the next text.
+        let mut text = core::mem::take(&mut self.pending_chars);
         self.has_pending_chars = false;
+        let result = self.flush_text(&text, before_end_tag);
+        text.clear();
+        self.pending_chars = text;
+        result
+    }
+
+    /// The work of [`Encoder::flush_chars`] on the collected `text`.
+    fn flush_text(&mut self, text: &str, before_end_tag: bool) -> ExiResult<()> {
         if text.chars().all(|c| matches!(c, ' ' | '\t' | '\n' | '\r')) {
             let frame = self.top()?;
             let has_ch = find_production(&self.tables, frame.rule, |t| {
@@ -549,7 +558,7 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
                 return Ok(());
             }
         }
-        self.encode_chars(&Value::Lexical(&text))
+        self.encode_chars(&Value::Lexical(text))
     }
 
     /// Whether `xml:space="preserve"` is set on the current element or on the

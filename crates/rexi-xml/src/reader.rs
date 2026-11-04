@@ -16,14 +16,18 @@
 //! parser does both before the application sees the data. Text that is only
 //! whitespace is kept, because the encoder knows from the grammar whether it
 //! matters.
+//!
+//! The parser hands out borrowed events. Names point into the XML text, and
+//! values point into scratch buffers that are reused from one element to the
+//! next, so after the first few elements parsing allocates nothing.
 
 use std::io::Write;
+use std::ops::Range;
 
 use quick_xml::escape::unescape;
-use quick_xml::events::attributes::Attribute;
-use quick_xml::events::{BytesStart, Event};
-use quick_xml::name::{QName, ResolveResult};
-use quick_xml::reader::NsReader;
+use quick_xml::events::{BytesRef, BytesStart, Event};
+use quick_xml::name::{PrefixDeclaration, QName};
+use quick_xml::reader::Reader;
 use rexi_core::event::Event as ExiEvent;
 use rexi_core::grammar::well_known::XSI_NS;
 use rexi_core::value::Value;
@@ -36,7 +40,7 @@ use crate::{Result, XmlError};
 pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
     let mut events = Vec::new();
     parse_into(xml, |ev| {
-        events.push(ev);
+        events.extend(OwnedEvent::from_event(ev));
         Ok(())
     })?;
     Ok(events)
@@ -48,9 +52,7 @@ pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
 /// Only one element's attributes are held at a time, because they must be sorted
 /// before they are sent.
 pub fn push_xml<W: Write, G: GrammarTables>(xml: &[u8], enc: &mut Encoder<W, G>) -> Result<()> {
-    parse_into(xml, |ev| {
-        enc.push(&as_lexical_event(&ev)).map_err(XmlError::from)
-    })
+    parse_into(xml, |ev| enc.push(ev).map_err(XmlError::from))
 }
 
 /// Borrows an event for the encoder, with text values turned into
@@ -73,59 +75,163 @@ pub fn as_lexical_event(ev: &OwnedEvent) -> ExiEvent<'_> {
     }
 }
 
-/// The namespace URI a prefix resolved to. A name with no prefix and no default
-/// namespace gives `""`. An undeclared prefix is an error.
-fn uri_of(resolution: ResolveResult<'_>) -> Result<String> {
-    match resolution {
-        ResolveResult::Unbound => Ok(String::new()),
-        ResolveResult::Bound(ns) => Ok(ns.as_ref().to_string()),
-        ResolveResult::Unknown(prefix) => Err(XmlError::Unsupported(format!(
-            "undeclared namespace prefix {prefix}"
-        ))),
-    }
+/// The namespace bound to the `xml` prefix, which never needs declaring
+/// ([Namespaces in XML 1.0 section 3](https://www.w3.org/TR/xml-names/#ns-decl)).
+const XML_NS: &str = "http://www.w3.org/XML/1998/namespace";
+
+/// The namespace declarations in scope
+/// ([Namespaces in XML 1.0 section 6](https://www.w3.org/TR/xml-names/#scoping)).
+///
+/// Declarations are kept as a stack: an element's own come last and are dropped
+/// at its end tag, and a later one hides an earlier one for the same prefix. The
+/// prefix and URI text sits in one buffer, so declaring allocates nothing once
+/// the buffer has grown.
+#[derive(Default)]
+struct Namespaces {
+    text: String,
+    /// (prefix, URI) places in `text`. The default namespace has an empty prefix.
+    bindings: Vec<(Range<usize>, Range<usize>)>,
+    /// How many bindings there were when each open element started.
+    scopes: Vec<usize>,
 }
 
-/// Attribute-value normalization for CDATA-typed attributes
-/// ([XML 1.0 section 3.3.3](https://www.w3.org/TR/xml/#AVNormalize)): line ends are
-/// normalized first ([section 2.11](https://www.w3.org/TR/xml/#sec-line-ends), so
-/// a CR LF pair is one line end), then each literal tab, newline and carriage return
-/// becomes a space. So `x<CR><LF>y` becomes `x y`, with one space, as EXIficient
-/// writes it. Character references (`&#10;`) are still escaped at this point, so
-/// they are not touched. After that the value is unescaped, which turns references
-/// into the characters they stand for.
-fn normalise_attribute(raw: &str) -> Result<String> {
-    let replaced: String = normalise_newlines(raw)
-        .chars()
-        .map(|c| {
-            if matches!(c, '\t' | '\n' | '\r') {
-                ' '
-            } else {
-                c
-            }
-        })
-        .collect();
-    Ok(unescape(&replaced)?.into_owned())
-}
-
-/// [XML 1.0 section 2.11](https://www.w3.org/TR/xml/#sec-line-ends): `\r\n` and a
-/// lone `\r` become `\n`.
-fn normalise_newlines(text: &str) -> String {
-    if !text.contains('\r') {
-        return text.to_string();
+impl Namespaces {
+    /// Starts a new element's scope. Its declarations follow with `bind`.
+    fn open(&mut self) {
+        self.scopes.push(self.bindings.len());
     }
-    let mut out = String::with_capacity(text.len());
-    let mut chars = text.chars().peekable();
-    while let Some(c) = chars.next() {
-        if c == '\r' {
-            if chars.peek() == Some(&'\n') {
-                chars.next();
-            }
-            out.push('\n');
-        } else {
-            out.push(c);
+
+    /// Declares `prefix` (empty for the default namespace) on the element whose
+    /// scope is open. Declaring the same prefix twice on one element is an error.
+    fn bind(&mut self, prefix: &str, uri: &str) -> Result<()> {
+        let scope = self.scopes.last().copied().unwrap_or(0);
+        if self.bindings[scope..]
+            .iter()
+            .any(|(p, _)| &self.text[p.clone()] == prefix)
+        {
+            return Err(XmlError::Unsupported(format!(
+                "namespace prefix {prefix:?} declared twice on one element"
+            )));
+        }
+        let prefix = push_range(&mut self.text, prefix);
+        let uri = push_range(&mut self.text, uri);
+        self.bindings.push((prefix, uri));
+        Ok(())
+    }
+
+    /// Ends the innermost element's scope and drops its declarations.
+    fn close(&mut self) {
+        if let Some(n) = self.scopes.pop() {
+            self.bindings.truncate(n);
+            self.text
+                .truncate(self.bindings.last().map_or(0, |(_, uri)| uri.end));
         }
     }
-    out
+
+    /// The namespace URI for `prefix`. No prefix means the default namespace,
+    /// which is `""` when none is declared (or `xmlns=""` undeclared it). An
+    /// undeclared prefix is an error.
+    fn uri(&self, prefix: Option<&str>) -> Result<&str> {
+        let Some(prefix) = prefix else {
+            // Most names have no prefix: find the default namespace without
+            // comparing any text.
+            let default = self.bindings.iter().rev().find(|(p, _)| p.is_empty());
+            return Ok(default.map_or("", |(_, uri)| &self.text[uri.clone()]));
+        };
+        if prefix == "xml" {
+            return Ok(XML_NS);
+        }
+        for (p, uri) in self.bindings.iter().rev() {
+            if &self.text[p.clone()] == prefix {
+                return Ok(&self.text[uri.clone()]);
+            }
+        }
+        if prefix.is_empty() {
+            Ok("")
+        } else {
+            Err(XmlError::Unsupported(format!(
+                "undeclared namespace prefix {prefix}"
+            )))
+        }
+    }
+
+    /// The URI and local name of an element name, or of an `xsi:type` value: a
+    /// name with no prefix takes the default namespace.
+    fn element<'n>(&self, name: &'n str) -> Result<(&str, &'n str)> {
+        let (local, prefix) = QName(name).decompose();
+        Ok((
+            self.uri(prefix.as_ref().map(|p| p.as_ref()))?,
+            local.into_inner(),
+        ))
+    }
+}
+
+/// Appends `text` to `out` with line ends normalized
+/// ([XML 1.0 section 2.11](https://www.w3.org/TR/xml/#sec-line-ends)): `\r\n`
+/// and a lone `\r` become `\n`.
+fn push_normalised(out: &mut String, text: &str) {
+    let mut rest = text;
+    while let Some(i) = rest.find('\r') {
+        out.push_str(&rest[..i]);
+        out.push('\n');
+        rest = &rest[i + 1..];
+        if let Some(after) = rest.strip_prefix('\n') {
+            rest = after;
+        }
+    }
+    out.push_str(rest);
+}
+
+/// Appends an attribute value to `out`, normalized for a CDATA-typed attribute
+/// ([XML 1.0 section 3.3.3](https://www.w3.org/TR/xml/#AVNormalize)). Line ends
+/// are normalized first ([section 2.11](https://www.w3.org/TR/xml/#sec-line-ends),
+/// so a CR LF pair is one line end). Then each literal tab, newline and carriage
+/// return becomes a space. So `x<CR><LF>y` becomes `x y`, with one space, as
+/// EXIficient writes it. Character references (`&#10;`) are still escaped at this
+/// point, so they are not touched. After that the value is unescaped, which turns
+/// references into the characters they stand for.
+fn push_attribute_value(out: &mut String, raw: &str) -> Result<()> {
+    let start = out.len();
+    let mut chars = raw.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                out.push(' ');
+            }
+            '\t' | '\n' => out.push(' '),
+            c => out.push(c),
+        }
+    }
+    if out[start..].contains('&') {
+        let unescaped = unescape(&out[start..])?.into_owned();
+        out.truncate(start);
+        out.push_str(&unescaped);
+    }
+    Ok(())
+}
+
+/// Appends the text an entity or character reference stands for. Only character
+/// references and the five predefined entities (`&lt;`, `&gt;`, `&amp;`,
+/// `&apos;`, `&quot;`) are known. Any other entity would need a DTD, which strict
+/// EXI can not carry.
+fn push_reference(out: &mut String, r: &BytesRef<'_>) -> Result<()> {
+    if let Some(c) = r.resolve_char_ref()? {
+        out.push(c);
+        return Ok(());
+    }
+    match &**r {
+        "lt" => out.push('<'),
+        "gt" => out.push('>'),
+        "amp" => out.push('&'),
+        "apos" => out.push('\''),
+        "quot" => out.push('"'),
+        // Gives quick-xml's own error for the unknown entity.
+        other => out.push_str(&unescape(&format!("&{other};"))?),
+    }
+    Ok(())
 }
 
 fn parse_nil(value: &str) -> Result<bool> {
@@ -138,61 +244,169 @@ fn parse_nil(value: &str) -> Result<bool> {
     }
 }
 
-/// The attribute events of one start tag, in grammar order: `xsi:type`, then
-/// `xsi:nil`, then the rest sorted by local name and then URI. Comparing Rust
-/// strings byte by byte gives Unicode code point order, which is the order the
-/// spec asks for ([EXI 1.2](https://www.w3.org/TR/exi/#conventions)).
+/// Where one attribute's parts sit in [`Scratch::attr_text`]. The prefix is
+/// replaced by the URI once all of the start tag's declarations are known.
+struct AttrSpan {
+    local: Range<usize>,
+    prefix: Option<Range<usize>>,
+    uri: Range<usize>,
+    value: Range<usize>,
+}
+
+/// Buffers kept from one element to the next, so that their memory is reused.
+#[derive(Default)]
+struct Scratch {
+    /// The text collected since the last tag. Text is joined across entity
+    /// references and CDATA sections.
+    text: String,
+    has_text: bool,
+    /// The names, URIs and values of one start tag's attributes, back to back.
+    attr_text: String,
+    /// One entry per attribute that is not a namespace declaration.
+    attrs: Vec<AttrSpan>,
+}
+
+/// Reads one start tag: opens its namespace scope with its declarations, and
+/// keeps its other attributes, normalized, in `scratch`. Declarations come
+/// first because they apply to the element's own name and attributes, wherever
+/// they stand in the tag.
+fn read_start_tag(
+    start: &BytesStart<'_>,
+    ns: &mut Namespaces,
+    scratch: &mut Scratch,
+) -> Result<()> {
+    let Scratch {
+        attr_text: buf,
+        attrs,
+        ..
+    } = scratch;
+    buf.clear();
+    attrs.clear();
+    ns.open();
+    // quick-xml's duplicate check allocates for every tag; duplicates are
+    // caught after sorting instead (see `push_attributes`).
+    for attr in start.attributes().with_checks(false) {
+        let attr = attr?;
+        match attr.key.as_namespace_binding() {
+            Some(PrefixDeclaration::Default) => ns.bind("", &attr.value)?,
+            Some(PrefixDeclaration::Named(prefix)) => ns.bind(prefix, &attr.value)?,
+            None => {
+                let (local, prefix) = attr.key.decompose();
+                let value_start = buf.len();
+                push_attribute_value(buf, &attr.value)?;
+                let value = value_start..buf.len();
+                let local = push_range(buf, local.as_ref());
+                let prefix = prefix.map(|p| push_range(buf, p.as_ref()));
+                attrs.push(AttrSpan {
+                    local,
+                    prefix,
+                    uri: 0..0,
+                    value,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Sends the attribute events of the start tag read by [`read_start_tag`], in
+/// grammar order: `xsi:type`, then `xsi:nil`, then the rest sorted by local name
+/// and then URI. Comparing Rust strings byte by byte gives Unicode code point
+/// order, which is the order the spec asks for
+/// ([EXI 1.2](https://www.w3.org/TR/exi/#conventions)).
 ///
-/// The `xsi:type` value is a qname, a name that may have a prefix. Its prefix is
-/// resolved the same way as an element name's, so a name with no prefix takes the
-/// default namespace. `xsi:nil` accepts `true`, `1`, `false` and `0`, with
-/// surrounding whitespace allowed.
-fn attribute_events(reader: &NsReader<&[u8]>, start: &BytesStart<'_>) -> Result<Vec<OwnedEvent>> {
+/// An attribute with no prefix is in no namespace. The `xsi:type` value is a
+/// qname, a name that may have a prefix. Its prefix is resolved the same way as
+/// an element name's, so a name with no prefix takes the default namespace.
+/// `xsi:nil` accepts `true`, `1`, `false` and `0`, with surrounding whitespace
+/// allowed.
+fn push_attributes(
+    ns: &Namespaces,
+    scratch: &mut Scratch,
+    sink: &mut impl FnMut(&ExiEvent<'_>) -> Result<()>,
+) -> Result<()> {
+    let Scratch {
+        attr_text: buf,
+        attrs,
+        ..
+    } = scratch;
     let mut xsi_type = None;
     let mut xsi_nil = None;
-    let mut plain: Vec<(String, String, String)> = Vec::new();
-    for attr in start.attributes() {
-        let attr: Attribute<'_> = attr?;
-        if attr.key.as_namespace_binding().is_some() {
-            continue;
-        }
-        let (resolution, local) = reader.resolver().resolve_attribute(attr.key);
-        let uri = uri_of(resolution)?;
-        let local = local.as_ref().to_string();
-        let value = normalise_attribute(&attr.value)?;
+    let mut i = 0;
+    while i < attrs.len() {
+        let a = &attrs[i];
+        let uri = match &a.prefix {
+            Some(p) => ns.uri(Some(&buf[p.clone()]))?,
+            None => "",
+        };
         if uri == XSI_NS {
-            match local.as_str() {
+            let local = &buf[a.local.clone()];
+            if (local == "type" && xsi_type.is_some()) || (local == "nil" && xsi_nil.is_some()) {
+                return Err(XmlError::Unsupported(format!(
+                    "attribute xsi:{local} appears twice on one element"
+                )));
+            }
+            match local {
                 "type" => {
+                    let value = &buf[a.value.clone()];
                     let qname = value.trim_matches([' ', '\t', '\n', '\r']);
-                    let (resolution, local) = reader.resolver().resolve_element(QName(qname));
-                    let uri = uri_of(resolution)?;
-                    let local = local.as_ref().to_string();
-                    xsi_type = Some(OwnedEvent::XsiType { uri, local });
+                    let (uri, local) = ns.element(qname)?;
+                    // The local name is the end of the qname, kept as a place in
+                    // `buf` because `buf` still grows below.
+                    let end = a.value.start + value.trim_end_matches([' ', '\t', '\n', '\r']).len();
+                    xsi_type = Some((uri, end - local.len()..end));
+                    attrs.remove(i);
                     continue;
                 }
                 "nil" => {
-                    xsi_nil = Some(OwnedEvent::XsiNil(parse_nil(&value)?));
+                    xsi_nil = Some(parse_nil(&buf[a.value.clone()])?);
+                    attrs.remove(i);
                     continue;
                 }
                 _ => {}
             }
         }
-        plain.push((local, uri, value));
+        let uri = push_range(buf, uri);
+        attrs[i].uri = uri;
+        i += 1;
     }
-    plain.sort_by(|a, b| (a.0.as_str(), a.1.as_str()).cmp(&(b.0.as_str(), b.1.as_str())));
-    let mut events = Vec::with_capacity(plain.len() + 2);
-    events.extend(xsi_type);
-    events.extend(xsi_nil);
-    events.extend(
-        plain
-            .into_iter()
-            .map(|(local, uri, value)| OwnedEvent::Attribute {
-                uri,
-                local,
-                value: OwnedValue::String(value),
-            }),
-    );
-    Ok(events)
+    if let Some((uri, local)) = xsi_type {
+        sink(&ExiEvent::XsiType(ExiQName::new(uri, &buf[local])))?;
+    }
+    if let Some(nil) = xsi_nil {
+        sink(&ExiEvent::XsiNil(nil))?;
+    }
+    let text = buf.as_str();
+    // Two attributes never share a name, so an unstable sort gives the same order.
+    attrs.sort_unstable_by(|a, b| {
+        (&text[a.local.clone()], &text[a.uri.clone()])
+            .cmp(&(&text[b.local.clone()], &text[b.uri.clone()]))
+    });
+    // Sorted, so an attribute given twice sits next to itself.
+    if let Some(pair) = attrs.windows(2).find(|w| {
+        (&text[w[0].local.clone()], &text[w[0].uri.clone()])
+            == (&text[w[1].local.clone()], &text[w[1].uri.clone()])
+    }) {
+        let name = ExiQName::new(&text[pair[0].uri.clone()], &text[pair[0].local.clone()]);
+        return Err(XmlError::Unsupported(format!(
+            "attribute {name} appears twice on one element"
+        )));
+    }
+    for a in attrs.iter() {
+        let name = ExiQName::new(&text[a.uri.clone()], &text[a.local.clone()]);
+        sink(&ExiEvent::Attribute(
+            name,
+            Value::Lexical(&text[a.value.clone()]),
+        ))?;
+    }
+    Ok(())
+}
+
+/// Appends `s` to `buf` and returns where it went.
+fn push_range(buf: &mut String, s: &str) -> Range<usize> {
+    let start = buf.len();
+    buf.push_str(s);
+    start..buf.len()
 }
 
 /// The streaming core: parses `xml` and hands every event to `sink` in order.
@@ -201,64 +415,59 @@ fn attribute_events(reader: &NsReader<&[u8]>, start: &BytesStart<'_>) -> Result<
 /// whitespace, and no DOCTYPE. Comments, processing instructions and the XML
 /// declaration are dropped. An empty-element tag (`<a/>`) gives an `SE` and an `EE`
 /// right away.
-fn parse_into(xml: &[u8], mut sink: impl FnMut(OwnedEvent) -> Result<()>) -> Result<()> {
-    let mut reader = NsReader::from_reader(xml);
+fn parse_into(xml: &[u8], mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>) -> Result<()> {
+    let mut reader = Reader::from_reader(xml);
     let mut depth = 0usize;
     let mut seen_root = false;
-    let mut text = String::new();
-    let mut has_text = false;
+    let mut ns = Namespaces::default();
+    let mut scratch = Scratch::default();
 
-    sink(OwnedEvent::StartDocument)?;
+    sink(&ExiEvent::StartDocument)?;
     loop {
-        let (resolution, event) = reader.read_resolved_event()?;
-        // Resolve now: the resolution borrows the reader, and the attribute step
-        // needs the reader again.
-        let uri = uri_of(resolution)?;
+        let event = reader.read_event()?;
         let empty = matches!(event, Event::Empty(_));
         match event {
             Event::Start(start) | Event::Empty(start) => {
-                flush_text(&mut text, &mut has_text, depth, &mut sink)?;
+                flush_text(&mut scratch, depth, &mut sink)?;
                 if depth == 0 {
                     if seen_root {
                         return Err(XmlError::Unsupported("more than one root element".into()));
                     }
                     seen_root = true;
                 }
-                let local = start.local_name().as_ref().to_string();
-                sink(OwnedEvent::StartElement { uri, local })?;
-                for attr in attribute_events(&reader, &start)? {
-                    sink(attr)?;
-                }
+                read_start_tag(&start, &mut ns, &mut scratch)?;
+                let (uri, local) = ns.element(start.name().into_inner())?;
+                sink(&ExiEvent::StartElement(ExiQName::new(uri, local)))?;
+                push_attributes(&ns, &mut scratch, &mut sink)?;
                 if empty {
-                    sink(OwnedEvent::EndElement)?;
+                    ns.close();
+                    sink(&ExiEvent::EndElement)?;
                 } else {
                     depth += 1;
                 }
             }
             Event::End(_) => {
-                flush_text(&mut text, &mut has_text, depth, &mut sink)?;
+                flush_text(&mut scratch, depth, &mut sink)?;
                 depth = depth
                     .checked_sub(1)
                     .ok_or_else(|| XmlError::Unsupported("unexpected end tag".into()))?;
-                sink(OwnedEvent::EndElement)?;
+                ns.close();
+                sink(&ExiEvent::EndElement)?;
             }
             // Text never holds references: they arrive as `GeneralRef` events and
             // are joined in here. Line endings are normalized only in the literal
             // text, so `&#13;` still comes out as a carriage return.
             Event::Text(t) => {
-                text.push_str(&normalise_newlines(&t.into_inner()));
-                has_text = true;
+                push_normalised(&mut scratch.text, &t);
+                scratch.has_text = true;
             }
             Event::CData(c) => {
-                text.push_str(&normalise_newlines(&c.into_inner()));
-                has_text = true;
+                push_normalised(&mut scratch.text, &c);
+                scratch.has_text = true;
             }
             Event::GeneralRef(r) => {
-                // Character references and the five predefined entities (`&lt;`,
-                // `&gt;`, `&amp;`, `&apos;`, `&quot;`). Any other entity would need a
-                // DTD, which strict EXI can not carry.
-                text.push_str(&unescape(&format!("&{};", &*r))?);
-                has_text = true;
+                push_reference(&mut scratch.text, &r)?;
+                scratch.has_text = true;
             }
             Event::DocType(_) => {
                 return Err(XmlError::Unsupported("DOCTYPE declarations".into()));
@@ -267,7 +476,7 @@ fn parse_into(xml: &[u8], mut sink: impl FnMut(OwnedEvent) -> Result<()>) -> Res
             Event::Eof => break,
         }
     }
-    flush_text(&mut text, &mut has_text, depth, &mut sink)?;
+    flush_text(&mut scratch, depth, &mut sink)?;
     if depth != 0 {
         return Err(XmlError::Unsupported(
             "document ends inside an element".into(),
@@ -276,33 +485,37 @@ fn parse_into(xml: &[u8], mut sink: impl FnMut(OwnedEvent) -> Result<()>) -> Res
     if !seen_root {
         return Err(XmlError::Unsupported("document has no root element".into()));
     }
-    sink(OwnedEvent::EndDocument)
+    sink(&ExiEvent::EndDocument)
 }
 
 /// Sends the joined text collected so far as one `CH` event. Outside the root
 /// element only whitespace is allowed, and it is dropped.
 fn flush_text(
-    text: &mut String,
-    has_text: &mut bool,
+    scratch: &mut Scratch,
     depth: usize,
-    sink: &mut impl FnMut(OwnedEvent) -> Result<()>,
+    sink: &mut impl FnMut(&ExiEvent<'_>) -> Result<()>,
 ) -> Result<()> {
-    if !*has_text {
+    if !scratch.has_text {
         return Ok(());
     }
-    *has_text = false;
-    let value = std::mem::take(text);
+    scratch.has_text = false;
     if depth == 0 {
-        if value.chars().all(|c| matches!(c, ' ' | '\t' | '\n' | '\r')) {
+        let blank = scratch
+            .text
+            .chars()
+            .all(|c| matches!(c, ' ' | '\t' | '\n' | '\r'));
+        scratch.text.clear();
+        if blank {
             return Ok(());
         }
         return Err(XmlError::Unsupported(
             "character data outside the root element".into(),
         ));
     }
-    sink(OwnedEvent::Characters(OwnedValue::String(value)))
+    let result = sink(&ExiEvent::Characters(Value::Lexical(&scratch.text)));
+    scratch.text.clear();
+    result
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -443,5 +656,60 @@ mod tests {
         assert!(parse_events(b"<r/><r/>").is_err());
         assert!(parse_events(b"").is_err());
         assert!(parse_events(b"<r>x</r>y").is_err());
+    }
+
+    #[test]
+    fn namespace_declarations_are_scoped() {
+        let xml = br#"<r xmlns="urn:a" xmlns:p="urn:p" p:x="1" y="2">
+            <c xmlns="urn:b"><d/></c><e xmlns=""/><p:f xmlns:p="urn:q" p:z="3"/><p:g/><xml:h/></r>"#;
+        let events: Vec<_> = parse_events(xml)
+            .unwrap_or_else(|e| panic!("{e}"))
+            .into_iter()
+            .filter(|e| !matches!(e, OwnedEvent::Characters(_)))
+            .collect();
+        assert_eq!(
+            events,
+            vec![
+                OwnedEvent::StartDocument,
+                se("urn:a", "r"),
+                at("urn:p", "x", "1"),
+                at("", "y", "2"),
+                se("urn:b", "c"),
+                se("urn:b", "d"),
+                OwnedEvent::EndElement,
+                OwnedEvent::EndElement,
+                se("", "e"),
+                OwnedEvent::EndElement,
+                se("urn:q", "f"),
+                at("urn:q", "z", "3"),
+                OwnedEvent::EndElement,
+                se("urn:p", "g"),
+                OwnedEvent::EndElement,
+                se("http://www.w3.org/XML/1998/namespace", "h"),
+                OwnedEvent::EndElement,
+                OwnedEvent::EndElement,
+                OwnedEvent::EndDocument,
+            ]
+        );
+        // A prefix declared on an element is gone after its end tag.
+        assert!(parse_events(br#"<r><a xmlns:p="urn:p"/><p:b/></r>"#).is_err());
+    }
+
+    #[test]
+    fn duplicates_are_rejected() {
+        let bad: [&[u8]; 5] = [
+            br#"<r a="1" a="2"/>"#,
+            br#"<r xmlns:p="urn:x" xmlns:q="urn:x" p:a="1" q:a="2"/>"#,
+            br#"<r xmlns:p="urn:x" xmlns:p="urn:y"/>"#,
+            br#"<r xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true" xsi:nil="false"/>"#,
+            br#"<r xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:x="http://www.w3.org/2001/XMLSchema-instance" xsi:type="t" x:type="u"/>"#,
+        ];
+        for xml in bad {
+            assert!(
+                matches!(parse_events(xml), Err(XmlError::Unsupported(_))),
+                "{}",
+                String::from_utf8_lossy(xml)
+            );
+        }
     }
 }

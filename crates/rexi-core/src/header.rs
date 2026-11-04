@@ -91,8 +91,8 @@ pub fn check_schema_id(stream: &SchemaId, tables: Option<&str>) -> ExiResult<()>
         Ok(())
     } else {
         Err(ExiError::SchemaIdMismatch {
-            stream: stream.clone(),
-            tables: tables.map(String::from),
+            stream: Box::new(stream.clone()),
+            tables: tables.map(Box::from),
         })
     }
 }

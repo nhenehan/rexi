@@ -33,7 +33,7 @@ fuzz_target!(|data: &[u8]| {
         // may repeat it (EXI 8.5.4.1.3) and still be conformant (EXI 10.1): the
         // decoder accepts it, by Nathan's choice to follow the spec. As XML that is
         // a duplicate attribute, which no XML parser accepts.
-        Err(e) if format!("{e:?}").contains("Duplicated") => return,
+        Err(e) if format!("{e:?}").contains("appears twice") => return,
         Err(e) => panic!("decoded XML does not encode: {e:?}\n{xml}"),
     };
     let first_events = decode_events(stream, tables, Some(options.clone()));

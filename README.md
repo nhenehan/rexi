@@ -76,6 +76,11 @@ tables ahead of time. rexi needs Rust 1.88 or newer.
   events, encode again to the same bytes from those events, and are accepted by
   exip's decoder. The W3C test suite's
   declaredProductions group passes too.
+- Is fast. In the [rexi-interop](https://github.com/nhenehan/rexi-interop)
+  benchmark (14 documents, strict bit-packed and byte-aligned), rexi beats
+  EXIficient 1.0.7 on every case: encoding from XML text, parsing included, is
+  1.8 to 6.2 times as fast, and decoding 1.03 to 1.8 times. Run
+  `scripts/run.sh` there to measure it on your machine.
 
 ## What it doesn't do yet
 

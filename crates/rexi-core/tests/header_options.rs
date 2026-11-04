@@ -185,8 +185,8 @@ fn schema_id_is_checked_against_the_tables() {
             assert_eq!(
                 got,
                 Err(ExiError::SchemaIdMismatch {
-                    stream: stream.clone(),
-                    tables: tables.map(String::from),
+                    stream: Box::new(stream.clone()),
+                    tables: tables.map(Box::from),
                 }),
                 "{stream:?} with {tables:?}"
             );
