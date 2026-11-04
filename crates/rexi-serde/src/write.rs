@@ -83,10 +83,10 @@ enum Prepared {
 }
 
 impl Prepared {
-    fn as_value(&self) -> Value<'_> {
+    fn to_value(&self) -> Value<'_> {
         match self {
             Prepared::Lexical(s) => Value::Lexical(s),
-            Prepared::Typed(v) => v.as_value(),
+            Prepared::Typed(v) => v.to_value(),
         }
     }
 }
@@ -320,7 +320,7 @@ fn write_chars<W: ByteSink, G: GrammarTables>(
         )));
     };
     let value = prepare(item, kind, ctx)?;
-    enc.characters(&value.as_value())?;
+    enc.characters(&value.to_value())?;
     Ok(())
 }
 
@@ -385,7 +385,7 @@ fn write_struct<W: ByteSink, G: GrammarTables>(
         let (uri, local) = qname_strings(t, q);
         let kind = t.datatype(ty);
         let value = prepare(&fields[i].1, kind, &format!("{ctx}/@{local}"))?;
-        enc.attribute(&uri, &local, &value.as_value())?;
+        enc.attribute(&uri, &local, &value.to_value())?;
     }
 
     // Character content: a `$text` or `$value` field that holds a single value

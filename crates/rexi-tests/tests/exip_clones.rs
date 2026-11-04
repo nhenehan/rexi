@@ -34,7 +34,7 @@ fn exip_acceptance_a_01_decodes() {
         return;
     }
     let xsd = dir.join("acceptance.xsd");
-    let tables = rexi_schema::compile_files(&[xsd.as_path()]).unwrap_or_else(|e| panic!("{e}"));
+    let tables = rexi_schema::compile_files([xsd.as_path()]).unwrap_or_else(|e| panic!("{e}"));
     let bytes = std::fs::read(dir.join("acceptance_a_01.exi")).unwrap_or_default();
     let events =
         rexi_xml::decode_events_typed(bytes.as_slice(), &tables, Some(ExiOptions::strict()))

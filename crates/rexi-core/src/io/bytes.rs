@@ -18,9 +18,18 @@ use crate::error::IoErrorKind;
 /// Where the decoder reads its bytes from.
 pub trait ByteSource {
     /// Reads up to `buf.len()` bytes into `buf`; `Ok(0)` means end of input.
+    ///
+    /// # Errors
+    ///
+    /// The source's own read error.
     fn get_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind>;
 
     /// Fills `buf` completely, or fails with [`IoErrorKind::UnexpectedEof`].
+    ///
+    /// # Errors
+    ///
+    /// [`IoErrorKind::UnexpectedEof`] when the source ends first, or the source's
+    /// own read error.
     fn get_bytes_exact(&mut self, mut buf: &mut [u8]) -> Result<(), IoErrorKind> {
         while !buf.is_empty() {
             match self.get_bytes(buf)? {
@@ -35,10 +44,19 @@ pub trait ByteSource {
 /// Where the encoder writes its bytes to.
 pub trait ByteSink {
     /// Writes all of `bytes`, or fails.
+    ///
+    /// # Errors
+    ///
+    /// The sink's own write error; [`SliceSink`] fails with
+    /// [`IoErrorKind::BufferFull`] when its buffer is full.
     fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind>;
 
     /// Pushes buffered bytes to where they are going. Does nothing for in-memory
     /// sinks.
+    ///
+    /// # Errors
+    ///
+    /// The sink's own write error.
     fn flush_bytes(&mut self) -> Result<(), IoErrorKind> {
         Ok(())
     }
@@ -119,6 +137,32 @@ impl<W: ByteSink + ?Sized> ByteSink for &mut W {
 
 /// A sink over a buffer the caller provides, for targets with no heap to spare.
 /// Writing past its end fails with [`IoErrorKind::BufferFull`].
+///
+/// # Examples
+///
+/// Encodes into a fixed buffer, with no heap use for the output.
+///
+/// ```
+/// use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
+/// use rexi_core::io::SliceSink;
+/// use rexi_core::{Encoder, ExiOptions, HeaderConfig};
+///
+/// const EXI: &str = "http://www.w3.org/2009/exi";
+/// let mut buf = [0u8; 64];
+/// let mut enc = Encoder::new(
+///     SliceSink::new(&mut buf),
+///     &OPTIONS_GRAMMARS,
+///     ExiOptions::strict(),
+///     HeaderConfig::default(),
+/// )?;
+/// enc.start_document()?;
+/// enc.start_element(EXI, "header")?;
+/// enc.end_element()?;
+/// enc.end_document()?;
+/// let sink = enc.finish()?;
+/// assert!(!sink.written().is_empty());
+/// # Ok::<(), rexi_core::ExiError>(())
+/// ```
 #[derive(Debug)]
 pub struct SliceSink<'a> {
     buf: &'a mut [u8],

@@ -223,7 +223,7 @@ pub fn format_value(
     match value {
         Value::Lexical(s) => {
             let owned = parse_lexical(kind, s, types)?;
-            format_value(kind, &owned.as_value(), types)
+            format_value(kind, &owned.to_value(), types)
         }
         Value::String(s) => Ok((*s).to_string()),
         Value::Boolean(b) => Ok(if *b { "true" } else { "false" }.to_string()),
@@ -299,7 +299,7 @@ fn enum_ordinal(
         types
             .enum_value(set, i)
             .and_then(|s| parse_lexical(item_kind, s, types).ok())
-            .and_then(|owned| format_value(item_kind, &owned.as_value(), types).ok())
+            .and_then(|owned| format_value(item_kind, &owned.to_value(), types).ok())
             .is_some_and(|candidate| candidate == canonical)
     });
     matches.map(|i| i as u32).ok_or_else(|| {
@@ -619,7 +619,7 @@ mod tests {
                 let decoded = decoded.unwrap_or(OwnedValue::Enum(u32::MAX));
                 let expected = format_value(*kind, typed, &Mock);
                 assert_eq!(
-                    format_value(*kind, &decoded.as_value(), &Mock),
+                    format_value(*kind, &decoded.to_value(), &Mock),
                     expected,
                     "{kind:?}"
                 );
@@ -792,7 +792,7 @@ mod tests {
         );
         let list = list.unwrap_or(OwnedValue::List(Vec::new()));
         assert_eq!(
-            format_value(D::List { item: 0 }, &list.as_value(), &Mock),
+            format_value(D::List { item: 0 }, &list.to_value(), &Mock),
             Ok("1 -2 3".to_string())
         );
         assert_eq!(
@@ -906,7 +906,7 @@ mod tests {
             for aligned in [false, true] {
                 let bytes = enc(aligned, *kind, value).unwrap_or_default();
                 let decoded = dec(aligned, *kind, &bytes).unwrap_or(OwnedValue::Enum(u32::MAX));
-                assert_eq!(decoded.as_value(), *value, "{kind:?}");
+                assert_eq!(decoded.to_value(), *value, "{kind:?}");
             }
         }
         let dt = DateTime::from_lexical(DateTimeKind::DateTime, "2026-04-15T17:45:00.5+02:00")

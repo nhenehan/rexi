@@ -35,7 +35,7 @@ impl core::fmt::Display for QName<'_> {
 }
 
 /// An event pushed into the [`crate::Encoder`] or pulled from the [`crate::Decoder`].
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Event<'a> {
     /// Start of the document (`SD`).
@@ -119,7 +119,7 @@ impl Event<'_> {
 
 /// An event that owns its strings, for buffering and tests. It covers only the
 /// events the strict codec handles.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum OwnedEvent {
     /// See [`Event::StartDocument`].
@@ -185,19 +185,20 @@ impl OwnedEvent {
         })
     }
 
-    /// Borrows this event as an [`Event`].
-    pub fn as_event(&self) -> Event<'_> {
+    /// This event as an [`Event`]. Names and strings are borrowed; values are
+    /// converted with [`OwnedValue::to_value`], which may allocate.
+    pub fn to_event(&self) -> Event<'_> {
         match self {
             OwnedEvent::StartDocument => Event::StartDocument,
             OwnedEvent::EndDocument => Event::EndDocument,
             OwnedEvent::StartElement { uri, local } => Event::StartElement(QName::new(uri, local)),
             OwnedEvent::EndElement => Event::EndElement,
             OwnedEvent::Attribute { uri, local, value } => {
-                Event::Attribute(QName::new(uri, local), value.as_value())
+                Event::Attribute(QName::new(uri, local), value.to_value())
             }
             OwnedEvent::XsiType { uri, local } => Event::XsiType(QName::new(uri, local)),
             OwnedEvent::XsiNil(b) => Event::XsiNil(*b),
-            OwnedEvent::Characters(v) => Event::Characters(v.as_value()),
+            OwnedEvent::Characters(v) => Event::Characters(v.to_value()),
         }
     }
 }

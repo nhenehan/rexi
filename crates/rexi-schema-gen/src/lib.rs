@@ -34,7 +34,7 @@ use rexi_core::grammar::{GrammarSetBuf, GrammarTables, Span, Terminal};
 use rexi_core::ids::{NONE, QNameId};
 
 /// Rendering options.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderOptions<'a> {
     /// Name of the generated `static`, for example `GRAMMARS`.
     pub name: &'a str,
@@ -60,6 +60,20 @@ impl Default for RenderOptions<'_> {
 /// Each table becomes a private `static` slice named `<NAME>_<TABLE>` (such as
 /// `GRAMMARS_RULES`). Then the public `<NAME>` static points at all of them. Index
 /// values equal to `NONE` are written as `NONE`.
+///
+/// # Examples
+///
+/// ```
+/// use rexi_schema_gen::{RenderOptions, render};
+///
+/// let xsd = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+///                <xs:element name="note" type="xs:string"/>
+///              </xs:schema>"#;
+/// let tables = rexi_schema::compile_str(xsd, None)?;
+/// let source = render(&tables, &RenderOptions { name: "NOTE_GRAMMARS", ..RenderOptions::default() });
+/// assert!(source.contains("pub static NOTE_GRAMMARS"));
+/// # Ok::<(), rexi_schema::SchemaError>(())
+/// ```
 pub fn render(tables: &GrammarSetBuf, opts: &RenderOptions<'_>) -> String {
     let mut out = String::new();
     let o = &mut out;
@@ -258,7 +272,7 @@ fn render_name_consts(o: &mut String, t: &GrammarSetBuf) {
 /// `PRE_COMPRESS`. Each run of characters that are not ASCII letters or digits
 /// becomes one `_`. A leading `_` is added if the result is empty or starts with a
 /// digit, so it is a valid identifier.
-pub fn screaming_snake(s: &str) -> String {
+pub(crate) fn screaming_snake(s: &str) -> String {
     let mut out = String::new();
     let mut prev_lower = false;
     for c in s.chars() {

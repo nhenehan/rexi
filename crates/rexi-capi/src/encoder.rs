@@ -190,7 +190,7 @@ pub unsafe extern "C" fn rexi_attribute(
         with_encoder(enc, |e| {
             let (u, l) = (c_str(uri, "uri")?, c_str(local, "local")?);
             let v = value.as_ref().ok_or_else(|| Fail::null("value"))?.input()?;
-            exi(e.attribute(u, l, &v.as_value()))
+            exi(e.attribute(u, l, &v.to_value()))
         })
     }
 }
@@ -232,7 +232,7 @@ pub unsafe extern "C" fn rexi_characters(
     unsafe {
         with_encoder(enc, |e| {
             let v = value.as_ref().ok_or_else(|| Fail::null("value"))?.input()?;
-            exi(e.characters(&v.as_value()))
+            exi(e.characters(&v.to_value()))
         })
     }
 }

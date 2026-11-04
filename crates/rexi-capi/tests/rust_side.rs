@@ -132,7 +132,7 @@ fn encoder_from_xsd_string_and_errors() {
         let via_xml = rexi_xml::encode_xml(
             b"<n>-42</n>",
             &buf,
-            &rexi_core::ExiOptions::strict(),
+            rexi_core::ExiOptions::strict(),
             rexi_core::HeaderConfig::default(),
         )
         .unwrap_or_else(|e| panic!("{e}"));

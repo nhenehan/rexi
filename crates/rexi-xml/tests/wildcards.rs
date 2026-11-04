@@ -28,7 +28,7 @@ fn encoding_a_wildcard_is_refused_as_a_wildcard() {
         let err = encode_xml(
             xml.as_bytes(),
             &tables,
-            &ExiOptions::strict(),
+            ExiOptions::strict(),
             HeaderConfig::default(),
         )
         .err()
@@ -39,7 +39,7 @@ fn encoding_a_wildcard_is_refused_as_a_wildcard() {
     let ok = encode_xml(
         b"<root/>",
         &tables,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     );
     assert!(ok.is_ok());

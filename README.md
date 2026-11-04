@@ -18,10 +18,10 @@ use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile the schema once, then reuse the tables for every message.
-    let tables = rexi_schema::compile_files(&[Path::new("order.xsd")])?;
+    let tables = rexi_schema::compile_files([Path::new("order.xsd")])?;
     let xml = std::fs::read("order.xml")?;
     let options = ExiOptions::strict();
-    let exi = rexi_xml::encode_xml(&xml, &tables, &options, HeaderConfig::default())?;
+    let exi = rexi_xml::encode_xml(&xml, &tables, options.clone(), HeaderConfig::default())?;
     // The options are not in the stream, so the decoder is told them.
     let back = rexi_xml::decode_to_xml(&exi[..], &tables, Some(options))?;
     println!("{} bytes of XML, {} bytes of EXI\n{back}", xml.len(), exi.len());
@@ -38,9 +38,9 @@ release tag:
 
 ```toml
 [dependencies]
-rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" }   # encoder, decoder, options, values
-rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" } # .xsd to grammar tables
-rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" }    # XML text to EXI and back
+rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }   # encoder, decoder, options, values
+rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" } # .xsd to grammar tables
+rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }    # XML text to EXI and back
 ```
 
 Add `rexi-serde` to map your own Rust types, and `rexi-schema-gen` to build the
@@ -145,7 +145,7 @@ BSD-3-Clause, see [LICENSE](LICENSE).
 
 ## For maintainers
 
-Version 0.1.0, the first release.
+Version 0.2.0.
 
 | Crate | Purpose |
 |---|---|

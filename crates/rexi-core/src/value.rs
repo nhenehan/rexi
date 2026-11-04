@@ -2,6 +2,7 @@
 //! kind matches one of the built-in EXI datatype encodings
 //! ([EXI 7.1](https://www.w3.org/TR/exi/#encodingDatatypes)).
 
+use crate::error::{ExiError, ExiResult};
 use crate::prelude::*;
 use core::fmt;
 
@@ -176,7 +177,7 @@ pub struct DateTime {
 }
 
 /// A value passed to the encoder or produced by the decoder.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Value<'a> {
     /// A value in its XML text form (XML Schema calls this the "lexical" form). The
@@ -207,7 +208,7 @@ pub enum Value<'a> {
 }
 
 /// A value that owns its data, made by the decoder and by parsing text forms.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum OwnedValue {
     /// See [`Value::String`].
@@ -233,8 +234,9 @@ pub enum OwnedValue {
 }
 
 impl OwnedValue {
-    /// Borrows this value as a [`Value`].
-    pub fn as_value(&self) -> Value<'_> {
+    /// This value as a [`Value`]. Strings and bytes are borrowed; a list and
+    /// the digits of a big integer are copied, so this may allocate.
+    pub fn to_value(&self) -> Value<'_> {
         match self {
             OwnedValue::String(s) => Value::String(s),
             OwnedValue::Boolean(b) => Value::Boolean(*b),
@@ -246,7 +248,7 @@ impl OwnedValue {
             OwnedValue::Binary(b) => Value::Binary(b),
             OwnedValue::Enum(o) => Value::Enum(*o),
             OwnedValue::List(items) => {
-                Value::List(items.iter().map(OwnedValue::as_value).collect())
+                Value::List(items.iter().map(OwnedValue::to_value).collect())
             }
         }
     }
@@ -270,5 +272,117 @@ impl Value<'_> {
                 OwnedValue::List(items.iter().map(Value::to_owned_value).collect())
             }
         }
+    }
+}
+
+/// The error for text that is not a number of the expected type.
+fn not_a(datatype: &'static str, s: &str) -> ExiError {
+    ExiError::value(
+        datatype,
+        format!("{s:?} is not a valid {datatype} text form"),
+    )
+}
+
+/// Parses the XML Schema text form, as [`Int::from_decimal_str`] does.
+impl core::str::FromStr for Int {
+    type Err = ExiError;
+    fn from_str(s: &str) -> ExiResult<Self> {
+        Int::from_decimal_str(s).ok_or_else(|| not_a("Integer", s))
+    }
+}
+
+/// Parses the XML Schema text form, as [`Uint::from_decimal_str`] does.
+impl core::str::FromStr for Uint {
+    type Err = ExiError;
+    fn from_str(s: &str) -> ExiResult<Self> {
+        Uint::from_decimal_str(s).ok_or_else(|| not_a("Unsigned Integer", s))
+    }
+}
+
+/// Parses decimal digits, as [`BigUint::from_decimal_str`] does.
+impl core::str::FromStr for BigUint {
+    type Err = ExiError;
+    fn from_str(s: &str) -> ExiResult<Self> {
+        BigUint::from_decimal_str(s).ok_or_else(|| not_a("Unsigned Integer", s))
+    }
+}
+
+/// Parses the XML Schema text form, as [`Decimal::from_lexical`] does.
+impl core::str::FromStr for Decimal {
+    type Err = ExiError;
+    fn from_str(s: &str) -> ExiResult<Self> {
+        Decimal::from_lexical(s).ok_or_else(|| not_a("Decimal", s))
+    }
+}
+
+/// Parses the XML Schema text form, as [`Float::from_lexical`] does.
+impl core::str::FromStr for Float {
+    type Err = ExiError;
+    fn from_str(s: &str) -> ExiResult<Self> {
+        Float::from_lexical(s).ok_or_else(|| not_a("Float", s))
+    }
+}
+
+impl From<u128> for BigUint {
+    fn from(v: u128) -> Self {
+        BigUint::from_u128(v)
+    }
+}
+
+impl From<Int> for Decimal {
+    fn from(v: Int) -> Self {
+        Decimal::from_int(&v)
+    }
+}
+
+impl From<Uint> for Decimal {
+    fn from(v: Uint) -> Self {
+        Decimal::from_uint(&v)
+    }
+}
+
+impl From<&Value<'_>> for OwnedValue {
+    fn from(v: &Value<'_>) -> Self {
+        v.to_owned_value()
+    }
+}
+
+/// Fails when the value does not fit in an `i64`.
+impl TryFrom<&Int> for i64 {
+    type Error = ExiError;
+    fn try_from(v: &Int) -> ExiResult<Self> {
+        v.to_i64()
+            .ok_or_else(|| ExiError::value("Integer", "value does not fit in 64 bits"))
+    }
+}
+
+/// Fails when the value does not fit in a `u64`.
+impl TryFrom<&Uint> for u64 {
+    type Error = ExiError;
+    fn try_from(v: &Uint) -> ExiResult<Self> {
+        v.to_u64()
+            .ok_or_else(|| ExiError::value("Unsigned Integer", "value does not fit in 64 bits"))
+    }
+}
+
+#[cfg(test)]
+mod conversion_tests {
+    use super::*;
+
+    #[test]
+    fn parse_and_convert() {
+        assert_eq!("-12".parse::<Int>(), Ok(Int::Small(-12)));
+        assert_eq!("12".parse::<Uint>(), Ok(Uint::Small(12)));
+        assert!("x".parse::<Int>().is_err());
+        assert!("1.5e".parse::<Float>().is_err());
+        assert_eq!(BigUint::from(7u128), BigUint::from_u64(7));
+        assert_eq!(i64::try_from(&Int::Small(3)), Ok(3));
+        assert_eq!(u64::try_from(&Uint::Small(3)), Ok(3));
+        let d: Decimal = "2.50".parse().unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(d, Decimal::from_lexical("2.5").unwrap_or_else(|| panic!()));
+        assert_eq!(
+            OwnedValue::from(&Value::Boolean(true)),
+            OwnedValue::Boolean(true)
+        );
     }
 }

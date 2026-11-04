@@ -198,7 +198,7 @@ pub enum Uint {
 
 impl Uint {
     /// Writes the value as an Unsigned Integer.
-    pub fn write<W: ByteSink>(&self, w: &mut BitWriter<W>) -> ExiResult<()> {
+    pub(crate) fn write<W: ByteSink>(&self, w: &mut BitWriter<W>) -> ExiResult<()> {
         match self {
             Uint::Small(v) => write_unsigned(w, *v),
             Uint::Big(b) => write_unsigned_big(w, b),

@@ -3,9 +3,33 @@
 //! ([EXI 8.5](https://www.w3.org/TR/exi/#informedGrammars)); "strict" means the
 //! stream may hold only what the schema allows.)
 //!
-//! ```ignore
-//! let bytes = rexi_serde::to_exi(&order, &GRAMMARS, &ExiOptions::strict(), HeaderConfig::default())?;
-//! let back: Order = rexi_serde::from_exi(&bytes, &GRAMMARS, Some(ExiOptions::strict()))?;
+//! ```
+//! use rexi_core::{ExiOptions, HeaderConfig};
+//! use serde::{Deserialize, Serialize};
+//!
+//! #[derive(Serialize, Deserialize, Debug, PartialEq)]
+//! struct Note {
+//!     to: String,
+//!     body: String,
+//! }
+//!
+//! let xsd = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+//!   <xs:element name="Note">
+//!     <xs:complexType>
+//!       <xs:sequence>
+//!         <xs:element name="to" type="xs:string"/>
+//!         <xs:element name="body" type="xs:string"/>
+//!       </xs:sequence>
+//!     </xs:complexType>
+//!   </xs:element>
+//! </xs:schema>"#;
+//! let tables = rexi_schema::compile_str(xsd, None)?;
+//!
+//! let note = Note { to: "Ada".into(), body: "Hello".into() };
+//! let bytes = rexi_serde::to_exi(&note, &tables, ExiOptions::strict(), HeaderConfig::default())?;
+//! let back: Note = rexi_serde::from_exi(&bytes, &tables, Some(ExiOptions::strict()))?;
+//! assert_eq!(back, note);
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
 //! The schema drives the mapping, so plain `#[derive(Serialize, Deserialize)]`
@@ -82,10 +106,16 @@ pub use error::{Error, Result};
 
 /// Serializes `value` as an EXI stream. The root element is picked from the
 /// value's type name.
+///
+/// # Errors
+///
+/// [`Error::Message`] when the value does not fit the schema (no matching
+/// element, attribute or type) or its `Serialize` impl fails, and [`Error::Exi`]
+/// when the encoder refuses an event or a value.
 pub fn to_exi<T: Serialize + ?Sized, G: GrammarTables>(
     value: &T,
     tables: G,
-    options: &ExiOptions,
+    options: ExiOptions,
     header: HeaderConfig,
 ) -> Result<Vec<u8>> {
     to_writer(Vec::new(), value, tables, options, header, None)
@@ -93,11 +123,15 @@ pub fn to_exi<T: Serialize + ?Sized, G: GrammarTables>(
 
 /// Like [`to_exi`], with the root element named explicitly (`local` or
 /// `{uri}local`) instead of taken from the value's type name.
+///
+/// # Errors
+///
+/// The same as [`to_exi`].
 pub fn to_exi_root<T: Serialize + ?Sized, G: GrammarTables>(
     value: &T,
     root: &str,
     tables: G,
-    options: &ExiOptions,
+    options: ExiOptions,
     header: HeaderConfig,
 ) -> Result<Vec<u8>> {
     to_writer(Vec::new(), value, tables, options, header, Some(root))
@@ -109,22 +143,32 @@ pub fn to_exi_root<T: Serialize + ?Sized, G: GrammarTables>(
 ///
 /// The value is first turned into an in-memory tree, so that attributes can be
 /// put in grammar order before anything is written.
+///
+/// # Errors
+///
+/// The same as [`to_exi`], and [`Error::Exi`] when writing to `writer` fails.
 pub fn to_writer<W: ByteSink, T: Serialize + ?Sized, G: GrammarTables>(
     writer: W,
     value: &T,
     tables: G,
-    options: &ExiOptions,
+    options: ExiOptions,
     header: HeaderConfig,
     root: Option<&str>,
 ) -> Result<W> {
     let item = ser::to_item(value)?;
-    let mut enc = Encoder::new(writer, tables, options.clone(), header)?;
+    let mut enc = Encoder::new(writer, tables, options, header)?;
     write::write_document(&mut enc, &item, root)?;
     Ok(enc.finish()?)
 }
 
 /// Deserializes a `T` from an EXI stream. `out_of_band` gives the options when
 /// the header does not carry them. Uses the default [`DecodeLimits`].
+///
+/// # Errors
+///
+/// [`Error::Exi`] when the stream cannot be decoded (see
+/// [`Decoder::next_event`](rexi_core::Decoder::next_event)), and
+/// [`Error::Message`] when its content does not fit `T`.
 pub fn from_exi<T: DeserializeOwned, G: GrammarTables>(
     bytes: &[u8],
     tables: G,
@@ -134,6 +178,10 @@ pub fn from_exi<T: DeserializeOwned, G: GrammarTables>(
 }
 
 /// Like [`from_exi`], with the given limits on what the stream may ask for.
+///
+/// # Errors
+///
+/// The same as [`from_exi`].
 pub fn from_exi_with_limits<T: DeserializeOwned, G: GrammarTables>(
     bytes: &[u8],
     tables: G,
@@ -146,6 +194,10 @@ pub fn from_exi_with_limits<T: DeserializeOwned, G: GrammarTables>(
 /// Deserializes a `T` from an EXI stream read from `reader`. The whole document is
 /// decoded into an element tree first, then `T` is built from the tree. Uses the
 /// default [`DecodeLimits`].
+///
+/// # Errors
+///
+/// The same as [`from_exi`], and [`Error::Exi`] when reading fails.
 pub fn from_reader<R: ByteSource, T: DeserializeOwned, G: GrammarTables>(
     reader: R,
     tables: G,
@@ -159,6 +211,10 @@ pub fn from_reader<R: ByteSource, T: DeserializeOwned, G: GrammarTables>(
 /// The default depth limit (256) also keeps the deserializer, which walks the
 /// tree by recursion, well inside the stack. With a much higher limit, a very
 /// deep document can need a bigger stack.
+///
+/// # Errors
+///
+/// The same as [`from_reader`].
 pub fn from_reader_with_limits<R: ByteSource, T: DeserializeOwned, G: GrammarTables>(
     reader: R,
     tables: G,

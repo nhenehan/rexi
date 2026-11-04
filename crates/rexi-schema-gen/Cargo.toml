@@ -6,8 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-keywords.workspace = true
-categories.workspace = true
+keywords = ["exi", "xsd", "codegen", "schema", "no-std"]
+categories = ["encoding", "development-tools::build-utils", "command-line-utilities"]
 readme = "../../README.md"
 description = "Generates static Rust grammar tables from XSD (gSOAP-style codegen)"
 

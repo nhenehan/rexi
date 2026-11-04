@@ -125,8 +125,8 @@ fn hex(bytes: &[u8]) -> String {
 fn round_trip_matches_xml_encoding() {
     let t = tables();
     let bytes =
-        to_exi(&drawing(), &t, &opts(), HeaderConfig::default()).unwrap_or_else(|e| panic!("{e}"));
-    let via_xml = rexi_xml::encode_xml(XML.as_bytes(), &t, &opts(), HeaderConfig::default())
+        to_exi(&drawing(), &t, opts(), HeaderConfig::default()).unwrap_or_else(|e| panic!("{e}"));
+    let via_xml = rexi_xml::encode_xml(XML.as_bytes(), &t, opts(), HeaderConfig::default())
         .unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(bytes, via_xml);
     assert_eq!(hex(&bytes), EXIFICIENT_DRAWING);
@@ -168,12 +168,12 @@ fn xsi_nil_writes_and_reads_as_none() {
         small: 0,
     };
     let bytes =
-        to_exi(&value, &t, &opts(), HeaderConfig::default()).unwrap_or_else(|e| panic!("{e}"));
+        to_exi(&value, &t, opts(), HeaderConfig::default()).unwrap_or_else(|e| panic!("{e}"));
     let xml = r#"<Drawing xmlns="urn:t" xmlns:t="urn:t"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" a="-1">
       <Shape xsi:type="t:Shape"><Label>s</Label></Shape><Counts></Counts><Blob></Blob>
       <Note xsi:nil="true"/><When>2026-01-01</When><Big>0</Big><Small>0</Small></Drawing>"#;
-    let via_xml = rexi_xml::encode_xml(xml.as_bytes(), &t, &opts(), HeaderConfig::default())
+    let via_xml = rexi_xml::encode_xml(xml.as_bytes(), &t, opts(), HeaderConfig::default())
         .unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(bytes, via_xml);
     assert_eq!(hex(&bytes), EXIFICIENT_NIL);
@@ -191,7 +191,7 @@ fn explicit_root_name() {
     }
     let t = tables();
     // The type name does not match a global element...
-    let err = to_exi(&Anything { a: 1 }, &t, &opts(), HeaderConfig::default());
+    let err = to_exi(&Anything { a: 1 }, &t, opts(), HeaderConfig::default());
     assert!(
         matches!(&err, Err(Error::Message(m)) if m.contains("no global element named Anything")),
         "{err:?}"
@@ -201,7 +201,7 @@ fn explicit_root_name() {
         &Anything { a: 1 },
         "{urn:t}Drawing",
         &t,
-        &opts(),
+        opts(),
         HeaderConfig::default(),
     );
     assert!(
@@ -222,7 +222,7 @@ fn values_that_do_not_fit_are_reported() {
     let err = to_exi(
         &MissingRequiredAttribute { b: "x".into() },
         &t,
-        &opts(),
+        opts(),
         HeaderConfig::default(),
     );
     assert!(
@@ -243,7 +243,7 @@ fn values_that_do_not_fit_are_reported() {
             bogus: "x".into(),
         },
         &t,
-        &opts(),
+        opts(),
         HeaderConfig::default(),
     );
     assert!(
@@ -255,7 +255,7 @@ fn values_that_do_not_fit_are_reported() {
         when: "not-a-date".into(),
         ..drawing()
     };
-    let err = to_exi(&bad_date, &t, &opts(), HeaderConfig::default());
+    let err = to_exi(&bad_date, &t, opts(), HeaderConfig::default());
     assert!(
         matches!(err, Err(Error::Exi(ExiError::Value { .. }))),
         "{err:?}"
@@ -265,7 +265,7 @@ fn values_that_do_not_fit_are_reported() {
 #[test]
 fn schema_less_is_rejected() {
     let empty = GrammarSetBuf::default();
-    let err = to_exi(&drawing(), &empty, &opts(), HeaderConfig::default());
+    let err = to_exi(&drawing(), &empty, opts(), HeaderConfig::default());
     assert!(
         matches!(
             err,

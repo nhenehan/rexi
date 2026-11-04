@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Strict and bit-packed, with the options agreed outside the stream: the
     // smallest output, with a header of a single byte.
     let options = ExiOptions::strict();
-    let exi = rexi_xml::encode_xml(&xml, &tables, &options, HeaderConfig::default())?;
+    let exi = rexi_xml::encode_xml(&xml, &tables, options.clone(), HeaderConfig::default())?;
 
     println!("XML: {} bytes", xml.len());
     println!("EXI: {} bytes", exi.len());

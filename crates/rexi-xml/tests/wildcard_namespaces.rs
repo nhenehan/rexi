@@ -49,7 +49,7 @@ fn attribute_wildcard_uris_join_the_uri_partition() {
     let bytes = rexi_xml::encode_xml(
         XML.as_bytes(),
         &t,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     )
     .unwrap_or_else(|e| panic!("{e}"));

@@ -23,11 +23,16 @@ where
     let tables = rexi_schema::compile_str(XSD, None).unwrap_or_else(|e| panic!("{e}"));
     let opts = ExiOptions::strict();
     let value = F { f: x, d: x };
-    let exi = rexi_serde::to_exi_root(&value, "F", &tables, &opts, HeaderConfig::default())
+    let exi = rexi_serde::to_exi_root(&value, "F", &tables, opts.clone(), HeaderConfig::default())
         .unwrap_or_else(|e| panic!("{x:?}: {e}"));
     let xml = format!("<F><f>{text}</f><d>{text}</d></F>");
-    let from_xml = rexi_xml::encode_xml(xml.as_bytes(), &tables, &opts, HeaderConfig::default())
-        .unwrap_or_else(|e| panic!("{e}"));
+    let from_xml = rexi_xml::encode_xml(
+        xml.as_bytes(),
+        &tables,
+        opts.clone(),
+        HeaderConfig::default(),
+    )
+    .unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(exi, from_xml, "{x:?}");
     let back: F<T> =
         rexi_serde::from_exi(&exi, &tables, Some(opts)).unwrap_or_else(|e| panic!("{e}"));

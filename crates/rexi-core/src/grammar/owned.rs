@@ -10,7 +10,7 @@ use crate::prelude::*;
 
 /// Owned grammar tables. Each field holds the same data as the field of the same
 /// name in [`GrammarSet`].
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GrammarSetBuf {
     /// String pool. See [`GrammarSet`] for the meaning.
     pub strings: Vec<String>,
@@ -54,7 +54,17 @@ impl GrammarSetBuf {
     }
 
     /// Gives the tables a `schemaId`, which a decoder checks the stream's against
-    /// ([`check_schema_id`](crate::header::check_schema_id)).
+    /// (see [`ExiError::SchemaIdMismatch`](crate::ExiError::SchemaIdMismatch)).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
+    /// use rexi_core::{GrammarSetBuf, GrammarTables};
+    ///
+    /// let tables = GrammarSetBuf::from_set(&OPTIONS_GRAMMARS).with_schema_id("urn:example:v1");
+    /// assert_eq!(tables.schema_id(), Some("urn:example:v1"));
+    /// ```
     pub fn with_schema_id(mut self, id: impl Into<String>) -> Self {
         self.schema_id = Some(id.into());
         self

@@ -18,9 +18,9 @@ dependencies, pinned to the release tag:
 
 ```toml
 [dependencies]
-rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" }
-rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" }
-rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.1.0" }
+rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
+rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
+rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
 ```
 
 ## Run the examples

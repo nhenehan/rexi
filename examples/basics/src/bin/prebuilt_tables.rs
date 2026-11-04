@@ -32,8 +32,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("compiling the XSD took {:?}", start.elapsed());
 
     let prebuilt = &order_tables::GRAMMARS;
-    let a = rexi_xml::encode_xml(&xml, &compiled, &options, HeaderConfig::default())?;
-    let b = rexi_xml::encode_xml(&xml, prebuilt, &options, HeaderConfig::default())?;
+    let a = rexi_xml::encode_xml(&xml, &compiled, options.clone(), HeaderConfig::default())?;
+    let b = rexi_xml::encode_xml(&xml, prebuilt, options.clone(), HeaderConfig::default())?;
     println!("EXI: {} bytes", b.len());
     println!("same bytes with compiled and prebuilt tables: {}", a == b);
 

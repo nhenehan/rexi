@@ -70,16 +70,32 @@ use xsd::model::Model;
 ///
 /// Includes and imports may only read files under the main files' folders; see
 /// [`compile_files_with`] to change that.
-pub fn compile_files(paths: &[&Path]) -> Result<GrammarSetBuf, SchemaError> {
+///
+/// # Errors
+///
+/// [`SchemaError::Io`] or [`SchemaError::Refused`] when a file cannot or may not
+/// be read, [`SchemaError::Xml`] when one is not well-formed XML,
+/// [`SchemaError::Invalid`] for a schema that breaks the rules,
+/// [`SchemaError::Unsupported`] for a construct this compiler does not do, and
+/// [`SchemaError::TooLarge`] when a content model grows too big.
+pub fn compile_files<P: AsRef<Path>>(
+    paths: impl IntoIterator<Item = P>,
+) -> Result<GrammarSetBuf, SchemaError> {
     compile_files_with(paths, &SchemaLoadOptions::default())
 }
 
 /// [`compile_files`] with the given rules for reading schema files.
-pub fn compile_files_with(
-    paths: &[&Path],
+///
+/// # Errors
+///
+/// The same as [`compile_files`].
+pub fn compile_files_with<P: AsRef<Path>>(
+    paths: impl IntoIterator<Item = P>,
     options: &SchemaLoadOptions,
 ) -> Result<GrammarSetBuf, SchemaError> {
-    let model = load_files_with(paths, options)?;
+    let paths: Vec<P> = paths.into_iter().collect();
+    let paths: Vec<&Path> = paths.iter().map(AsRef::as_ref).collect();
+    let model = load_files_with(&paths, options)?;
     proto::emit::emit_with(&model, options.max_grammar_size)
 }
 
@@ -87,11 +103,19 @@ pub fn compile_files_with(
 /// given as relative paths. They may only read files under `base_dir`; with no
 /// `base_dir`, the schema may not include or import files at all. See
 /// [`compile_str_with`] to change that.
+///
+/// # Errors
+///
+/// The same as [`compile_files`].
 pub fn compile_str(xsd: &str, base_dir: Option<&Path>) -> Result<GrammarSetBuf, SchemaError> {
     compile_str_with(xsd, base_dir, &SchemaLoadOptions::default())
 }
 
 /// [`compile_str`] with the given rules for reading schema files.
+///
+/// # Errors
+///
+/// The same as [`compile_files`].
 pub fn compile_str_with(
     xsd: &str,
     base_dir: Option<&Path>,

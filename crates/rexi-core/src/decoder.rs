@@ -42,7 +42,7 @@ enum Step {
 
 /// Decodes an EXI stream from the byte source `R` into [`Event`]s, using the
 /// grammar tables `G`.
-pub struct Decoder<R: ByteSource, G: GrammarTables> {
+pub struct Decoder<R, G> {
     inp: BitReader<R>,
     tables: G,
     options: ExiOptions,
@@ -65,20 +65,70 @@ pub struct Decoder<R: ByteSource, G: GrammarTables> {
     string_bytes: u64,
 }
 
+/// Shows the options and how far decoding has got, not the tables or buffers.
+impl<R: ByteSource, G: GrammarTables> core::fmt::Debug for Decoder<R, G> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Decoder")
+            .field("options", &self.options)
+            .field("bit_position", &self.bit_position())
+            .field("depth", &self.frames.len())
+            .finish_non_exhaustive()
+    }
+}
+
 impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     /// Reads the EXI header ([EXI 5](https://www.w3.org/TR/exi/#header)). Options
     /// found in the stream win over `out_of_band`. If the stream has none,
     /// `out_of_band` must be given. The options' `schemaId` must name `tables`
-    /// (see [`header::check_schema_id`]).
+    /// (see [`ExiError::SchemaIdMismatch`] for the rule).
     ///
     /// Uses the safe [`DecodeLimits::default`]. Call [`Decoder::with_limits`] to
     /// pick others.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the header is bad or cut short ([`ExiError::Header`],
+    /// [`ExiError::Truncated`]), when the stream carries no options and `out_of_band`
+    /// is `None`, when the options ask for something this codec does not do
+    /// ([`ExiError::Unsupported`]), or when the stream's `schemaId` does not name
+    /// `tables` ([`ExiError::SchemaIdMismatch`]).
     pub fn new(input: R, tables: G, out_of_band: Option<ExiOptions>) -> ExiResult<Self> {
         Self::with_limits(input, tables, out_of_band, DecodeLimits::default())
     }
 
     /// Like [`Decoder::new`], with the given limits on what the stream may ask
     /// for. See [`DecodeLimits`].
+    ///
+    /// # Errors
+    ///
+    /// The same as [`Decoder::new`].
+    ///
+    /// # Examples
+    ///
+    /// Decodes with tighter limits than the defaults, for input from a network.
+    ///
+    /// ```
+    /// use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
+    /// use rexi_core::{DecodeLimits, Decoder, Encoder, ExiOptions, HeaderConfig};
+    ///
+    /// # const EXI: &str = "http://www.w3.org/2009/exi";
+    /// # let mut enc = Encoder::new(Vec::new(), &OPTIONS_GRAMMARS, ExiOptions::strict(), HeaderConfig::default())?;
+    /// # enc.start_document()?;
+    /// # enc.start_element(EXI, "header")?;
+    /// # enc.end_element()?;
+    /// # enc.end_document()?;
+    /// # let bytes = enc.finish()?;
+    /// let limits = DecodeLimits::default()
+    ///     .with_max_depth(Some(16))
+    ///     .with_max_string_bytes(Some(64 * 1024));
+    /// let mut dec = Decoder::with_limits(&bytes[..], &OPTIONS_GRAMMARS, Some(ExiOptions::strict()), limits)?;
+    /// let mut events = 0;
+    /// while dec.next_event()?.is_some() {
+    ///     events += 1;
+    /// }
+    /// assert_eq!(events, 4); // SD, SE(header), EE, ED
+    /// # Ok::<(), rexi_core::ExiError>(())
+    /// ```
     pub fn with_limits(
         input: R,
         tables: G,
@@ -153,18 +203,13 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
         &self.options
     }
 
-    /// What the header said.
-    pub fn header(&self) -> &HeaderInfo {
-        &self.header
-    }
-
     /// Number of bits read so far, header included (if there was one).
     pub fn bit_position(&self) -> u64 {
         self.inp.bit_position()
     }
 
     /// Gives back the bit reader, for example to read what follows the EXI body.
-    pub fn into_reader(self) -> BitReader<R> {
+    pub(crate) fn into_reader(self) -> BitReader<R> {
         self.inp
     }
 
@@ -172,6 +217,14 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     ///
     /// Inlined, so the event is built where the caller uses it instead of being
     /// copied out through memory.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the stream does not follow the grammar ([`ExiError::Grammar`]),
+    /// holds a value its datatype does not allow ([`ExiError::Value`]), ends too
+    /// soon ([`ExiError::Truncated`]), needs a feature this codec does not do
+    /// ([`ExiError::Unsupported`]), or goes over one of the [`DecodeLimits`]
+    /// ([`ExiError::LimitExceeded`]).
     #[inline]
     pub fn next_event(&mut self) -> ExiResult<Option<Event<'_>>> {
         let step = self.step()?;
@@ -189,10 +242,10 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             Step::Ed => Event::EndDocument,
             Step::Se(q) => Event::StartElement(qn(q)),
             Step::Ee => Event::EndElement,
-            Step::At(q) => Event::Attribute(qn(q), self.value.as_value()),
+            Step::At(q) => Event::Attribute(qn(q), self.value.to_value()),
             Step::XsiType(q) => Event::XsiType(qn(q)),
             Step::XsiNil(b) => Event::XsiNil(b),
-            Step::Ch => Event::Characters(self.value.as_value()),
+            Step::Ch => Event::Characters(self.value.to_value()),
             Step::Done => return None,
         })
     }
@@ -512,12 +565,20 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
 
     /// Formats a value in the standard text form (the XML Schema "canonical lexical"
     /// form) of `kind`.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Value`] when `value` is not a value of `kind`.
     pub fn format(&self, kind: DatatypeKind, value: &crate::value::Value<'_>) -> ExiResult<String> {
         lexical::format_value(kind, value, &self.tables)
     }
 
     /// Formats the value of the most recent `Attribute`/`Characters` event, using
     /// its datatype (untyped if there was none yet).
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Value`] when `value` is not a value of that datatype.
     pub fn format_last(&self, value: &crate::value::Value<'_>) -> ExiResult<String> {
         let kind = self.last_datatype().unwrap_or(DatatypeKind::Untyped);
         lexical::format_value(kind, value, &self.tables)

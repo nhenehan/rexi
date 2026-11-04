@@ -7,7 +7,7 @@ use crate::error::{ExiError, ExiResult};
 /// It can work bit-packed or byte-aligned (see the module docs). It pulls one byte at
 /// a time from the source and hands out its bits as callers ask for them.
 #[derive(Debug)]
-pub struct BitReader<R: ByteSource> {
+pub struct BitReader<R> {
     inner: R,
     /// The unread bits of the current byte, right-aligned: they sit in the low
     /// `pending_len` bits, the next bit to read is the highest of them, and every bit

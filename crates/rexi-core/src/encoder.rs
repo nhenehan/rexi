@@ -39,6 +39,7 @@ use crate::value::Value;
 
 /// One event code that was written, as recorded with the `trace` feature.
 #[cfg(feature = "trace")]
+#[cfg_attr(docsrs, doc(cfg(feature = "trace")))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TraceEntry {
     /// Bit position of the stream where the event code starts.
@@ -53,7 +54,7 @@ pub struct TraceEntry {
 
 /// Encodes a stream of [`Event`]s into EXI, using the grammar tables `G` and
 /// writing to the byte sink `W`.
-pub struct Encoder<W: ByteSink, G: GrammarTables> {
+pub struct Encoder<W, G> {
     out: BitWriter<W>,
     tables: G,
     options: ExiOptions,
@@ -68,9 +69,54 @@ pub struct Encoder<W: ByteSink, G: GrammarTables> {
     trace: Vec<TraceEntry>,
 }
 
+/// Shows the options and how far encoding has got, not the tables or buffers.
+impl<W: ByteSink, G: GrammarTables> core::fmt::Debug for Encoder<W, G> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Encoder")
+            .field("options", &self.options)
+            .field("bit_position", &self.bit_position())
+            .field("depth", &self.frames.len())
+            .finish_non_exhaustive()
+    }
+}
+
 impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// Creates an encoder and writes the EXI header
     /// ([EXI 5](https://www.w3.org/TR/exi/#header)) right away.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the options ask for something this codec does not do
+    /// ([`ExiError::Unsupported`], see [`ExiOptions::validate`]), or when writing the
+    /// header to `out` fails ([`ExiError::Io`]).
+    ///
+    /// # Examples
+    ///
+    /// Encodes `<header><strict/></header>` against the EXI Options grammar that
+    /// ships with the crate. Tables for your own schema come from `rexi-schema` or
+    /// `rexi-schema-gen`.
+    ///
+    /// ```
+    /// use rexi_core::grammar::options_grammar::OPTIONS_GRAMMARS;
+    /// use rexi_core::{Encoder, ExiOptions, HeaderConfig};
+    ///
+    /// const EXI: &str = "http://www.w3.org/2009/exi";
+    /// let mut enc = Encoder::new(
+    ///     Vec::new(),
+    ///     &OPTIONS_GRAMMARS,
+    ///     ExiOptions::strict(),
+    ///     HeaderConfig::default(),
+    /// )?;
+    /// enc.start_document()?;
+    /// enc.start_element(EXI, "header")?;
+    /// enc.start_element(EXI, "strict")?;
+    /// enc.end_element()?;
+    /// enc.end_element()?;
+    /// enc.end_document()?;
+    /// let bytes = enc.finish()?;
+    /// assert!(!bytes.is_empty());
+    /// # Ok::<(), rexi_core::ExiError>(())
+    /// ```
     pub fn new(out: W, tables: G, options: ExiOptions, header: HeaderConfig) -> ExiResult<Self> {
         options.validate()?;
         let mut writer = BitWriter::new(out);
@@ -136,12 +182,18 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Every event code written so far (only with the `trace` feature).
     #[cfg(feature = "trace")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "trace")))]
     pub fn trace(&self) -> &[TraceEntry] {
         &self.trace
     }
 
     /// Finishes the stream: pads the last byte and returns the inner writer. Fails
     /// if `EndDocument` has not been pushed yet.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] before `EndDocument`, and with
+    /// [`ExiError::Io`] when writing the last byte fails.
     pub fn finish(self) -> ExiResult<W> {
         if self.cursor != Cursor::Done {
             return Err(ExiError::Grammar {
@@ -154,6 +206,7 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Returns the bit writer without finishing (for putting a body inside a larger
     /// stream).
+    #[doc(hidden)]
     pub fn into_writer(self) -> BitWriter<W> {
         self.out
     }
@@ -161,6 +214,13 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// Encodes one event. Events that strict mode does not allow (namespace
     /// declarations, comments, PIs, DOCTYPE, entity references, self-contained) are
     /// refused as unsupported features.
+    ///
+    /// # Errors
+    ///
+    /// The errors of the method for the event's kind ([`Encoder::start_element`],
+    /// [`Encoder::attribute`], [`Encoder::characters`], ...). An event kind that
+    /// strict EXI cannot carry (a comment, a namespace declaration, ...) fails with
+    /// [`ExiError::Unsupported`].
     pub fn push(&mut self, ev: &Event<'_>) -> ExiResult<()> {
         match ev {
             Event::StartDocument => self.start_document(),
@@ -181,6 +241,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     }
 
     /// Starts the document (`SD`). Must be the first event.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when the document has already started.
     pub fn start_document(&mut self) -> ExiResult<()> {
         if self.cursor != Cursor::Document {
             return Err(self.mismatch("SD"));
@@ -194,6 +258,11 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Ends the document (`ED`) after the root element has ended. Call
     /// [`Encoder::finish`] afterwards to write the last partial byte.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] while the root element is still open, and
+    /// with the errors of [`Encoder::characters`] for text still held back.
     pub fn end_document(&mut self) -> ExiResult<()> {
         self.flush_chars(false)?;
         if self.cursor != Cursor::DocEnd {
@@ -206,6 +275,14 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Starts element `{uri}local` (`SE`). The name is looked up in the tables; a name
     /// the schema does not allow at this point is refused.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when the grammar does not allow this element
+    /// here, and with [`ExiError::Unsupported`] when only a wildcard would allow it.
+    /// Text still held back is written first, so the errors of
+    /// [`Encoder::characters`] may come from here too. On a write error,
+    /// [`ExiError::Io`].
     pub fn start_element(&mut self, uri: &str, local: &str) -> ExiResult<()> {
         let qname = self.tables.find_qname(uri, local);
         self.start_element_resolved(qname, Some((uri, local)))
@@ -213,6 +290,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// [`Encoder::start_element`] for a qname already looked up in this encoder's
     /// tables (for example a generated `LN_*` constant), so no lookup is needed.
+    ///
+    /// # Errors
+    ///
+    /// The same as [`Encoder::start_element`].
     pub fn start_element_id(&mut self, qname: QNameId) -> ExiResult<()> {
         self.start_element_resolved(Some(qname), None)
     }
@@ -298,6 +379,12 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// Encodes an attribute: the `AT(qname)` event code, then its value in the
     /// attribute's datatype. An `xml:space` attribute is also tracked for the
     /// whitespace rules in `flush_chars`.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when the grammar does not allow this
+    /// attribute here, and with [`ExiError::Value`] when `value` does not fit the
+    /// attribute's datatype. On a write error, [`ExiError::Io`].
     pub fn attribute(&mut self, uri: &str, local: &str, value: &Value<'_>) -> ExiResult<()> {
         let qname = self.tables.find_qname(uri, local);
         let xml_space = uri == crate::grammar::ir::well_known::XML_NS && local == "space";
@@ -306,6 +393,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// [`Encoder::attribute`] for a qname already looked up in this encoder's
     /// tables (for example a generated `LN_*` constant), so no lookup is needed.
+    ///
+    /// # Errors
+    ///
+    /// The same as [`Encoder::attribute`].
     pub fn attribute_id(&mut self, qname: QNameId, value: &Value<'_>) -> ExiResult<()> {
         let xml_space = qname.uri == crate::string_table::XML_NS_URI_ID
             && self.tables.local_name_str(qname) == Some("space")
@@ -363,6 +454,13 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// name as a QName ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)). The
     /// element then goes on with the named type's grammar
     /// ([EXI 8.5.4.4.2](https://www.w3.org/TR/exi/#addingProductionsStrict)).
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when `xsi:type` is not allowed here (it must
+    /// come right after the start tag, on an element whose type can be cast), and
+    /// with [`ExiError::Schema`] when the tables have no type of that name. On a
+    /// write error, [`ExiError::Io`].
     pub fn xsi_type(&mut self, uri: &str, local: &str) -> ExiResult<()> {
         self.flush_chars(false)?;
         let frame = self.top()?;
@@ -411,6 +509,12 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// true, the element switches to its type's `TypeEmpty` grammar, which allows
     /// only attributes and then `EE`
     /// ([EXI 8.5.4.4.2](https://www.w3.org/TR/exi/#addingProductionsStrict)).
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when `xsi:nil` is not allowed here (it must
+    /// come right after the start tag, or after `xsi:type`, on a nillable element).
+    /// On a write error, [`ExiError::Io`].
     pub fn xsi_nil(&mut self, nil: bool) -> ExiResult<()> {
         self.flush_chars(false)?;
         let frame = self.top()?;
@@ -439,6 +543,13 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Adds character data. Text values are held in a buffer (see `flush_chars`);
     /// typed values are written right away.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when the grammar allows no text here, and
+    /// with [`ExiError::Value`] when the text does not fit the datatype. Text given
+    /// as [`Value::Lexical`] or [`Value::String`] is held back until the next event,
+    /// so for it these errors come from that next call.
     pub fn characters(&mut self, value: &Value<'_>) -> ExiResult<()> {
         match value {
             Value::Lexical(s) | Value::String(s) => {
@@ -455,6 +566,13 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
 
     /// Encodes `EE` and closes the innermost element. Closing the root moves the
     /// document to `DocEnd`, where only `ED` may follow.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ExiError::Grammar`] when the element may not end yet (a required
+    /// child or attribute is missing), and with the errors of
+    /// [`Encoder::characters`] for text still held back. On a write error,
+    /// [`ExiError::Io`].
     pub fn end_element(&mut self) -> ExiResult<()> {
         self.flush_chars(true)?;
         let frame = self.top()?;

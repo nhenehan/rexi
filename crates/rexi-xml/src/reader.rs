@@ -21,7 +21,6 @@
 //! values point into scratch buffers that are reused from one element to the
 //! next, so after the first few elements parsing allocates nothing.
 
-use std::io::Write;
 use std::ops::Range;
 
 use quick_xml::escape::unescape;
@@ -30,13 +29,20 @@ use quick_xml::name::{PrefixDeclaration, QName};
 use quick_xml::reader::Reader;
 use rexi_core::event::Event as ExiEvent;
 use rexi_core::grammar::well_known::XSI_NS;
+use rexi_core::io::ByteSink;
 use rexi_core::value::Value;
 use rexi_core::{Encoder, GrammarTables, OwnedEvent, OwnedValue, QName as ExiQName};
 
-use crate::{Result, XmlError};
+use crate::{Result, XmlError, XmlSyntaxError, syntax};
 
 /// Parses a whole XML document into owned events: `SD`, the element tree, `ED`.
 /// The whole list is held in memory.
+///
+/// # Errors
+///
+/// [`XmlError::Syntax`] when the XML is not well-formed, and
+/// [`XmlError::Unsupported`] for XML this front end does not handle (a DOCTYPE,
+/// an undeclared prefix, an attribute given twice, ...).
 pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
     let mut events = Vec::new();
     parse_into(xml, |ev| {
@@ -51,19 +57,24 @@ pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
 ///
 /// Only one element's attributes are held at a time, because they must be sorted
 /// before they are sent.
-pub fn push_xml<W: Write, G: GrammarTables>(xml: &[u8], enc: &mut Encoder<W, G>) -> Result<()> {
+///
+/// # Errors
+///
+/// The errors of [`parse_events`], and [`XmlError::Exi`] when the encoder
+/// refuses an event or a value.
+pub fn push_xml<W: ByteSink, G: GrammarTables>(xml: &[u8], enc: &mut Encoder<W, G>) -> Result<()> {
     parse_into(xml, |ev| enc.push(ev).map_err(XmlError::from))
 }
 
-/// Borrows an event for the encoder, with text values turned into
+/// An event for the encoder (see [`OwnedEvent::to_event`]), with text values turned into
 /// [`Value::Lexical`]. That way the grammar's datatype decides how the text is
 /// parsed. A `Value::String` would be rejected where the grammar wants a boolean
 /// or an integer. Values that are not strings pass through as they are.
-pub fn as_lexical_event(ev: &OwnedEvent) -> ExiEvent<'_> {
+pub fn to_lexical_event(ev: &OwnedEvent) -> ExiEvent<'_> {
     fn lexical(v: &OwnedValue) -> Value<'_> {
         match v {
             OwnedValue::String(s) => Value::Lexical(s),
-            other => other.as_value(),
+            other => other.to_value(),
         }
     }
     match ev {
@@ -71,7 +82,7 @@ pub fn as_lexical_event(ev: &OwnedEvent) -> ExiEvent<'_> {
             ExiEvent::Attribute(ExiQName::new(uri, local), lexical(value))
         }
         OwnedEvent::Characters(value) => ExiEvent::Characters(lexical(value)),
-        other => other.as_event(),
+        other => other.to_event(),
     }
 }
 
@@ -206,7 +217,7 @@ fn push_attribute_value(out: &mut String, raw: &str) -> Result<()> {
         }
     }
     if out[start..].contains('&') {
-        let unescaped = unescape(&out[start..])?.into_owned();
+        let unescaped = unescape(&out[start..]).map_err(syntax)?.into_owned();
         out.truncate(start);
         out.push_str(&unescaped);
     }
@@ -218,7 +229,7 @@ fn push_attribute_value(out: &mut String, raw: &str) -> Result<()> {
 /// `&apos;`, `&quot;`) are known. Any other entity would need a DTD, which strict
 /// EXI can not carry.
 fn push_reference(out: &mut String, r: &BytesRef<'_>) -> Result<()> {
-    if let Some(c) = r.resolve_char_ref()? {
+    if let Some(c) = r.resolve_char_ref().map_err(syntax)? {
         out.push(c);
         return Ok(());
     }
@@ -229,7 +240,7 @@ fn push_reference(out: &mut String, r: &BytesRef<'_>) -> Result<()> {
         "apos" => out.push('\''),
         "quot" => out.push('"'),
         // Gives quick-xml's own error for the unknown entity.
-        other => out.push_str(&unescape(&format!("&{other};"))?),
+        other => out.push_str(&unescape(&format!("&{other};")).map_err(syntax)?),
     }
     Ok(())
 }
@@ -286,7 +297,7 @@ fn read_start_tag(
     // quick-xml's duplicate check allocates for every tag; duplicates are
     // caught after sorting instead (see `push_attributes`).
     for attr in start.attributes().with_checks(false) {
-        let attr = attr?;
+        let attr = attr.map_err(syntax)?;
         match attr.key.as_namespace_binding() {
             Some(PrefixDeclaration::Default) => ns.bind("", &attr.value)?,
             Some(PrefixDeclaration::Named(prefix)) => ns.bind(prefix, &attr.value)?,
@@ -424,7 +435,9 @@ fn parse_into(xml: &[u8], mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>) -> 
 
     sink(&ExiEvent::StartDocument)?;
     loop {
-        let event = reader.read_event()?;
+        let event = reader
+            .read_event()
+            .map_err(|e| XmlError::Syntax(XmlSyntaxError::new(e, Some(reader.error_position()))))?;
         let empty = matches!(event, Event::Empty(_));
         match event {
             Event::Start(start) | Event::Empty(start) => {

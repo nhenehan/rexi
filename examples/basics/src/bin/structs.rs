@@ -77,14 +77,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // The root element's name comes from the struct's name, `Order`.
-    let exi = rexi_serde::to_exi(&order, &tables, &options, HeaderConfig::default())?;
+    let exi = rexi_serde::to_exi(&order, &tables, options.clone(), HeaderConfig::default())?;
     let xml = std::fs::read(data("order.xml"))?;
-    let from_xml = rexi_xml::encode_xml(&xml, &tables, &options, HeaderConfig::default())?;
+    let from_xml = rexi_xml::encode_xml(&xml, &tables, options.clone(), HeaderConfig::default())?;
     println!("EXI: {} bytes", exi.len());
     println!("same bytes as encoding order.xml: {}", exi == from_xml);
 
     let back: Order = rexi_serde::from_exi(&exi, &tables, Some(options.clone()))?;
-    let again = rexi_serde::to_exi(&back, &tables, &options, HeaderConfig::default())?;
+    let again = rexi_serde::to_exi(&back, &tables, options.clone(), HeaderConfig::default())?;
     println!("decodes and encodes to the same bytes: {}", again == exi);
 
     println!(

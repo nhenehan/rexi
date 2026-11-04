@@ -343,7 +343,7 @@ where
     let case = case(name);
     for profile in PROFILES {
         let expected = reference(&case, profile);
-        match rexi_serde::to_exi(value, tables, &(profile.options)(&case), profile.header) {
+        match rexi_serde::to_exi(value, tables, (profile.options)(&case), profile.header) {
             Ok(actual) if actual == expected => {}
             Ok(actual) => failures.push(describe_diff(
                 &format!("{name} {} to_exi", profile.name),

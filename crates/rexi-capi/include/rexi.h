@@ -712,7 +712,7 @@ struct RexiOptions rexi_options_strict(void);
 const char *rexi_last_error(void);
 
 /**
- * The library version, for example `"0.1.0"`. Never NULL. The string lives for
+ * The library version, for example `"0.2.0"`. Never NULL. The string lives for
  * the whole program; do not free it.
  */
 const char *rexi_version(void);

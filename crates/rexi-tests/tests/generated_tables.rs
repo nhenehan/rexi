@@ -168,7 +168,7 @@ fn transcode<D: GrammarTables, E: GrammarTables>(
     )
     .unwrap_or_else(|e| panic!("{e}"));
     for ev in &events {
-        enc.push(&ev.as_event())
+        enc.push(&ev.to_event())
             .unwrap_or_else(|e| panic!("encode: {e}"));
     }
     let mut out = enc.finish().unwrap_or_else(|e| panic!("{e}"));

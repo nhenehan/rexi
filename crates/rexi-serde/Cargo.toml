@@ -6,8 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-keywords.workspace = true
-categories.workspace = true
+keywords = ["exi", "xml", "serde", "binary", "no-std"]
+categories = ["encoding", "no-std", "embedded"]
 readme = "../../README.md"
 description = "Serde Serializer/Deserializer over the strict schema-informed EXI codec"
 

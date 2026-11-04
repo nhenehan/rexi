@@ -126,6 +126,15 @@ impl ExiOptions {
     }
 
     /// Sets the alignment.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rexi_core::{Alignment, ExiOptions};
+    ///
+    /// let options = ExiOptions::strict().with_alignment(Alignment::ByteAligned);
+    /// assert!(options.byte_aligned());
+    /// ```
     #[must_use]
     pub fn with_alignment(mut self, alignment: Alignment) -> Self {
         self.alignment = alignment;
@@ -138,6 +147,11 @@ impl ExiOptions {
     /// The spec rule checked here: `strict` may not be used with Preserve.dtd,
     /// prefixes, comments or pis (Preserve.lexicalValues is allowed). Every other
     /// refusal is a feature this codec does not support, including non-strict mode.
+    ///
+    /// # Errors
+    ///
+    /// [`ExiError::Header`] when the options break the spec's rule above, and
+    /// [`ExiError::Unsupported`] for a feature this codec does not do.
     pub fn validate(&self) -> ExiResult<()> {
         if self.compression {
             return Err(ExiError::Unsupported(Feature::Compression));

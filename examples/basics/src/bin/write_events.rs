@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let from_xml = rexi_xml::encode_xml(
         &xml,
         &tables,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     )?;
     println!("EXI: {} bytes", exi.len());

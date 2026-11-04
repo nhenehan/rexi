@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut streams = Vec::new();
     for (label, options, header) in cases {
-        let exi = rexi_xml::encode_xml(&xml, &tables, &options, header)?;
+        let exi = rexi_xml::encode_xml(&xml, &tables, options.clone(), header)?;
         println!(
             "{label:<28} {:>4} bytes  starts {}",
             exi.len(),

@@ -104,7 +104,7 @@ impl Codec {
         Ok(rexi_serde::to_exi(
             message,
             &self.tables,
-            &self.options,
+            self.options.clone(),
             HeaderConfig::default(),
         )?)
     }

@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let xml = std::fs::read(data("order.xml"))?;
     let options = ExiOptions::strict();
     let tables = &order_tables::GRAMMARS;
-    let exi = rexi_xml::encode_xml(&xml, tables, &options, HeaderConfig::default())?;
+    let exi = rexi_xml::encode_xml(&xml, tables, options.clone(), HeaderConfig::default())?;
 
     let mut big = [0u8; 256];
     let used = transcode(&exi, &mut big, &options)?;

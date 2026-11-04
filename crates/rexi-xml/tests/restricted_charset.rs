@@ -49,7 +49,7 @@ fn encode(t: &GrammarSetBuf, xml: &str) -> rexi_xml::Result<Vec<u8>> {
     rexi_xml::encode_xml(
         xml.as_bytes(),
         t,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     )
 }
@@ -74,7 +74,7 @@ fn assert_decode_refused(t: &GrammarSetBuf, bytes: &[u8], what: &str) {
 const SCALAR_STREAM: &[u8] = &[0x80, 0x00, 0x00, 0x00];
 
 fn encode_with(t: &GrammarSetBuf, xml: &str, o: &ExiOptions) -> rexi_xml::Result<Vec<u8>> {
-    rexi_xml::encode_xml(xml.as_bytes(), t, o, HeaderConfig::default())
+    rexi_xml::encode_xml(xml.as_bytes(), t, o.clone(), HeaderConfig::default())
 }
 
 fn byte_aligned() -> ExiOptions {

@@ -26,7 +26,7 @@ fn id_entry_points_reproduce_the_fixtures() {
             panic!("{}: encoder", case.name);
         };
         for ev in &events {
-            let ev = ev.as_event();
+            let ev = ev.to_event();
             let r = match &ev {
                 Event::StartElement(q) => match tables.find_qname(q.uri, q.local) {
                     Some(id) => enc.start_element_id(id),

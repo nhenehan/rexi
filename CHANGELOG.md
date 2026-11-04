@@ -1,7 +1,41 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
+- The API follows the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/).
+  These changes break code written for 0.1.0:
+  - `OwnedValue::as_value`, `OwnedEvent::as_event` and `rexi_xml::as_lexical_event`
+    are now `to_value`, `to_event` and `to_lexical_event`, because they may
+    allocate.
+  - `rexi_xml::encode_xml` and `rexi_serde::{to_exi, to_exi_root, to_writer}`
+    take `ExiOptions` by value.
+  - `XmlError::Xml(quick_xml::Error)` is now `XmlError::Syntax(XmlSyntaxError)`,
+    with the parser's message and the byte offset; quick-xml is no longer part
+    of the API. `XmlError` prints the inner error's text and returns no
+    `source()`, so error reporters do not print it twice.
+  - `DateTime::check` returns `ExiResult` instead of `Result<(), String>`.
+  - No longer public: `Decoder::header`, `Decoder::into_reader`, `Uint::write`,
+    `datatype::{read_scalar, write_scalar}`, the `BigUint` helpers for the codec
+    and `DateTime::normalize_hour24`; `BigUint::limbs` and
+    `BigUint::reverse_decimal_digits` are gone. `Encoder::into_writer` is
+    hidden. `rexi_schema_gen::screaming_snake` is private.
+- Other API changes, which keep 0.1.0 code working:
+  - `rexi_xml::push_xml` takes any `ByteSink` and the `decode_*` functions any
+    `ByteSource`, not only `std::io` types.
+  - `rexi_schema::compile_files` takes any list of paths
+    (`impl IntoIterator<Item = impl AsRef<Path>>`).
+  - New impls: `FromStr` for `Int`, `Uint`, `BigUint`, `Decimal` and `Float`;
+    `From<u128>` for `BigUint`; `From<Int>` and `From<Uint>` for `Decimal`;
+    `From<&Value>` for `OwnedValue`; `TryFrom<&Int>` for `i64` and
+    `TryFrom<&Uint>` for `u64`; `Eq` and `Hash` for `Value`, `OwnedValue`,
+    `Event` and `OwnedEvent`; `Debug` for `Encoder` and `Decoder`; `Default` for
+    `GrammarSet` and `WhiteSpace`; and more `Eq`, `Hash` and `Copy` derives.
+  - The struct definitions of `Encoder`, `Decoder`, `BitReader` and `BitWriter`
+    have no trait bounds; the bounds are on the impls.
+  - Every public function that can fail says how in an `# Errors` section, and
+    the crates have runnable examples.
+- Packaging: each crate has its own keywords and categories, carries the
+  LICENSE file, and docs.rs shows the `trace` feature's items.
 - Encoding from XML is about 40 % faster. The XML reader hands borrowed events
   straight to the encoder, reuses its buffers and resolves namespaces itself,
   so it no longer allocates for each element (a new test holds this). The
@@ -18,8 +52,7 @@
   equal the tables' id exactly, and tables with no id refuse a stream that names
   one. Tables compiled from XSD have no id: give them one with
   `GrammarSetBuf::with_schema_id`, `rexi_tables_with_schema_id`, or the CLI's
-  `--schema-id`. `header::check_schema_id` is the rule on its own. JExi
-  applies the same rule.
+  `--schema-id`. JExi applies the same rule.
 - Restricted character sets
   ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) are encoded
   and decoded instead of refused. `DatatypeKind::RestrictedString` gains an

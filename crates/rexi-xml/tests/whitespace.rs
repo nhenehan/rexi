@@ -37,14 +37,14 @@ fn whitespace_only_text_as_exificient() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/whitespace");
     let ws = dir.join("ws.xsd");
     let xml = dir.join("xml.xsd");
-    let tables = rexi_schema::compile_files(&[ws.as_path(), xml.as_path()])
-        .unwrap_or_else(|e| panic!("{e}"));
+    let tables =
+        rexi_schema::compile_files([ws.as_path(), xml.as_path()]).unwrap_or_else(|e| panic!("{e}"));
     let mut failures = Vec::new();
     for (doc, expected) in CASES {
         match rexi_xml::encode_xml(
             doc.as_bytes(),
             &tables,
-            &ExiOptions::strict(),
+            ExiOptions::strict(),
             HeaderConfig::default(),
         ) {
             Ok(bytes) => {
@@ -74,7 +74,7 @@ fn list_items_split_on_xml_spaces_only() {
     let bytes = rexi_xml::encode_xml(
         XML.as_bytes(),
         &tables,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     )
     .unwrap_or_else(|e| panic!("{e}"));
@@ -101,7 +101,7 @@ fn attribute_cr_lf_is_one_space_as_exificient() {
         let bytes = rexi_xml::encode_xml(
             xml.as_bytes(),
             &tables,
-            &ExiOptions::strict(),
+            ExiOptions::strict(),
             HeaderConfig::default(),
         )
         .unwrap_or_else(|e| panic!("{e}"));

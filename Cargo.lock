@@ -158,7 +158,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rexi-capi"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cbindgen",
  "rexi-core",
@@ -169,11 +169,11 @@ dependencies = [
 
 [[package]]
 name = "rexi-core"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "rexi-nostd-check"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rexi-core",
  "rexi-serde",
@@ -182,7 +182,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-schema"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rexi-core",
  "roxmltree",
@@ -190,7 +190,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-schema-gen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rexi-core",
  "rexi-schema",
@@ -198,7 +198,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-serde"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rexi-core",
  "rexi-schema",
@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rexi-core",
  "rexi-schema",
@@ -220,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-xml"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quick-xml",
  "rexi-core",

@@ -110,10 +110,10 @@ pub(crate) enum Input<'a> {
 }
 
 impl Input<'_> {
-    pub(crate) fn as_value(&self) -> Value<'_> {
+    pub(crate) fn to_value(&self) -> Value<'_> {
         match self {
             Input::Lexical(s) => Value::Lexical(s),
-            Input::Owned(v) => v.as_value(),
+            Input::Owned(v) => v.to_value(),
             Input::Bytes(b) => Value::Binary(b),
         }
     }

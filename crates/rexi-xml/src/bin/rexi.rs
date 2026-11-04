@@ -365,7 +365,8 @@ fn run(argv: &[String]) -> Result<(), String> {
             let header = HeaderConfig::default()
                 .with_cookie(args.cookie)
                 .with_include_options(args.include_options);
-            let bytes = encode_xml(&xml, &tables, &options, header).map_err(|e| e.to_string())?;
+            let bytes =
+                encode_xml(&xml, &tables, options.clone(), header).map_err(|e| e.to_string())?;
             fs::write(output, &bytes).map_err(|e| format!("cannot write {output}: {e}"))?;
             Ok(())
         }
@@ -452,7 +453,7 @@ fn bench(args: &Args) -> Result<(), String> {
     let (input_kind, output_bytes, ns) = match op.as_str() {
         "encode" => {
             let encoded =
-                encode_xml(&data, &tables, &options, header).map_err(|e| e.to_string())?;
+                encode_xml(&data, &tables, options.clone(), header).map_err(|e| e.to_string())?;
             if let Some(path) = &args.out {
                 fs::write(path, &encoded)
                     .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
@@ -468,14 +469,14 @@ fn bench(args: &Args) -> Result<(), String> {
                     )
                     .map_err(|e| e.to_string())?;
                     for ev in &events {
-                        enc.push(&rexi_xml::as_lexical_event(ev))
+                        enc.push(&rexi_xml::to_lexical_event(ev))
                             .map_err(|e| e.to_string())?;
                     }
                     enc.finish().map(drop).map_err(|e| e.to_string())
                 })?
             } else {
                 time_runs((warmup, warmup_ms), iterations, || {
-                    encode_xml(&data, &tables, &options, header)
+                    encode_xml(&data, &tables, options.clone(), header)
                         .map(drop)
                         .map_err(|e| e.to_string())
                 })?

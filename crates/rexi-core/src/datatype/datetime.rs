@@ -251,28 +251,50 @@ impl DateTime {
 
     /// Checks the ranges of the parts that `kind` uses. Parts it does not use are
     /// ignored.
-    pub fn check(&self, kind: DateTimeKind) -> Result<(), String> {
+    ///
+    /// # Errors
+    ///
+    /// [`ExiError::Value`] names the first part out of range.
+    pub fn check(&self, kind: DateTimeKind) -> ExiResult<()> {
         if kind.has_month() && !(1..=12).contains(&self.month) {
-            return Err(format!("month {} out of range", self.month));
+            return Err(ExiError::value(
+                NAME,
+                format!("month {} out of range", self.month),
+            ));
         }
         if kind.has_day() && !(1..=31).contains(&self.day) {
-            return Err(format!("day {} out of range", self.day));
+            return Err(ExiError::value(
+                NAME,
+                format!("day {} out of range", self.day),
+            ));
         }
         if kind.has_time() {
             if self.hour > 24 {
-                return Err(format!("hour {} out of range", self.hour));
+                return Err(ExiError::value(
+                    NAME,
+                    format!("hour {} out of range", self.hour),
+                ));
             }
             if self.minute > 59 {
-                return Err(format!("minute {} out of range", self.minute));
+                return Err(ExiError::value(
+                    NAME,
+                    format!("minute {} out of range", self.minute),
+                ));
             }
             if self.second > 60 {
-                return Err(format!("second {} out of range", self.second));
+                return Err(ExiError::value(
+                    NAME,
+                    format!("second {} out of range", self.second),
+                ));
             }
         }
         if let Some(tz) = self.timezone
             && tz.abs() > MAX_TIMEZONE_MINUTES
         {
-            return Err(format!("time zone offset {tz} minutes out of range"));
+            return Err(ExiError::value(
+                NAME,
+                format!("time zone offset {tz} minutes out of range"),
+            ));
         }
         Ok(())
     }
@@ -281,7 +303,7 @@ impl DateTime {
     /// Only `dateTime` has a date to move forward; for `time` the hour just becomes
     /// 0. Leap years follow the Gregorian rule (every 4 years, but not every 100,
     /// except every 400).
-    pub fn normalize_hour24(&mut self, kind: DateTimeKind) {
+    pub(crate) fn normalize_hour24(&mut self, kind: DateTimeKind) {
         if !kind.has_time() || self.hour != 24 {
             return;
         }
@@ -458,9 +480,7 @@ pub fn write_datetime<W: ByteSink>(
     kind: DateTimeKind,
     value: &DateTime,
 ) -> ExiResult<()> {
-    value
-        .check(kind)
-        .map_err(|reason| ExiError::value(NAME, reason))?;
+    value.check(kind)?;
     let mut dt = *value;
     dt.normalize_hour24(kind);
     if kind.has_year() {
@@ -527,8 +547,7 @@ pub fn read_datetime<R: ByteSource>(
     if r.read_bool()? {
         dt.timezone = Some(timezone_from_wire(r.read_nbit_unsigned(BITS_TIMEZONE)?)?);
     }
-    dt.check(kind)
-        .map_err(|reason| ExiError::value(NAME, reason))?;
+    dt.check(kind)?;
     dt.normalize_hour24(kind);
     Ok(dt)
 }

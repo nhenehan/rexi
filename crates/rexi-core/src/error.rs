@@ -183,7 +183,11 @@ pub enum ExiError {
     },
     /// The stream's `schemaId` option does not name the schema of the grammar
     /// tables it is decoded with ([EXI 5.4](https://www.w3.org/TR/exi/#options)).
-    /// See [`check_schema_id`](crate::header::check_schema_id) for the rule.
+    ///
+    /// The rule: a stream with no `schemaId` is not checked. `xsi:nil` (no
+    /// schema) is always refused, because rexi's tables are schema-informed.
+    /// `""` and any other id must equal the tables' id exactly, so tables with
+    /// no id refuse a stream that names one.
     SchemaIdMismatch {
         /// What the stream's options say (never [`SchemaId::Absent`]).
         /// Boxed, like `tables`, so that this rare error does not make every

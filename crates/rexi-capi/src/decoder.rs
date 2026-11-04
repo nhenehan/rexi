@@ -223,14 +223,14 @@ impl RexiDecoder {
                     }
                 }
                 OwnedEvent::Attribute { uri, local, value } => {
-                    let lexical = self.inner.format_last(&value.as_value())?;
+                    let lexical = self.inner.format_last(&value.to_value())?;
                     if let Some(f) = h.attribute {
                         let v = output(&value, self.lexical.set(&lexical));
                         call(f(self.uri.set(&uri), self.local.set(&local), &v, user))?;
                     }
                 }
                 OwnedEvent::Characters(value) => {
-                    let lexical = self.inner.format_last(&value.as_value())?;
+                    let lexical = self.inner.format_last(&value.to_value())?;
                     if let Some(f) = h.characters {
                         let v = output(&value, self.lexical.set(&lexical));
                         call(f(&v, user))?;

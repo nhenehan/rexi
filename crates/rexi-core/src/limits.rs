@@ -49,7 +49,17 @@ use core::fmt;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// # Examples
+///
+/// ```
+/// use rexi_core::DecodeLimits;
+///
+/// let limits = DecodeLimits::default().with_max_depth(Some(32));
+/// assert_eq!(limits.max_depth, Some(32));
+/// assert_eq!(DecodeLimits::unlimited().max_depth, None);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct DecodeLimits {
     /// Most elements open at once. Stops endless nesting, such as a required

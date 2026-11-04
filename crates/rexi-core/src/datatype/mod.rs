@@ -12,8 +12,8 @@
 //!   and local-name partitions of the string table;
 //! - lists are walked by the encoder, which sends each item to the right encoder.
 //!
-//! Everything else is a single value (a scalar) handled by [`write_scalar`] /
-//! [`read_scalar`].
+//! Everything else is a single value (a scalar), which the codec writes and
+//! reads in one step.
 
 pub(crate) mod biguint;
 pub(crate) mod binary;
@@ -41,9 +41,10 @@ use crate::value::{DateTimeKind, OwnedValue, Value};
 /// - `Replace`: turn each tab, line feed and carriage return into a space.
 /// - `Collapse`: do `Replace`, then join runs of spaces into one space and cut spaces
 ///   from both ends.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum WhiteSpace {
     /// Keep the text as it is.
+    #[default]
     Preserve,
     /// Turn tabs, line feeds and carriage returns into spaces.
     Replace,
@@ -180,7 +181,7 @@ pub trait TypeResolver {
 
 /// Encodes a scalar value of `kind`. `value` may be [`Value::Lexical`], in which case
 /// it is parsed first. Returns an error for string-like, QName and list kinds.
-pub fn write_scalar<W: ByteSink>(
+pub(crate) fn write_scalar<W: ByteSink>(
     w: &mut BitWriter<W>,
     kind: DatatypeKind,
     value: &Value<'_>,
@@ -190,7 +191,7 @@ pub fn write_scalar<W: ByteSink>(
 }
 
 /// Decodes a scalar value of `kind`. Returns an error for string-like, QName and list kinds.
-pub fn read_scalar<R: ByteSource>(
+pub(crate) fn read_scalar<R: ByteSource>(
     r: &mut BitReader<R>,
     kind: DatatypeKind,
     types: &dyn TypeResolver,

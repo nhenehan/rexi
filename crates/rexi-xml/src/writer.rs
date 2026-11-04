@@ -24,8 +24,8 @@
 //!   if it is in a namespace. On the root, the default namespace is simply not
 //!   declared.
 
+use rexi_core::io::ByteSource;
 use std::fmt::Write as _;
-use std::io::Read;
 
 use rexi_core::grammar::well_known::XSI_NS;
 use rexi_core::{DecodeLimits, Decoder, ExiOptions, GrammarTables, OwnedEvent, OwnedValue};
@@ -357,7 +357,7 @@ pub fn write_xml(events: &[OwnedEvent], formatter: impl Fn(&OwnedValue) -> Strin
 
 /// Pulls every event out of `input` and passes each value through `map`. `map` also
 /// gets the decoder, so it can ask for the value's standard text form.
-fn drain<R: Read, G: GrammarTables>(
+fn drain<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
@@ -397,7 +397,12 @@ fn drain<R: Read, G: GrammarTables>(
 /// form (`OwnedValue::String`). That is the same form [`crate::parse_events`] gives
 /// for the matching XML, so the two can be compared. Uses the default
 /// [`DecodeLimits`].
-pub fn decode_events<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// [`XmlError::Exi`] when the stream cannot be decoded (see
+/// [`Decoder::next_event`]).
+pub fn decode_events<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
@@ -406,20 +411,28 @@ pub fn decode_events<R: Read, G: GrammarTables>(
 }
 
 /// Like [`decode_events`], with the given limits on what the stream may ask for.
-pub fn decode_events_with_limits<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// The same as [`decode_events`].
+pub fn decode_events_with_limits<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
     limits: DecodeLimits,
 ) -> Result<Vec<OwnedEvent>> {
     drain(input, tables, out_of_band, limits, |dec, value| {
-        Ok(OwnedValue::String(dec.format_last(&value.as_value())?))
+        Ok(OwnedValue::String(dec.format_last(&value.to_value())?))
     })
 }
 
 /// Decodes a stream into events, keeping the decoder's typed values. Uses the
 /// default [`DecodeLimits`].
-pub fn decode_events_typed<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// The same as [`decode_events`].
+pub fn decode_events_typed<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
@@ -429,7 +442,11 @@ pub fn decode_events_typed<R: Read, G: GrammarTables>(
 
 /// Like [`decode_events_typed`], with the given limits on what the stream may ask
 /// for.
-pub fn decode_events_typed_with_limits<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// The same as [`decode_events`].
+pub fn decode_events_typed_with_limits<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
@@ -440,7 +457,11 @@ pub fn decode_events_typed_with_limits<R: Read, G: GrammarTables>(
 
 /// Decodes a stream straight to XML text, with values in their standard text
 /// form. Uses the default [`DecodeLimits`].
-pub fn decode_to_xml<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// The same as [`decode_events`].
+pub fn decode_to_xml<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,
@@ -449,7 +470,11 @@ pub fn decode_to_xml<R: Read, G: GrammarTables>(
 }
 
 /// Like [`decode_to_xml`], with the given limits on what the stream may ask for.
-pub fn decode_to_xml_with_limits<R: Read, G: GrammarTables>(
+///
+/// # Errors
+///
+/// The same as [`decode_events`].
+pub fn decode_to_xml_with_limits<R: ByteSource, G: GrammarTables>(
     input: R,
     tables: G,
     out_of_band: Option<ExiOptions>,

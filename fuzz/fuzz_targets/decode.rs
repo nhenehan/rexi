@@ -27,7 +27,7 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
     let header = HeaderConfig::default().with_include_options(false);
-    let again = match encode_xml(xml.as_bytes(), tables, &options, header) {
+    let again = match encode_xml(xml.as_bytes(), tables, options.clone(), header) {
         Ok(bytes) => bytes,
         // The grammar lets xsi:nil="false" come back to the same rule, so a stream
         // may repeat it (EXI 8.5.4.1.3) and still be conformant (EXI 10.1): the

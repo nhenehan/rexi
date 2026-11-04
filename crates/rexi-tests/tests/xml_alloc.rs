@@ -98,7 +98,7 @@ fn encoding_from_xml_does_not_allocate_per_element() {
         let exi = rexi_xml::encode_xml(
             xml.as_bytes(),
             &tables,
-            &ExiOptions::strict(),
+            ExiOptions::strict(),
             HeaderConfig::default(),
         );
         let n = allocations() - before;

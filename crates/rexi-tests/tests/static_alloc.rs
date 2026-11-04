@@ -111,7 +111,7 @@ fn static_tables_allocate_nothing_before_the_codec() {
         .find(|c| c.name == "order-complex")
         .unwrap_or_else(|| panic!("order-complex case missing"));
     let xsd = case.main_xsd.clone();
-    assert!(allocations_in(|| drop(rexi_schema::compile_files(&[xsd.as_path()]))) > 0);
+    assert!(allocations_in(|| drop(rexi_schema::compile_files([xsd.as_path()]))) > 0);
 
     let out = Vec::with_capacity(4096);
     let at_new = allocations_in(|| {

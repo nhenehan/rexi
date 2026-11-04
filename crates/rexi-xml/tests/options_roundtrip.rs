@@ -16,7 +16,7 @@ fn encode(xml: &str) -> Vec<u8> {
     encode_xml(
         xml.as_bytes(),
         OPTIONS_GRAMMARS,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     )
     .unwrap_or_else(|e| panic!("{e}"))
@@ -128,7 +128,7 @@ fn grammar_violations_are_reported() {
     let err = encode_xml(
         xml.as_bytes(),
         OPTIONS_GRAMMARS,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     );
     assert!(
@@ -141,15 +141,15 @@ fn grammar_violations_are_reported() {
     let err = encode_xml(
         b"<header xmlns=\"urn:other\"/>",
         OPTIONS_GRAMMARS,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     );
     assert!(matches!(err, Err(rexi_xml::XmlError::Exi(_))), "{err:?}");
     let err = encode_xml(
         b"<header xmlns=",
         OPTIONS_GRAMMARS,
-        &ExiOptions::strict(),
+        ExiOptions::strict(),
         HeaderConfig::default(),
     );
-    assert!(matches!(err, Err(rexi_xml::XmlError::Xml(_))), "{err:?}");
+    assert!(matches!(err, Err(rexi_xml::XmlError::Syntax(_))), "{err:?}");
 }

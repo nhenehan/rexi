@@ -15,7 +15,7 @@ use crate::error::{ExiError, ExiResult};
 /// * `flush` only asks the sink to flush its own buffer. It does **not** send the
 ///   partly filled byte; use `finish` (or `align_to_byte` first) for that.
 #[derive(Debug)]
-pub struct BitWriter<W: ByteSink> {
+pub struct BitWriter<W> {
     inner: W,
     /// The bits waiting to be written, right-aligned: they sit in the low `pending_len`
     /// bits, the oldest bit is the highest of them, and every bit above them is zero.

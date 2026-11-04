@@ -59,7 +59,7 @@ pub fn encode_matches_exificient<G: GrammarTables>(tables_for: impl Fn(&Case) ->
         let xml = std::fs::read(&case.xml).unwrap_or_default();
         for profile in PROFILES {
             let expected = reference(&case, profile);
-            match rexi_xml::encode_xml(&xml, &tables, &(profile.options)(&case), profile.header) {
+            match rexi_xml::encode_xml(&xml, &tables, (profile.options)(&case), profile.header) {
                 Ok(actual) => {
                     if first_bit_difference(&actual, &expected).is_some() {
                         failures.push(describe_diff(
@@ -156,7 +156,7 @@ pub fn reencode_decoded_events_round_trips<G: GrammarTables>(tables_for: impl Fn
                     profile.header,
                 )?;
                 for ev in &events {
-                    enc.push(&ev.as_event())?;
+                    enc.push(&ev.to_event())?;
                 }
                 enc.finish()
             })();
@@ -193,7 +193,7 @@ pub fn exipd_accepts_rexi_output<G: GrammarTables>(tables_for: impl Fn(&Case) ->
         let xml = std::fs::read(&case.xml).unwrap_or_default();
         for profile in PROFILES {
             let Ok(bytes) =
-                rexi_xml::encode_xml(&xml, &tables, &(profile.options)(&case), profile.header)
+                rexi_xml::encode_xml(&xml, &tables, (profile.options)(&case), profile.header)
             else {
                 continue; // reported by encode_matches_exificient
             };

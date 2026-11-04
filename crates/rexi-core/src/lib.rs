@@ -71,6 +71,8 @@
 //! ```
 
 #![no_std]
+// docs.rs builds with `--cfg docsrs` and marks the `trace` items as needing it.
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
 extern crate alloc;

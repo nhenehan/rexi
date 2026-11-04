@@ -6,7 +6,7 @@ use core::fmt;
 use rexi_core::ExiError;
 
 /// What went wrong while turning Rust values into EXI or back.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
     /// The codec rejected an event or a value.

@@ -64,11 +64,6 @@ impl BigUint {
         }
     }
 
-    /// The limbs, lowest first, with no zero limbs at the end (zero is empty).
-    pub fn limbs(&self) -> &[u32] {
-        &self.limbs
-    }
-
     fn normalize(&mut self) {
         while self.limbs.last() == Some(&0) {
             self.limbs.pop();
@@ -100,7 +95,7 @@ impl BigUint {
     }
 
     /// `self = self * m + a`.
-    pub fn mul_small_add(&mut self, m: u32, a: u32) {
+    pub(crate) fn mul_small_add(&mut self, m: u32, a: u32) {
         let mut carry = u64::from(a);
         for limb in &mut self.limbs {
             let v = u64::from(*limb) * u64::from(m) + carry;
@@ -115,7 +110,7 @@ impl BigUint {
 
     /// Divides in place by a small divisor and returns the remainder. Works from the
     /// top limb down, like long division.
-    pub fn div_small_rem(&mut self, d: u32) -> u32 {
+    pub(crate) fn div_small_rem(&mut self, d: u32) -> u32 {
         let mut rem = 0u64;
         for limb in self.limbs.iter_mut().rev() {
             let cur = (rem << 32) | u64::from(*limb);
@@ -127,7 +122,7 @@ impl BigUint {
     }
 
     /// The number in base 10, with no leading zeros (`"0"` for zero).
-    pub fn to_decimal_string(&self) -> String {
+    pub(crate) fn to_decimal_string(&self) -> String {
         if self.is_zero() {
             return "0".to_string();
         }
@@ -147,13 +142,13 @@ impl BigUint {
     }
 
     /// Low 7 bits, for writing the next varint group.
-    pub fn low7(&self) -> u8 {
+    pub(crate) fn low7(&self) -> u8 {
         (self.limbs.first().copied().unwrap_or(0) & 0x7F) as u8
     }
 
     /// Shifts right by 7 bits in place. The 7 bits pushed out of each limb move into
     /// the top of the limb below it (`carry << 25`, since 32 - 7 = 25).
-    pub fn shr7(&mut self) {
+    pub(crate) fn shr7(&mut self) {
         let mut carry = 0u32;
         for limb in self.limbs.iter_mut().rev() {
             let v = *limb;
@@ -164,7 +159,7 @@ impl BigUint {
     }
 
     /// Builds a value from 7-bit groups, least significant group first.
-    pub fn from_7bit_groups(groups: &[u8]) -> Self {
+    pub(crate) fn from_7bit_groups(groups: &[u8]) -> Self {
         let mut n = Self::zero();
         for &g in groups.iter().rev() {
             n.shl7_or(u32::from(g & 0x7F));
@@ -186,24 +181,9 @@ impl BigUint {
         self.normalize();
     }
 
-    /// Reverses the decimal digits (used for the fractional part of decimals,
-    /// [EXI 7.1.3](https://www.w3.org/TR/exi/#encodingDecimal)). Zeros that end up in
-    /// front after reversing are dropped, so 100 becomes 1.
-    #[must_use]
-    pub fn reverse_decimal_digits(&self) -> Self {
-        let s = self.to_decimal_string();
-        let rev: String = s.chars().rev().collect();
-        let trimmed = rev.trim_start_matches('0');
-        if trimmed.is_empty() {
-            Self::zero()
-        } else {
-            Self::from_decimal_str(trimmed).unwrap_or_default()
-        }
-    }
-
     /// `self + 1`
     #[must_use]
-    pub fn add_one(&self) -> Self {
+    pub(crate) fn add_one(&self) -> Self {
         let mut n = self.clone();
         n.mul_small_add(1, 1);
         n
@@ -211,7 +191,7 @@ impl BigUint {
 
     /// `self - 1`, saturating at zero.
     #[must_use]
-    pub fn sub_one(&self) -> Self {
+    pub(crate) fn sub_one(&self) -> Self {
         if self.is_zero() {
             return Self::zero();
         }
@@ -304,22 +284,6 @@ mod tests {
             m.shr7();
         }
         assert_eq!(BigUint::from_7bit_groups(&groups), n);
-    }
-
-    #[test]
-    fn reverse_digits() {
-        assert_eq!(
-            BigUint::from_u64(100).reverse_decimal_digits(),
-            BigUint::from_u64(1)
-        );
-        assert_eq!(
-            BigUint::from_u64(5).reverse_decimal_digits(),
-            BigUint::from_u64(5)
-        );
-        assert_eq!(
-            BigUint::from_u64(59).reverse_decimal_digits(),
-            BigUint::from_u64(95)
-        );
     }
 
     #[test]

@@ -130,6 +130,6 @@ fn top(stack: &mut [Node]) -> Result<&mut Node> {
 /// Pairs a decoded value with its standard text form, from the datatype of the
 /// event just read.
 fn text<R: ByteSource, G: GrammarTables>(dec: &Decoder<R, G>, value: OwnedValue) -> Result<Text> {
-    let lexical = dec.format_last(&value.as_value())?;
+    let lexical = dec.format_last(&value.to_value())?;
     Ok(Text { value, lexical })
 }

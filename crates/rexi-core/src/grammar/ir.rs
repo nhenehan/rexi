@@ -37,7 +37,8 @@ impl Span {
 
     /// The range as a `usize` range, for slicing.
     pub fn range(&self) -> core::ops::Range<usize> {
-        self.start as usize..(self.start + self.len) as usize
+        // Summed as usize, so bad tables cannot overflow a u32 here.
+        self.start as usize..self.start as usize + self.len as usize
     }
 }
 
@@ -190,7 +191,7 @@ pub struct GlobalAttribute {
 }
 
 /// Grammar tables as borrowed slices: the shape a generated `static` has.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GrammarSet<'a> {
     /// String pool referenced by [`StrIdx`].
     pub strings: &'a [&'a str],
@@ -351,6 +352,13 @@ pub trait GrammarTables {
             Err(_) => names.iter().position(|&s| self.string(s) == local)?,
         } as u32;
         Some(QNameId::new(uri_id, local_id))
+    }
+}
+
+/// [`GrammarSet::EMPTY`].
+impl Default for GrammarSet<'_> {
+    fn default() -> Self {
+        GrammarSet::EMPTY
     }
 }
 

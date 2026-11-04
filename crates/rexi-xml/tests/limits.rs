@@ -247,7 +247,7 @@ const STRINGS: &str = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 /// all zero bytes, placed before the final `EE(r)`.
 fn string_hits(t: &GrammarSetBuf, text: &str, hits: usize) -> Vec<u8> {
     let xml = format!("<r><s>{text}</s></r>");
-    let mut b = rexi_xml::encode_xml(xml.as_bytes(), t, &byte_aligned(), HeaderConfig::default())
+    let mut b = rexi_xml::encode_xml(xml.as_bytes(), t, byte_aligned(), HeaderConfig::default())
         .unwrap_or_else(|e| panic!("{e}"));
     let end = b.pop();
     assert_eq!(end, Some(0x01));

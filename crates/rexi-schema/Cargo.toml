@@ -6,8 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-keywords.workspace = true
-categories.workspace = true
+keywords = ["exi", "xml", "xsd", "schema", "binary"]
+categories = ["encoding", "parser-implementations"]
 readme = "../../README.md"
 description = "XSD to EXI schema-informed grammar compiler"
 

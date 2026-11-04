@@ -54,8 +54,8 @@ fn includes_under_the_main_folder_work() {
     write(&dir.join("sub/more.xsd"), TYPES);
     write(&dir.join("main.xsd"), &including("types.xsd"));
     write(&dir.join("main2.xsd"), &including("sub/./more.xsd"));
-    assert!(compile_files(&[&dir.join("main.xsd")]).is_ok());
-    assert!(compile_files(&[&dir.join("main2.xsd")]).is_ok());
+    assert!(compile_files([&dir.join("main.xsd")]).is_ok());
+    assert!(compile_files([&dir.join("main2.xsd")]).is_ok());
 }
 
 #[test]
@@ -65,12 +65,12 @@ fn a_ubl_style_layout_needs_a_root() {
     write(&set.join("common/types.xsd"), TYPES);
     let main = set.join("maindoc/order.xsd");
     write(&main, &including("../common/types.xsd"));
-    let reason = refused(compile_files(&[&main]));
+    let reason = refused(compile_files([&main]));
     assert!(reason.contains("set a schema root"), "{reason}");
     let opts = SchemaLoadOptions::default().with_root(SchemaRoot::Folder(set.clone()));
-    assert!(compile_files_with(&[&main], &opts).is_ok());
+    assert!(compile_files_with([&main], &opts).is_ok());
     let opts = SchemaLoadOptions::default().with_root(SchemaRoot::Anywhere);
-    assert!(compile_files_with(&[&main], &opts).is_ok());
+    assert!(compile_files_with([&main], &opts).is_ok());
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn outside_paths_are_refused_whether_or_not_they_exist() {
         "../../../../../../../../no/such/file.xsd",
     ] {
         write(&dir.join("main.xsd"), &including(location));
-        let reason = refused(compile_files(&[&dir.join("main.xsd")]));
+        let reason = refused(compile_files([&dir.join("main.xsd")]));
         assert!(reason.contains("outside"), "{location}: {reason}");
     }
 }
@@ -96,7 +96,7 @@ fn urls_are_never_fetched() {
     for location in ["http://example.com/types.xsd", "file:///etc/passwd"] {
         write(&dir.join("main.xsd"), &including(location));
         let opts = SchemaLoadOptions::default().with_root(SchemaRoot::Anywhere);
-        let reason = refused(compile_files_with(&[&dir.join("main.xsd")], &opts));
+        let reason = refused(compile_files_with([&dir.join("main.xsd")], &opts));
         assert!(reason.contains("URL"), "{location}: {reason}");
     }
 }
@@ -120,13 +120,13 @@ fn devices_and_big_files_are_refused() {
     let anywhere = SchemaLoadOptions::default().with_root(SchemaRoot::Anywhere);
     if Path::new("/dev/zero").exists() {
         write(&dir.join("main.xsd"), &including("/dev/zero"));
-        let reason = refused(compile_files_with(&[&dir.join("main.xsd")], &anywhere));
+        let reason = refused(compile_files_with([&dir.join("main.xsd")], &anywhere));
         assert!(reason.contains("regular file"), "{reason}");
     }
     write(&dir.join("types.xsd"), TYPES);
     write(&dir.join("main.xsd"), &including("types.xsd"));
     let small = SchemaLoadOptions::default().with_max_file_bytes(Some(TYPES.len() as u64 - 1));
-    let reason = refused(compile_files_with(&[&dir.join("main.xsd")], &small));
+    let reason = refused(compile_files_with([&dir.join("main.xsd")], &small));
     assert!(reason.contains("bigger than"), "{reason}");
 }
 
@@ -139,7 +139,7 @@ fn pipes_and_links_out_of_the_root_are_refused() {
     std::os::unix::fs::symlink(elsewhere.join("types.xsd"), dir.join("link.xsd"))
         .unwrap_or_else(|e| panic!("{e}"));
     write(&dir.join("main.xsd"), &including("link.xsd"));
-    let reason = refused(compile_files(&[&dir.join("main.xsd")]));
+    let reason = refused(compile_files([&dir.join("main.xsd")]));
     assert!(reason.contains("outside"), "{reason}");
 
     // A named pipe would block a reader forever; it must be refused unopened.
@@ -149,7 +149,7 @@ fn pipes_and_links_out_of_the_root_are_refused() {
         .is_ok_and(|s| s.success());
     if made {
         write(&dir.join("main.xsd"), &including("pipe.xsd"));
-        let reason = refused(compile_files(&[&dir.join("main.xsd")]));
+        let reason = refused(compile_files([&dir.join("main.xsd")]));
         assert!(reason.contains("regular file"), "{reason}");
     }
 }

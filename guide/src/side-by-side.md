@@ -10,11 +10,11 @@ both and checks.
 
 | Task | rexi (Rust) | JExi (Julia) |
 |---|---|---|
-| Compile a schema | `rexi_schema::compile_files(&[path])` | `JExi.compile_files(path)` |
+| Compile a schema | `rexi_schema::compile_files([path])` | `JExi.compile_files(path)` |
 | Strict options | `ExiOptions::strict()` | `JExi.strict_options()` |
 | Change an option | `.with_alignment(Alignment::ByteAligned)` | `strict_options(; alignment = JExi.ALIGN_BYTE_ALIGNED)` |
 | Header settings | `HeaderConfig::new().with_cookie(true).with_include_options(true)` | `HeaderConfig(; cookie, include_options)` |
-| XML to EXI | `rexi_xml::encode_xml(xml, tables, &opts, header)` | `JExi.encode_xml(xml, tables; options, header)` |
+| XML to EXI | `rexi_xml::encode_xml(xml, tables, opts, header)` | `JExi.encode_xml(xml, tables; options, header)` |
 | EXI to XML | `rexi_xml::decode_to_xml(bytes, tables, Some(opts))` | `JExi.decode_to_xml(bytes, tables; options)` |
 | Read events | `while let Some(ev) = dec.next_event()?` | `for ev in dec` |
 | Write events | `enc.start_element(ns, name)?` | `JExi.start_element!(enc, ns, name)` |
