@@ -143,9 +143,9 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             reader = r;
             opts
         } else {
-            out_of_band.ok_or(ExiError::Header(
-                "stream carries no options and none were given out of band",
-            ))?
+            out_of_band.ok_or_else(|| {
+                ExiError::Header("stream carries no options and none were given out of band")
+            })?
         };
         options.validate()?;
         header::check_schema_id(&options.schema_id, tables.schema_id())?;
@@ -252,6 +252,11 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
 
     /// Reads one event. `SD` and `ED` take no bits (each is the only choice where
     /// it occurs); everything else starts with an event code.
+    ///
+    /// Inlined into its one caller, [`Decoder::next_event`]. The result is too big
+    /// to come back in registers, so without inlining it goes through memory on
+    /// every event, which costs about 5 % of decode time.
+    #[inline]
     fn step(&mut self) -> ExiResult<Step> {
         match self.cursor {
             Cursor::Document => {
@@ -440,8 +445,8 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
             // refused before the string table is touched.
             DatatypeKind::RestrictedString { alphabet, .. } => {
-                let alphabet =
-                    alphabet.ok_or(ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
+                let alphabet = alphabet
+                    .ok_or_else(|| ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
                 let mut buf = match core::mem::replace(&mut self.value, OwnedValue::Boolean(false))
                 {
                     OwnedValue::String(s) => s,
@@ -548,13 +553,13 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
         self.frames
             .last()
             .copied()
-            .ok_or(ExiError::Internal("empty grammar stack"))
+            .ok_or_else(|| ExiError::Internal("empty grammar stack"))
     }
 
     fn top_mut(&mut self) -> ExiResult<&mut Frame> {
         self.frames
             .last_mut()
-            .ok_or(ExiError::Internal("empty grammar stack"))
+            .ok_or_else(|| ExiError::Internal("empty grammar stack"))
     }
 
     /// The datatype of the value carried by the most recent `Attribute` or

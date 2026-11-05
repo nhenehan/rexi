@@ -66,7 +66,7 @@ pub fn read_rcs_chars<R: ByteSource>(
             alphabet
                 .chars()
                 .nth(i as usize)
-                .ok_or(ExiError::Internal("alphabet index"))?
+                .ok_or_else(|| ExiError::Internal("alphabet index"))?
         } else if i as usize == n {
             let value = read_unsigned(r)?;
             u32::try_from(value)

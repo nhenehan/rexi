@@ -427,7 +427,7 @@ impl ValuePartitions {
             let e = *self
                 .entries
                 .get(index)
-                .ok_or(ExiError::Internal("value index points outside the table"))?;
+                .ok_or_else(|| ExiError::Internal("value index points outside the table"))?;
             if e.context == context {
                 write_unsigned(w, 0)?;
                 let n = ceil_log2(self.local_count(context));
@@ -437,7 +437,7 @@ impl ValuePartitions {
                 let n = ceil_log2(self.global_count());
                 let global_id = e
                     .global_id
-                    .ok_or(ExiError::Internal("found value is not live"))?;
+                    .ok_or_else(|| ExiError::Internal("found value is not live"))?;
                 w.write_nbit_unsigned(u64::from(global_id), n)
             }
         } else {
@@ -484,10 +484,10 @@ impl ValuePartitions {
                 let local_id = r.read_nbit_unsigned(n)? as usize;
                 let index = self
                     .entry_of_local(context, local_id)
-                    .ok_or(ExiError::StringTable("local value identifier out of range"))?;
-                let e = self.entries.get(index).ok_or(ExiError::Internal(
-                    "local partition points outside the table",
-                ))?;
+                    .ok_or_else(|| ExiError::StringTable("local value identifier out of range"))?;
+                let e = self.entries.get(index).ok_or_else(|| {
+                    ExiError::Internal("local partition points outside the table")
+                })?;
                 if e.global_id.is_none() {
                     return Err(ExiError::StringTable(
                         "local value identifier is unassigned",
@@ -502,9 +502,7 @@ impl ValuePartitions {
                 let e = self
                     .entry_of_global(global_id)
                     .and_then(|i| self.entries.get(i))
-                    .ok_or(ExiError::StringTable(
-                        "global value identifier out of range",
-                    ))?;
+                    .ok_or_else(|| ExiError::StringTable("global value identifier out of range"))?;
                 out.push_str(self.text_of(e));
                 Ok(())
             }

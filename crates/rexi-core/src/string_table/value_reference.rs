@@ -155,9 +155,7 @@ impl ReferencePartitions {
             let slot = self
                 .global
                 .get(global_id as usize)
-                .ok_or(ExiError::Internal(
-                    "value index points outside global partition",
-                ))?;
+                .ok_or_else(|| ExiError::Internal("value index points outside global partition"))?;
             if slot.context == context {
                 write_unsigned(w, 0)?;
                 let n = ceil_log2(self.local_count(context));
@@ -195,25 +193,21 @@ impl ReferencePartitions {
                     .local
                     .get(&context)
                     .and_then(|p| p.get(local_id))
-                    .ok_or(ExiError::StringTable("local value identifier out of range"))?
-                    .ok_or(ExiError::StringTable(
-                        "local value identifier is unassigned",
-                    ))?;
-                let slot = self
-                    .global
-                    .get(global_id as usize)
-                    .ok_or(ExiError::Internal(
-                        "local partition points outside global partition",
-                    ))?;
+                    .ok_or_else(|| ExiError::StringTable("local value identifier out of range"))?
+                    .ok_or_else(|| ExiError::StringTable("local value identifier is unassigned"))?;
+                let slot = self.global.get(global_id as usize).ok_or_else(|| {
+                    ExiError::Internal("local partition points outside global partition")
+                })?;
                 out.push_str(&slot.value);
                 Ok(())
             }
             1 => {
                 let n = ceil_log2(self.global.len());
                 let global_id = r.read_nbit_unsigned(n)? as usize;
-                let slot = self.global.get(global_id).ok_or(ExiError::StringTable(
-                    "global value identifier out of range",
-                ))?;
+                let slot = self
+                    .global
+                    .get(global_id)
+                    .ok_or_else(|| ExiError::StringTable("global value identifier out of range"))?;
                 out.push_str(&slot.value);
                 Ok(())
             }

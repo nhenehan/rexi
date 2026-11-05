@@ -74,6 +74,10 @@
 // docs.rs builds with `--cfg docsrs` and marks the `trace` items as needing it.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
+// `ExiError` holds `String`s, so it needs code to drop it. `ok_or(ExiError::..)`
+// builds the error even when there is no error, and then drops it. That cost
+// shows up in decoder profiles, so this crate uses `ok_or_else` on purpose.
+#![allow(clippy::unnecessary_lazy_evaluations)]
 
 extern crate alloc;
 #[cfg(feature = "std")]

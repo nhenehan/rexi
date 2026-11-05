@@ -726,8 +726,8 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
                 whitespace,
                 alphabet,
             } => {
-                let alphabet =
-                    alphabet.ok_or(ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
+                let alphabet = alphabet
+                    .ok_or_else(|| ExiError::Unsupported(Feature::RestrictedCharacterSet))?;
                 let alphabet = self.tables.string(alphabet);
                 match value {
                     Value::Lexical(s) => {
@@ -829,7 +829,7 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     fn top_mut(&mut self) -> ExiResult<&mut Frame> {
         self.frames
             .last_mut()
-            .ok_or(ExiError::Internal("empty grammar stack"))
+            .ok_or_else(|| ExiError::Internal("empty grammar stack"))
     }
 
     /// Builds the error for an event that no production allows here, listing what
