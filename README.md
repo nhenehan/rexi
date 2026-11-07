@@ -197,7 +197,7 @@ cargo +1.88 test --workspace   # oldest supported Rust (rust-version); rustup to
 cargo run -p rexi-xml --bin rexi -- encode --xsd a.xsd in.xml out.exi
 cargo run -p rexi-xml --bin rexi -- decode --xsd a.xsd out.exi
 cargo run -p rexi-xml --bin rexi -- decode --xsd a.xsd --max-depth 1024 out.exi   # or --no-limits
-cargo run -p rexi-schema-gen -- a.xsd [b.xsd ...] --out tables.rs [--name GRAMMARS] [--check]
+cargo run -p rexi-schema-gen -- a.xsd [b.xsd ...] --out tables.rs [--name GRAMMARS] [--schema-id ID] [--check]
 fuzz/run.sh [seconds]   # fuzz targets, 60 s each by default (nightly, cargo install cargo-fuzz)
 ```
 

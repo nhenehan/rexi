@@ -1,7 +1,10 @@
 //! `rexi-schema-gen <main.xsd> [more.xsd ...] --out tables.rs [--name GRAMMARS]
-//! [--core-path rexi_core] [--check]`
+//! [--schema-id ID] [--core-path rexi_core] [--check]`
 //!
-//! Compiles the schemas and writes the grammar tables as Rust source. With
+//! Compiles the schemas and writes the grammar tables as Rust source.
+//! `--schema-id` gives the tables the id that streams name in their `schemaId`
+//! option ([EXI 5.4](https://www.w3.org/TR/exi/#options)); the decoder refuses
+//! a stream whose `schemaId` differs. With
 //! `--check`, it writes nothing. It compares the new text with the existing
 //! `--out` file instead and exits with 1 if the file is out of date. Bad
 //! arguments or errors exit with 2.
@@ -12,12 +15,13 @@ use std::process::ExitCode;
 use rexi_schema_gen::{RenderOptions, render};
 
 const USAGE: &str = "usage: rexi-schema-gen <main.xsd> [more.xsd ...] --out <tables.rs> \
-[--name GRAMMARS] [--core-path rexi_core] [--check]";
+[--name GRAMMARS] [--schema-id ID] [--core-path rexi_core] [--check]";
 
 struct Args {
     xsds: Vec<PathBuf>,
     out: PathBuf,
     name: String,
+    schema_id: Option<String>,
     core_path: String,
     check: bool,
 }
@@ -26,6 +30,7 @@ fn parse_args() -> Result<Args, String> {
     let mut xsds = Vec::new();
     let mut out = None;
     let mut name = "GRAMMARS".to_string();
+    let mut schema_id = None;
     let mut core_path = "rexi_core".to_string();
     let mut check = false;
     let mut it = std::env::args().skip(1);
@@ -34,6 +39,7 @@ fn parse_args() -> Result<Args, String> {
         match a.as_str() {
             "--out" | "-o" => out = Some(PathBuf::from(value("--out")?)),
             "--name" => name = value("--name")?,
+            "--schema-id" => schema_id = Some(value("--schema-id")?),
             "--core-path" => core_path = value("--core-path")?,
             "--check" => check = true,
             "-h" | "--help" => return Err(USAGE.to_string()),
@@ -56,6 +62,7 @@ fn parse_args() -> Result<Args, String> {
         xsds,
         out,
         name,
+        schema_id,
         core_path,
         check,
     })
@@ -78,7 +85,10 @@ fn source_line(xsds: &[PathBuf]) -> String {
 fn run() -> Result<ExitCode, String> {
     let args = parse_args()?;
     let refs: Vec<&Path> = args.xsds.iter().map(PathBuf::as_path).collect();
-    let tables = rexi_schema::compile_files(&refs).map_err(|e| format!("schema: {e}"))?;
+    let mut tables = rexi_schema::compile_files(&refs).map_err(|e| format!("schema: {e}"))?;
+    if let Some(id) = args.schema_id {
+        tables = tables.with_schema_id(id);
+    }
     let text = render(
         &tables,
         &RenderOptions {
