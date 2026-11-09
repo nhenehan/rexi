@@ -1,27 +1,123 @@
-name: rexi-ci
+# Checks for every pull request, merge-queue run and push to main: the same steps
+# as scripts/gate.sh, split into jobs that run side by side. Make "ci-ok" the one
+# required status check in the branch protection rule for main.
+# The release workflow (release.yml) runs this workflow too, before it releases.
+name: ci
 
 on:
-  push:
-    paths:
-      - 'rexi/**'
   pull_request:
-    paths:
-      - 'rexi/**'
+  push:
+    branches: [main]
+  merge_group:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   checks:
+    name: fmt, clippy, docs, tests, no_std, tables
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rexi
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Format
-        run: cargo fmt --check
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets
+        with:
+          components: rustfmt, clippy
+          targets: thumbv7em-none-eabihf
+      - uses: Swatinem/rust-cache@v2
+      - name: Standards cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/rexi/standards
+          key: standards-${{ hashFiles('standards.lock') }}
+      - name: Standards (W3C EXI 1.0, fetched, not committed)
+        run: scripts/fetch-standards.sh
+      - name: rustfmt
+        run: cargo fmt --all --check
+      - name: clippy
+        run: |
+          cargo clippy --workspace --all-targets --no-deps -- -D warnings
+          cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check --all-targets --no-deps --no-default-features -- -D warnings
+      - name: rustdoc
+        run: cargo doc --workspace --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: tests
+        run: |
+          cargo test --workspace
+          cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check --no-default-features
+      - name: no_std build (thumbv7em-none-eabihf)
+        run: cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf
+      - name: generated tables
+        run: scripts/gen-tables.sh --check
+
+  msrv:
+    name: tests on Rust 1.88
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: Swatinem/rust-cache@v2
+      - name: Standards cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/rexi/standards
+          key: standards-${{ hashFiles('standards.lock') }}
       - name: Standards
         run: scripts/fetch-standards.sh
-      - name: Tests
+      - name: tests
         run: cargo test --workspace
+
+  exificient:
+    name: EXIficient fixtures and exip judges
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # exip's utils/xsd2exip (the EXIficient 1.0.7 oracle) targets Java 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Standards cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/rexi/standards
+          key: standards-${{ hashFiles('standards.lock') }}
+      - name: Standards
+        run: scripts/fetch-standards.sh
+      # exi-testsuite alone is about 600 MB: keep the checkouts and builds.
+      - name: Third-party cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/rexi/third_party
+          key: third-party-${{ runner.os }}-${{ hashFiles('third-party.lock') }}
+      - name: Third parties (exip, exi-testsuite), built
+        run: scripts/fetch-third-party.sh --build
+      - name: EXIficient fixtures up to date
+        run: scripts/gen-fixtures.sh --check
+      - name: tests with the exip judges required
+        run: cargo test --workspace
+        env:
+          REXI_REQUIRE_JUDGES: "1"
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [checks, msrv, exificient]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job passed
+        run: |
+          [[ "${{ needs.checks.result }}" == success && \
+             "${{ needs.msrv.result }}" == success && \
+             "${{ needs.exificient.result }}" == success ]]

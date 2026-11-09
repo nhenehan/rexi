@@ -1,0 +1,59 @@
+# Release on a version tag (v0.2.1, v0.3.0-rc.1, ...): run every CI check, make
+# sure the tag names the workspace version and the crates package, then create the
+# GitHub Release with that version's section of CHANGELOG.md as its notes.
+# A tag with a "-" (v0.3.0-rc.1) makes a pre-release.
+#
+# This does not publish to crates.io. A crates.io publish is permanent, so it
+# stays a manual step (EXI/CARGO-RELEASE-GUIDE.md); the dry run below shows it
+# would work.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: The tag names the workspace version
+        id: version
+        run: |
+          version="$(cargo metadata --no-deps --format-version 1 \
+              | jq -r '.packages[] | select(.name == "rexi-core") | .version')"
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match the workspace version $version"
+              exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: The crates package (dry run, nothing is uploaded)
+        run: cargo publish --dry-run --workspace --locked
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="${{ steps.version.outputs.version }}" \
+              '$0 == "## " v { f = 1; next } /^## / && f { exit } f' CHANGELOG.md > notes.md
+          if [[ ! -s notes.md ]]; then
+              echo "::error::CHANGELOG.md has no '## ${{ steps.version.outputs.version }}' section"
+              exit 1
+          fi
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" --verify-tag \
+              --title "rexi ${{ steps.version.outputs.version }}" \
+              --notes-file notes.md "${flags[@]}"
