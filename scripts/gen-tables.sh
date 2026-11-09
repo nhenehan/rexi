@@ -6,7 +6,8 @@
 #   scripts/gen-tables.sh --check  exit 1 if any generated file is stale
 #
 # Inputs:  fixtures/interop/cases.tsv (one module per case),
-#          fixtures/spec/exi-options.xsd (module exi_options)
+#          exi-options.xsd (module exi_options): EXI 1.0 Appendix C
+#          (https://www.w3.org/TR/exi/#optionsSchema), from scripts/fetch-standards.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,5 +38,6 @@ while IFS=$'\t' read -r name _xml main imports; do
     for x in "${extra[@]}"; do [[ -n "$x" ]] && xsds+=("$FIXTURES/$x"); done
     gen "${name//-/_}" "${xsds[@]}" || status=1
 done < "$FIXTURES/cases.tsv"
-gen exi_options "$TESTS/fixtures/spec/exi-options.xsd" --name EXI_OPTIONS || status=1
+"$ROOT/scripts/fetch-standards.sh" --check >/dev/null
+gen exi_options "$("$ROOT/scripts/fetch-standards.sh" --print-dir)/exi-options.xsd" --name EXI_OPTIONS || status=1
 exit $status

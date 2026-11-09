@@ -1,0 +1,14 @@
+# Standards the tests and generators read, fetched from their publishers by
+# scripts/fetch-standards.sh into
+# ${REXI_STANDARDS:-${XDG_CACHE_HOME:-~/.cache}/rexi/standards}. They are linked,
+# never committed.
+#
+# Each line: <file> <sha256> <source: a URL, or a part of an earlier file>
+#
+# exi-20140211.html: W3C EXI 1.0 (Second Edition), the dated Recommendation.
+# exi-options.xsd:   its Appendix C schema for the EXI Options document
+#                    (https://www.w3.org/TR/exi/#optionsSchema), from which
+#                    scripts/gen-tables.sh makes the exi_options test tables.
+
+exi-20140211.html 45f6a50c712ee983dac0ebda2a991734f6eb8a507df87dbfdda7f9903d59b7db https://www.w3.org/TR/2014/REC-exi-20140211/
+exi-options.xsd   ec5d0cff3aed0d489792aac3e86ea20d2672f3e61710c80f6982a235670d56cd html-pre:exi-20140211.html#optionsSchema

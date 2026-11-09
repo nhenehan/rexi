@@ -15,6 +15,9 @@ NOSTD=(-p rexi-core -p rexi-serde -p rexi-nostd-check)
 
 step() { printf '\n== %s\n' "$*"; }
 
+step "standards (W3C EXI 1.0, fetched, not committed)"
+scripts/fetch-standards.sh --check
+
 step "rustfmt"
 cargo fmt --all --check
 

@@ -16,8 +16,17 @@ use rexi_core::{
 use rexi_schema_gen::{RenderOptions, render};
 use rexi_tests::{cases, describe_diff, generated};
 
+/// The Appendix C schema (https://www.w3.org/TR/exi/#optionsSchema), taken from
+/// the W3C Recommendation by `scripts/fetch-standards.sh`.
 fn options_xsd() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/spec/exi-options.xsd")
+    let path = rexi_tests::standards_dir().join("exi-options.xsd");
+    if !path.is_file() {
+        eprintln!(
+            "{} is missing: run scripts/fetch-standards.sh",
+            path.display()
+        );
+    }
+    path
 }
 
 /// (module, static name, schema files) for every generated module, mirroring

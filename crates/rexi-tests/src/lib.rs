@@ -191,6 +191,25 @@ pub fn third_party_dir() -> PathBuf {
     cache.join("rexi").join("third_party")
 }
 
+/// The standards cache that `scripts/fetch-standards.sh` fills (from
+/// `standards.lock`): `$REXI_STANDARDS`, or else `$XDG_CACHE_HOME/rexi/standards`,
+/// or else `$HOME/.cache/rexi/standards`. Empty variables count as unset.
+/// Standards are linked, never committed.
+pub fn standards_dir() -> PathBuf {
+    let env = |k: &str| {
+        std::env::var_os(k)
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from)
+    };
+    if let Some(dir) = env("REXI_STANDARDS") {
+        return dir;
+    }
+    let cache = env("XDG_CACHE_HOME")
+        .or_else(|| env("HOME").map(|h| h.join(".cache")))
+        .unwrap_or_else(|| PathBuf::from(".cache"));
+    cache.join("rexi").join("standards")
+}
+
 /// Path of the exipd binary if `scripts/fetch-third-party.sh --build` built it.
 pub fn exipd_binary() -> Option<PathBuf> {
     let p = third_party_dir().join("exip/build/examples/simpleDecoding/exipd");
