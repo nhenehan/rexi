@@ -94,11 +94,14 @@ build() {
     command -v cmake >/dev/null || { echo "missing required command: cmake" >&2; return 1; }
     echo "building exipd in $exip/build"
     # Older exip code treats warnings as errors; newer compilers surface more.
-    cmake -S "$exip" -B "$exip/build" -DCMAKE_C_FLAGS="-Wno-error=type-limits" >/dev/null
-    cmake --build "$exip/build" --target exipd
+    # Only exipd is needed: skip exip's own tests (they need the "check" library).
+    # "|| return 1" on each step, because set -e is off inside "build || ...".
+    cmake -S "$exip" -B "$exip/build" -DEXIP_BUILD_TESTS=OFF \
+        -DCMAKE_C_FLAGS="-Wno-error=type-limits" >/dev/null || return 1
+    cmake --build "$exip/build" --target exipd || return 1
     echo "building the EXIficient oracle (exip utils/xsd2exip)"
     command -v mvn >/dev/null || { echo "missing required command: mvn" >&2; return 1; }
-    (cd "$exip/utils/xsd2exip" && mvn -q -DskipTests package)
+    (cd "$exip/utils/xsd2exip" && mvn -q -DskipTests package) || return 1
 }
 
 status=0
