@@ -92,7 +92,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rexi-core"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "rexi-fuzz"
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-schema"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rexi-core",
  "roxmltree",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-tests"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rexi-core",
  "rexi-schema",
@@ -124,7 +124,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-xml"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "quick-xml",
  "rexi-core",

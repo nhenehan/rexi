@@ -13,14 +13,21 @@ rexi is a set of small crates. Most programs need three of them:
 | `rexi-xml` | Going straight between XML text and EXI |
 
 Add `rexi-serde` to map your own types, and `rexi-schema-gen` to build tables
-ahead of time. The crates are not on crates.io yet, so add them as git
-dependencies, pinned to the release tag:
+ahead of time. The `rexi` crate gathers the first three, with `rexi-serde`
+behind its `serde` feature:
 
 ```toml
 [dependencies]
-rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
-rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
-rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }
+rexi = "0.3"
+```
+
+Or depend on them one by one:
+
+```toml
+[dependencies]
+rexi-core = "0.3"
+rexi-schema = "0.3"
+rexi-xml = "0.3"
 ```
 
 ## Run the examples

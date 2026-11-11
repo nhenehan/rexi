@@ -1,7 +1,40 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+The first release on crates.io. These changes break code written for 0.2.0:
+
+- Index types are their own types now, not `u32` aliases: `UriId`, `LocalId`,
+  `PrefixId`, `TypeIdx`, `ElemIdx`, `GrammarIdx`, `RuleIdx`, `EnumSetIdx` and
+  `StrIdx` each wrap a `u32`, so the compiler stops an index into one table being
+  used for another. Each has `new`, `index` (a `usize`, for slices), `is_none`
+  and its own `NONE`, which replaces the shared `ids::NONE`. `QNameId::new` takes
+  a `UriId` and a `LocalId`; constants such as `string_table::XML_NS_URI_ID` and
+  the options grammar's `LN_*` are typed. `rexi-schema-gen` writes typed values
+  (`RuleIdx(5)`, `RuleIdx::NONE`), so tables made by 0.2.0 must be made again.
+- `ByteSource::get_bytes` and `get_bytes_exact` are now `read_bytes` and
+  `read_bytes_exact`, following the Rust API Guidelines' naming rules.
+- `GrammarTables` is sealed: only rexi's own table types implement it, so new
+  methods can come in minor releases. Build tables with `rexi-schema` or
+  `rexi-schema-gen`.
+- `Int` and `Uint` compare and hash by number: `Int::Big` holding a number that
+  fits in `i64` equals the `Int::Small` with that number (and likewise for
+  `Uint`); a negative zero equals zero. Before, they were unequal.
+
+Also new:
+
+- The `rexi` crate gathers the others in one dependency: `rexi::*` is rexi-core,
+  and the features `schema` and `xml` (on by default) and `serde` add
+  `rexi::schema`, `rexi::xml` and `rexi::serde`. Without default features it is
+  `no_std`.
+- The release workflow publishes to crates.io after a person approves it (the
+  `crates-io` environment on GitHub), then creates the GitHub Release.
+- CI on GitHub for every pull request, the merge queue and `main`: the gate's
+  steps, the Rust 1.88 tests, and the EXIficient fixtures with the exip judges.
+- The README's links are full GitHub links, so they work on crates.io.
+- rexi-capi builds only the C libraries (`librexi.a`, `librexi.so`), no Rust
+  rlib, because the `rexi` crate owns that name on the Rust side. So
+  `RexiTables::from_static` is gone; C programs and their `-lrexi` do not change.
 - Standards are linked, not committed: the copy of the EXI 1.0 Appendix C
   options schema is gone. `scripts/fetch-standards.sh` downloads the dated W3C
   Recommendation into `~/.cache/rexi/standards` and takes the schema out of it,

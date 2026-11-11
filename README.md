@@ -29,35 +29,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-The full version is [`examples/basics/src/bin/roundtrip.rs`](examples/basics/src/bin/roundtrip.rs).
+The full version is [`examples/basics/src/bin/roundtrip.rs`](https://github.com/nhenehan/rexi/blob/main/examples/basics/src/bin/roundtrip.rs).
 
 ## Add to your project
 
-The crates are not on crates.io yet. Add them as git dependencies, pinned to the
-release tag:
-
 ```toml
 [dependencies]
-rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }   # encoder, decoder, options, values
-rexi-schema = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" } # .xsd to grammar tables
-rexi-xml = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0" }    # XML text to EXI and back
+rexi = "0.3"   # encoder, decoder, .xsd to grammar tables, XML text to EXI and back
 ```
 
-Add `rexi-serde` to map your own Rust types, and `rexi-schema-gen` to build the
-tables ahead of time. rexi needs Rust 1.88 or newer.
+The `rexi` crate gathers the others: `rexi::schema` (rexi-schema) and
+`rexi::xml` (rexi-xml) are on by default, and the `serde` feature adds
+`rexi::serde` (rexi-serde), to map your own Rust types. On a small device
+without `std`, use `rexi = { version = "0.3", default-features = false }`. You
+can also depend on the crates one by one (`rexi-core = "0.3"` and so on).
+`rexi-schema-gen` builds the tables ahead of time, and `cargo install rexi-xml`
+installs the `rexi` command line tool. rexi needs Rust 1.88 or newer.
 
 ## Learn more
 
 - **The user guide** walks through one small program per idea, from a first
   round trip to `no_std` and C. Build it with
   `mdbook-mermaid install guide && mdbook serve guide` (you need `mdbook` and
-  `mdbook-mermaid`), or read the chapters in [`guide/src`](guide/src/introduction.md).
-- **[`examples/basics`](examples/basics/README.md)** has those programs. Each
+  `mdbook-mermaid`), or read the chapters in [`guide/src`](https://github.com/nhenehan/rexi/blob/main/guide/src/introduction.md).
+- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** has those programs. Each
   has a Julia twin in JExi that prints the same output.
-- **[`examples/mqtt-todo`](examples/mqtt-todo/README.md)** is a todo list over
+- **[`examples/mqtt-todo`](https://github.com/nhenehan/rexi/blob/main/examples/mqtt-todo/README.md)** is a todo list over
   MQTT, with a Rust server and Rust, C (rexi C API), Java (EXIficient) and C#
   (Nagasena for .NET) clients.
-- **The C API** is one header, [`crates/rexi-capi/include/rexi.h`](crates/rexi-capi/include/rexi.h),
+- **The C API** is one header, [`crates/rexi-capi/include/rexi.h`](https://github.com/nhenehan/rexi/blob/main/crates/rexi-capi/include/rexi.h),
   for `librexi.a` or `librexi.so`. It has exip-style encoder calls and a
   callback decoder.
 
@@ -117,7 +117,7 @@ billion items or endless nesting. rexi's decoder has four limits, on by default,
 that stop this early with `ExiError::LimitExceeded`. Schema loading has rules
 too: `xs:include` and `xs:import` read only regular files under the main
 schema's folder, never a URL. See the guide's
-[Untrusted input](guide/src/untrusted-input.md) chapter to change either.
+[Untrusted input](https://github.com/nhenehan/rexi/blob/main/guide/src/untrusted-input.md) chapter to change either.
 
 ## Thanks
 
@@ -140,14 +140,15 @@ Thank you.
 
 ## License
 
-BSD-3-Clause, see [LICENSE](LICENSE).
+BSD-3-Clause, see [LICENSE](https://github.com/nhenehan/rexi/blob/main/LICENSE).
 
 ## For maintainers
 
-Version 0.2.0.
+Version 0.3.0.
 
 | Crate | Purpose |
 |---|---|
+| `rexi` | Facade: re-exports rexi-core, and rexi-schema, rexi-xml and rexi-serde by feature |
 | `rexi-core` | Codec core with no dependencies: bit I/O, datatypes, string tables, grammar runtime, `Encoder`/`Decoder`, header and options document. `no_std` + `alloc` |
 | `rexi-schema` | XSD to `GrammarSetBuf` tables (roxmltree) |
 | `rexi-schema-gen` | XSD to a `static GrammarSet<'static>` (Rust source) |
@@ -161,7 +162,7 @@ Version 0.2.0.
   makes every `std::io::Read`/`Write` an `io::ByteSource`/`io::ByteSink`.
   Without it, `&[u8]`, `Vec<u8>` and `io::SliceSink` are the sources and sinks;
   depend with `default-features = false`.
-- **Tables.** Grammar tables are flat slices indexed by `u32`. Reading static
+- **Tables.** Grammar tables are flat slices indexed by `u32` newtypes (`UriId`, `ElemIdx`, ...). Reading static
   tables never allocates; the codec allocates its string table when an
   `Encoder`/`Decoder` is built.
 - **Examples** and `fuzz/` are separate workspaces, built only on request.

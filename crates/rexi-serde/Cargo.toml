@@ -11,6 +11,10 @@ categories = ["encoding", "no-std", "embedded"]
 readme = "../../README.md"
 description = "Serde Serializer/Deserializer over the strict schema-informed EXI codec"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = ["std"]
 # std::io readers and writers in from_reader / to_writer (via rexi-core's std).

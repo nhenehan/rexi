@@ -11,7 +11,8 @@ fixed buffer.
 turn off the default features:
 
 ```toml
-rexi-core = { git = "https://github.com/nhenehan/rexi", tag = "v0.2.0", default-features = false }
+rexi-core = { version = "0.3", default-features = false }
+# or, with serde: rexi = { version = "0.3", default-features = false, features = ["serde"] }
 ```
 
 The output doesn't have to go into a growing `Vec`. A `SliceSink` writes into a

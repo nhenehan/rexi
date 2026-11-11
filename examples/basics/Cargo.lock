@@ -48,11 +48,11 @@ dependencies = [
 
 [[package]]
 name = "rexi-core"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "rexi-schema"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rexi-core",
  "roxmltree",
@@ -60,7 +60,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-serde"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rexi-core",
  "serde",
@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "rexi-xml"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "quick-xml",
  "rexi-core",

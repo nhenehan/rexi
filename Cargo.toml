@@ -20,18 +20,18 @@ edition = "2024"
 # Oldest supported Rust; scripts/gate.sh tests with it.
 rust-version = "1.88"
 license = "BSD-3-Clause"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Nathan Henehan <nhenehan@acm.org>"]
 repository = "https://github.com/nhenehan/rexi"
 keywords = ["exi", "xml", "binary", "encoding", "no-std"]
 categories = ["encoding", "parser-implementations", "no-std", "embedded"]
 
 [workspace.dependencies]
-rexi-core = { version = "0.2.0", path = "crates/rexi-core", default-features = false }
-rexi-schema = { version = "0.2.0", path = "crates/rexi-schema" }
-rexi-xml = { version = "0.2.0", path = "crates/rexi-xml" }
-rexi-schema-gen = { version = "0.2.0", path = "crates/rexi-schema-gen" }
-rexi-serde = { version = "0.2.0", path = "crates/rexi-serde", default-features = false }
+rexi-core = { version = "0.3.0", path = "crates/rexi-core", default-features = false }
+rexi-schema = { version = "0.3.0", path = "crates/rexi-schema" }
+rexi-xml = { version = "0.3.0", path = "crates/rexi-xml" }
+rexi-schema-gen = { version = "0.3.0", path = "crates/rexi-schema-gen" }
+rexi-serde = { version = "0.3.0", path = "crates/rexi-serde", default-features = false }
 roxmltree = "0.21"
 quick-xml = "0.42"
 serde = { version = "1", default-features = false, features = ["derive"] }
