@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0
+## 0.3.0 - 2026-11-10
 
 The first release on crates.io. These changes break code written for 0.2.0:
 
