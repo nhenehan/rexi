@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 QUICK=0
 [[ "${1:-}" == "--quick" ]] && QUICK=1
-NOSTD=(-p rexi-core -p rexi-serde -p rexi-nostd-check)
+NOSTD=(-p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi)
 
 step() { printf '\n== %s\n' "$*"; }
 
@@ -39,6 +39,7 @@ CARGO_TARGET_DIR=target/msrv cargo +1.88 test --workspace -q \
 
 step "no_std build (thumbv7em-none-eabihf)"
 cargo build -q -p rexi-nostd-check --target thumbv7em-none-eabihf
+cargo build -q -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
 
 step "generated tables"
 scripts/gen-tables.sh --check

@@ -8,6 +8,7 @@ members = [
     "crates/rexi-serde",
     "crates/rexi-capi",
     "crates/rexi-nostd-check",
+    "crates/rexi",
 ]
 resolver = "2"
 # Examples (examples/*/build.sh) and fuzz/ (cargo-fuzz, nightly) are separate

@@ -1,0 +1,36 @@
+[package]
+name = "rexi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "EXI (Efficient XML Interchange) for Rust: one crate for rexi-core, rexi-schema, rexi-xml and rexi-serde"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["std", "schema", "xml"]
+# std::io support in rexi-core (and rexi-serde, when on).
+std = ["rexi-core/std", "rexi-serde?/std"]
+# rexi::schema: compile an XML Schema (.xsd) into grammar tables at run time.
+schema = ["std", "dep:rexi-schema"]
+# rexi::xml: XML text to EXI and back.
+xml = ["schema", "dep:rexi-xml"]
+# rexi::serde: your own Rust types to EXI and back (works without std).
+serde = ["dep:rexi-serde"]
+
+[dependencies]
+rexi-core.workspace = true
+rexi-schema = { workspace = true, optional = true }
+rexi-xml = { workspace = true, optional = true }
+rexi-serde = { workspace = true, optional = true }
+
+[lints]
+workspace = true

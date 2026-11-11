@@ -44,7 +44,7 @@ jobs:
       - name: clippy
         run: |
           cargo clippy --workspace --all-targets --no-deps -- -D warnings
-          cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check --all-targets --no-deps --no-default-features -- -D warnings
+          cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --all-targets --no-deps --no-default-features -- -D warnings
       - name: rustdoc
         run: cargo doc --workspace --no-deps
         env:
@@ -52,9 +52,11 @@ jobs:
       - name: tests
         run: |
           cargo test --workspace
-          cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check --no-default-features
+          cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --no-default-features
       - name: no_std build (thumbv7em-none-eabihf)
-        run: cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf
+        run: |
+          cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf
+          cargo build -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
       - name: generated tables
         run: scripts/gen-tables.sh --check
 
