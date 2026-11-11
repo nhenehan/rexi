@@ -51,7 +51,7 @@ use crate::datatype::string::{
 use crate::datatype::unsigned::write_unsigned;
 use crate::error::{ExiError, ExiResult};
 use crate::grammar::GrammarTables;
-use crate::ids::{LocalId, NONE, PrefixId, QNameId, StrIdx, UriId};
+use crate::ids::{LocalId, PrefixId, QNameId, StrIdx, UriId};
 use crate::io::{BitReader, BitWriter, ceil_log2};
 use value::ValuePartitions;
 
@@ -322,7 +322,7 @@ impl StringTable {
         if let Some(id) = self.find_uri(tables, uri) {
             return id;
         }
-        let id = self.uris.len() as UriId;
+        let id = UriId::new(self.uris.len() as u32);
         self.uris.push(UriEntry {
             uri: Text::Owned(uri.to_owned()),
             ..UriEntry::default()
@@ -332,7 +332,7 @@ impl StringTable {
     }
 
     /// Adds `prefix` to the prefix partition of `uri`, returning its compact
-    /// identifier (the existing one if present). Returns [`NONE`] when `uri` is
+    /// identifier (the existing one if present). Returns [`PrefixId::NONE`] when `uri` is
     /// not a valid identifier.
     pub fn add_prefix<G: GrammarTables + ?Sized>(
         &mut self,
@@ -343,10 +343,11 @@ impl StringTable {
         if let Some(id) = self.find_prefix(tables, uri, prefix) {
             return id;
         }
-        let Some(entry) = self.uris.get_mut(uri as usize) else {
-            return NONE;
+        let Some(entry) = self.uris.get_mut(uri.index()) else {
+            return PrefixId::NONE;
         };
-        let id = (entry.initial_prefixes.len() + entry.added_prefixes().len()) as PrefixId;
+        let id =
+            PrefixId::new((entry.initial_prefixes.len() + entry.added_prefixes().len()) as u32);
         let added = entry.added_mut();
         added.prefixes.push(prefix.to_owned());
         added.prefix_index.insert(prefix.to_owned(), id);
@@ -354,7 +355,7 @@ impl StringTable {
     }
 
     /// Adds `local` to the local-name partition of `uri`, returning its compact
-    /// identifier (the existing one if present). Returns [`NONE`] when `uri` is
+    /// identifier (the existing one if present). Returns [`LocalId::NONE`] when `uri` is
     /// not a valid identifier.
     pub fn add_local_name<G: GrammarTables + ?Sized>(
         &mut self,
@@ -365,10 +366,10 @@ impl StringTable {
         if let Some(id) = self.find_local_name(tables, uri, local) {
             return id;
         }
-        let Some(entry) = self.uris.get_mut(uri as usize) else {
-            return NONE;
+        let Some(entry) = self.uris.get_mut(uri.index()) else {
+            return LocalId::NONE;
         };
-        let id = (entry.initial_locals.len() + entry.added_locals().len()) as LocalId;
+        let id = LocalId::new((entry.initial_locals.len() + entry.added_locals().len()) as u32);
         let added = entry.added_mut();
         added.local_names.push(local.to_owned());
         added.local_index.insert(local.to_owned(), id);
@@ -392,7 +393,9 @@ impl StringTable {
             added.local_names.sort_unstable();
             added.local_index.clear();
             for (id, name) in added.local_names.iter().enumerate() {
-                added.local_index.insert(name.clone(), id as LocalId);
+                added
+                    .local_index
+                    .insert(name.clone(), LocalId::new(id as u32));
             }
         }
     }
@@ -407,7 +410,7 @@ impl StringTable {
             .unwrap_or_default()
             .iter()
             .position(|e| matches!(e.uri, Text::Grammar(i) if tables.string(i) == uri))
-            .map(|i| i as UriId)
+            .map(|i| UriId::new(i as u32))
             .or_else(|| self.uri_index.get(uri).copied())
     }
 
@@ -419,13 +422,13 @@ impl StringTable {
         uri: UriId,
         prefix: &str,
     ) -> Option<PrefixId> {
-        let entry = self.uris.get(uri as usize)?;
+        let entry = self.uris.get(uri.index())?;
         let initial = tables
             .prefixes()
             .get(entry.initial_prefixes.clone())
             .unwrap_or_default();
         self.find_initial(tables, initial, prefix)
-            .map(|i| i as PrefixId)
+            .map(|i| PrefixId::new(i as u32))
             .or_else(|| entry.added.as_ref()?.prefix_index.get(prefix).copied())
     }
 
@@ -437,13 +440,13 @@ impl StringTable {
         uri: UriId,
         local: &str,
     ) -> Option<LocalId> {
-        let entry = self.uris.get(uri as usize)?;
+        let entry = self.uris.get(uri.index())?;
         let initial = tables
             .local_names()
             .get(entry.initial_locals.clone())
             .unwrap_or_default();
         self.find_initial(tables, initial, local)
-            .map(|i| i as LocalId)
+            .map(|i| LocalId::new(i as u32))
             .or_else(|| entry.added.as_ref()?.local_index.get(local).copied())
     }
 
@@ -453,7 +456,7 @@ impl StringTable {
         tables: &'a G,
         id: UriId,
     ) -> Option<&'a str> {
-        self.uris.get(id as usize).map(|e| match &e.uri {
+        self.uris.get(id.index()).map(|e| match &e.uri {
             Text::Grammar(i) => tables.string(*i),
             Text::Owned(s) => s.as_str(),
         })
@@ -466,8 +469,8 @@ impl StringTable {
         uri: UriId,
         id: LocalId,
     ) -> Option<&'a str> {
-        let entry = self.uris.get(uri as usize)?;
-        let id = id as usize;
+        let entry = self.uris.get(uri.index())?;
+        let id = id.index();
         match id.checked_sub(entry.initial_locals.len()) {
             None => tables
                 .local_names()
@@ -484,8 +487,8 @@ impl StringTable {
         uri: UriId,
         id: PrefixId,
     ) -> Option<&'a str> {
-        let entry = self.uris.get(uri as usize)?;
-        let id = id as usize;
+        let entry = self.uris.get(uri.index())?;
+        let id = id.index();
         match id.checked_sub(entry.initial_prefixes.len()) {
             None => tables
                 .prefixes()
@@ -503,14 +506,14 @@ impl StringTable {
     /// Number of entries in the local-name partition of `uri` (0 for an unknown URI).
     pub fn local_name_count(&self, uri: UriId) -> usize {
         self.uris
-            .get(uri as usize)
+            .get(uri.index())
             .map_or(0, |e| e.initial_locals.len() + e.added_locals().len())
     }
 
     /// Number of entries in the prefix partition of `uri` (0 for an unknown URI).
     pub fn prefix_count(&self, uri: UriId) -> usize {
         self.uris
-            .get(uri as usize)
+            .get(uri.index())
             .map_or(0, |e| e.initial_prefixes.len() + e.added_prefixes().len())
     }
 
@@ -598,7 +601,7 @@ impl StringTable {
             id_plus_one => {
                 let id = id_plus_one - 1;
                 if (id as usize) < self.uris.len() {
-                    Ok(id as UriId)
+                    Ok(UriId::new(id as u32))
                 } else {
                     Err(ExiError::StringTable("uri identifier out of range"))
                 }
@@ -618,7 +621,7 @@ impl StringTable {
         uri: UriId,
         prefix: &str,
     ) -> ExiResult<PrefixId> {
-        if (uri as usize) >= self.uris.len() {
+        if uri.index() >= self.uris.len() {
             return Err(ExiError::StringTable("uri identifier out of range"));
         }
         let n = ceil_log2(self.prefix_count(uri) + 1);
@@ -642,7 +645,7 @@ impl StringTable {
         r: &mut BitReader<R>,
         uri: UriId,
     ) -> ExiResult<PrefixId> {
-        if (uri as usize) >= self.uris.len() {
+        if uri.index() >= self.uris.len() {
             return Err(ExiError::StringTable("uri identifier out of range"));
         }
         let count = self.prefix_count(uri);
@@ -655,7 +658,7 @@ impl StringTable {
             id_plus_one => {
                 let id = id_plus_one - 1;
                 if (id as usize) < count {
-                    Ok(id as PrefixId)
+                    Ok(PrefixId::new(id as u32))
                 } else {
                     Err(ExiError::StringTable("prefix identifier out of range"))
                 }
@@ -677,7 +680,7 @@ impl StringTable {
         uri: UriId,
         local: &str,
     ) -> ExiResult<LocalId> {
-        if (uri as usize) >= self.uris.len() {
+        if uri.index() >= self.uris.len() {
             return Err(ExiError::StringTable("uri identifier out of range"));
         }
         match self.find_local_name(tables, uri, local) {
@@ -703,7 +706,7 @@ impl StringTable {
         r: &mut BitReader<R>,
         uri: UriId,
     ) -> ExiResult<LocalId> {
-        if (uri as usize) >= self.uris.len() {
+        if uri.index() >= self.uris.len() {
             return Err(ExiError::StringTable("uri identifier out of range"));
         }
         let count = self.local_name_count(uri);
@@ -712,7 +715,7 @@ impl StringTable {
                 let n = ceil_log2(count);
                 let id = r.read_nbit_unsigned(n)?;
                 if (id as usize) < count {
-                    Ok(id as LocalId)
+                    Ok(LocalId::new(id as u32))
                 } else {
                     Err(ExiError::StringTable("local-name identifier out of range"))
                 }
@@ -829,31 +832,31 @@ mod tests {
     fn add_uri_is_idempotent_and_sequential() {
         let mut t = default_table();
         assert_eq!(t.uri_count(), 4);
-        assert_eq!(t.add_uri(NO, XSI_NS_URI), 2);
-        assert_eq!(t.add_uri(NO, "urn:a"), 4);
-        assert_eq!(t.add_uri(NO, "urn:a"), 4);
-        assert_eq!(t.find_uri(NO, "urn:a"), Some(4));
+        assert_eq!(t.add_uri(NO, XSI_NS_URI), UriId(2));
+        assert_eq!(t.add_uri(NO, "urn:a"), UriId(4));
+        assert_eq!(t.add_uri(NO, "urn:a"), UriId(4));
+        assert_eq!(t.find_uri(NO, "urn:a"), Some(UriId(4)));
         assert_eq!(t.find_uri(NO, "urn:b"), None);
-        assert_eq!(t.uri(NO, 4), Some("urn:a"));
-        assert_eq!(t.uri(NO, 5), None);
+        assert_eq!(t.uri(NO, UriId(4)), Some("urn:a"));
+        assert_eq!(t.uri(NO, UriId(5)), None);
     }
 
     #[test]
     fn invalid_uri_id_yields_none_sentinel() {
         let mut t = default_table();
-        assert_eq!(t.add_prefix(NO, 99, "p"), NONE);
-        assert_eq!(t.add_local_name(NO, 99, "l"), NONE);
-        assert_eq!(t.local_name_count(99), 0);
-        assert_eq!(t.prefix_count(99), 0);
-        assert_eq!(t.local_name(NO, 99, 0), None);
-        assert_eq!(t.prefix(NO, 99, 0), None);
+        assert_eq!(t.add_prefix(NO, UriId(99), "p"), PrefixId::NONE);
+        assert_eq!(t.add_local_name(NO, UriId(99), "l"), LocalId::NONE);
+        assert_eq!(t.local_name_count(UriId(99)), 0);
+        assert_eq!(t.prefix_count(UriId(99)), 0);
+        assert_eq!(t.local_name(NO, UriId(99), LocalId(0)), None);
+        assert_eq!(t.prefix(NO, UriId(99), PrefixId(0)), None);
         let mut w = BitWriter::new(Vec::new());
         assert_eq!(
-            t.write_local_name(NO, &mut w, 99, "l"),
+            t.write_local_name(NO, &mut w, UriId(99), "l"),
             Err(ExiError::StringTable("uri identifier out of range"))
         );
         assert_eq!(
-            t.write_prefix(NO, &mut w, 99, "p"),
+            t.write_prefix(NO, &mut w, UriId(99), "p"),
             Err(ExiError::StringTable("uri identifier out of range"))
         );
     }
@@ -863,29 +866,29 @@ mod tests {
         let mut t = default_table();
         let mut w = BitWriter::new(Vec::new());
         // 4 URIs -> ceil_log2(5) = 3 bits; id 2 is written as 3.
-        assert_eq!(t.write_uri(NO, &mut w, XSI_NS_URI), Ok(2));
+        assert_eq!(t.write_uri(NO, &mut w, XSI_NS_URI), Ok(UriId(2)));
         assert_eq!(w.bit_position(), 3);
-        assert_eq!(t.write_uri(NO, &mut w, ""), Ok(0));
+        assert_eq!(t.write_uri(NO, &mut w, ""), Ok(UriId(0)));
         assert_eq!(w.bit_position(), 6);
         let bytes = finish(w);
         // 3 (id 2 + 1) in 3 bits, 1 (id 0 + 1) in 3 bits, two padding bits.
         assert_eq!(bytes, vec![0b0110_0100]);
         let mut r = BitReader::new(bytes.as_slice());
         let mut d = default_table();
-        assert_eq!(d.read_uri(NO, &mut r), Ok(2));
-        assert_eq!(d.read_uri(NO, &mut r), Ok(0));
+        assert_eq!(d.read_uri(NO, &mut r), Ok(UriId(2)));
+        assert_eq!(d.read_uri(NO, &mut r), Ok(UriId(0)));
     }
 
     #[test]
     fn uri_miss_is_zero_then_string_and_grows_the_partition() {
         let mut t = default_table();
         let mut w = BitWriter::new(Vec::new());
-        assert_eq!(t.write_uri(NO, &mut w, "urn:x"), Ok(4));
+        assert_eq!(t.write_uri(NO, &mut w, "urn:x"), Ok(UriId(4)));
         assert_eq!(t.uri_count(), 5);
         // 0 in 3 bits, then String "urn:x": length 5 then 5 chars = 48 bits.
         assert_eq!(w.bit_position(), 3 + 8 + 5 * 8);
         // Now 5 entries -> ceil_log2(6) is still 3 bits; the new id 4 is written as 5.
-        assert_eq!(t.write_uri(NO, &mut w, "urn:x"), Ok(4));
+        assert_eq!(t.write_uri(NO, &mut w, "urn:x"), Ok(UriId(4)));
         assert_eq!(w.bit_position(), 3 + 48 + 3);
         let bytes = finish(w);
         let mut r = BitReader::new(bytes.as_slice());
@@ -895,9 +898,9 @@ mod tests {
 
         let mut d = default_table();
         let mut r = BitReader::new(bytes.as_slice());
-        assert_eq!(d.read_uri(NO, &mut r), Ok(4));
-        assert_eq!(d.uri(NO, 4), Some("urn:x"));
-        assert_eq!(d.read_uri(NO, &mut r), Ok(4));
+        assert_eq!(d.read_uri(NO, &mut r), Ok(UriId(4)));
+        assert_eq!(d.uri(NO, UriId(4)), Some("urn:x"));
+        assert_eq!(d.read_uri(NO, &mut r), Ok(UriId(4)));
         assert_eq!(d.uri_count(), 5);
     }
 
@@ -906,27 +909,27 @@ mod tests {
         // Empty partition: ceil_log2(1) = 0 bits, every write is a miss.
         let mut t = StringTable::new();
         let mut w = BitWriter::new(Vec::new());
-        assert_eq!(t.write_uri(NO, &mut w, "a"), Ok(0));
+        assert_eq!(t.write_uri(NO, &mut w, "a"), Ok(UriId(0)));
         assert_eq!(w.bit_position(), 8 + 8);
         // 1 entry -> ceil_log2(2) = 1 bit.
-        assert_eq!(t.write_uri(NO, &mut w, "a"), Ok(0));
+        assert_eq!(t.write_uri(NO, &mut w, "a"), Ok(UriId(0)));
         assert_eq!(w.bit_position(), 17);
         for (i, uri) in ["b", "c", "d", "e", "f", "g"].iter().enumerate() {
-            assert_eq!(t.write_uri(NO, &mut w, uri), Ok(i as UriId + 1));
+            assert_eq!(t.write_uri(NO, &mut w, uri), Ok(UriId::new(i as u32 + 1)));
         }
         // 7 entries -> ceil_log2(8) = 3 bits; 8 entries -> ceil_log2(9) = 4 bits.
         let before = w.bit_position();
-        assert_eq!(t.write_uri(NO, &mut w, "g"), Ok(6));
+        assert_eq!(t.write_uri(NO, &mut w, "g"), Ok(UriId(6)));
         assert_eq!(w.bit_position() - before, 3);
-        assert_eq!(t.write_uri(NO, &mut w, "h"), Ok(7));
+        assert_eq!(t.write_uri(NO, &mut w, "h"), Ok(UriId(7)));
         let before = w.bit_position();
-        assert_eq!(t.write_uri(NO, &mut w, "h"), Ok(7));
+        assert_eq!(t.write_uri(NO, &mut w, "h"), Ok(UriId(7)));
         assert_eq!(w.bit_position() - before, 4);
         let bytes = finish(w);
         let mut d = StringTable::new();
         let mut r = BitReader::new(bytes.as_slice());
         let got: Vec<ExiResult<UriId>> = (0..11).map(|_| d.read_uri(NO, &mut r)).collect();
-        assert_eq!(got, [0, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7].map(Ok));
+        assert_eq!(got, [0, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7].map(|i| Ok(UriId(i))));
     }
 
     #[test]
@@ -946,19 +949,25 @@ mod tests {
         let xml = XML_NS_URI_ID;
         let mut w = BitWriter::new(Vec::new());
         // Hit: Unsigned 0 (one octet), then id 2 ("lang") in ceil_log2(4) = 2 bits.
-        assert_eq!(t.write_local_name(NO, &mut w, xml, "lang"), Ok(2));
+        assert_eq!(t.write_local_name(NO, &mut w, xml, "lang"), Ok(LocalId(2)));
         assert_eq!(w.bit_position(), 10);
         // Miss: length 3 + 1 = 4 as Unsigned, then 3 chars; added as id 4.
-        assert_eq!(t.write_local_name(NO, &mut w, xml, "foo"), Ok(4));
+        assert_eq!(t.write_local_name(NO, &mut w, xml, "foo"), Ok(LocalId(4)));
         assert_eq!(w.bit_position(), 10 + 8 + 24);
         assert_eq!(t.local_name_count(xml), 5);
-        assert_eq!(t.local_name(NO, xml, 4), Some("foo"));
+        assert_eq!(t.local_name(NO, xml, LocalId(4)), Some("foo"));
         // Hit on the new entry: 5 entries -> 3 bits.
-        assert_eq!(t.write_local_name(NO, &mut w, xml, "foo"), Ok(4));
+        assert_eq!(t.write_local_name(NO, &mut w, xml, "foo"), Ok(LocalId(4)));
         assert_eq!(w.bit_position(), 42 + 8 + 3);
         // Empty partition (uri 0): a hit would need ceil_log2(1) = 0 bits after a miss of one entry.
-        assert_eq!(t.write_local_name(NO, &mut w, 0, "root"), Ok(0));
-        assert_eq!(t.write_local_name(NO, &mut w, 0, "root"), Ok(0));
+        assert_eq!(
+            t.write_local_name(NO, &mut w, UriId(0), "root"),
+            Ok(LocalId(0))
+        );
+        assert_eq!(
+            t.write_local_name(NO, &mut w, UriId(0), "root"),
+            Ok(LocalId(0))
+        );
         let bytes = finish(w);
 
         let mut r = BitReader::new(bytes.as_slice());
@@ -974,26 +983,29 @@ mod tests {
 
         let mut d = StringTable::with_initial_entries(false);
         let mut r = BitReader::new(bytes.as_slice());
-        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(2));
-        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(4));
-        assert_eq!(d.local_name(NO, xml, 4), Some("foo"));
-        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(4));
-        assert_eq!(d.read_local_name(NO, &mut r, 0), Ok(0));
-        assert_eq!(d.read_local_name(NO, &mut r, 0), Ok(0));
-        assert_eq!(d.local_name(NO, 0, 0), Some("root"));
+        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(LocalId(2)));
+        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(LocalId(4)));
+        assert_eq!(d.local_name(NO, xml, LocalId(4)), Some("foo"));
+        assert_eq!(d.read_local_name(NO, &mut r, xml), Ok(LocalId(4)));
+        assert_eq!(d.read_local_name(NO, &mut r, UriId(0)), Ok(LocalId(0)));
+        assert_eq!(d.read_local_name(NO, &mut r, UriId(0)), Ok(LocalId(0)));
+        assert_eq!(d.local_name(NO, UriId(0), LocalId(0)), Some("root"));
     }
 
     #[test]
     fn local_name_length_counts_code_points() {
         let mut t = default_table();
         let mut w = BitWriter::new(Vec::new());
-        assert_eq!(t.write_local_name(NO, &mut w, 0, "é€"), Ok(0));
+        assert_eq!(
+            t.write_local_name(NO, &mut w, UriId(0), "é€"),
+            Ok(LocalId(0))
+        );
         let bytes = finish(w);
         assert_eq!(bytes[0], 3);
         let mut d = default_table();
         let mut r = BitReader::new(bytes.as_slice());
-        assert_eq!(d.read_local_name(NO, &mut r, 0), Ok(0));
-        assert_eq!(d.local_name(NO, 0, 0), Some("é€"));
+        assert_eq!(d.read_local_name(NO, &mut r, UriId(0)), Ok(LocalId(0)));
+        assert_eq!(d.local_name(NO, UriId(0), LocalId(0)), Some("é€"));
     }
 
     #[test]
@@ -1004,7 +1016,7 @@ mod tests {
         // empty partition where a hit must fail.
         let mut r = BitReader::new([0u8].as_slice());
         assert_eq!(
-            d.read_local_name(NO, &mut r, 0),
+            d.read_local_name(NO, &mut r, UriId(0)),
             Err(ExiError::StringTable("local-name identifier out of range"))
         );
     }
@@ -1015,25 +1027,25 @@ mod tests {
         let xml = XML_NS_URI_ID;
         let mut w = BitWriter::new(Vec::new());
         // 1 prefix -> ceil_log2(2) = 1 bit; "xml" is id 0, written as 1.
-        assert_eq!(t.write_prefix(NO, &mut w, xml, "xml"), Ok(0));
+        assert_eq!(t.write_prefix(NO, &mut w, xml, "xml"), Ok(PrefixId(0)));
         assert_eq!(w.bit_position(), 1);
         // Miss: 0 in 1 bit, then String "x" (length 1 + 1 char), added as id 1.
-        assert_eq!(t.write_prefix(NO, &mut w, xml, "x"), Ok(1));
+        assert_eq!(t.write_prefix(NO, &mut w, xml, "x"), Ok(PrefixId(1)));
         assert_eq!(w.bit_position(), 1 + 1 + 16);
         // 2 prefixes -> ceil_log2(3) = 2 bits.
-        assert_eq!(t.write_prefix(NO, &mut w, xml, "x"), Ok(1));
+        assert_eq!(t.write_prefix(NO, &mut w, xml, "x"), Ok(PrefixId(1)));
         assert_eq!(w.bit_position(), 20);
         assert_eq!(t.prefix_count(xml), 2);
-        assert_eq!(t.find_prefix(NO, xml, "x"), Some(1));
+        assert_eq!(t.find_prefix(NO, xml, "x"), Some(PrefixId(1)));
         let bytes = finish(w);
         let mut d = StringTable::with_initial_entries(false);
         let mut r = BitReader::new(bytes.as_slice());
-        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(0));
-        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(1));
-        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(1));
-        assert_eq!(d.prefix(NO, xml, 1), Some("x"));
+        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(PrefixId(0)));
+        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(PrefixId(1)));
+        assert_eq!(d.read_prefix(NO, &mut r, xml), Ok(PrefixId(1)));
+        assert_eq!(d.prefix(NO, xml, PrefixId(1)), Some("x"));
         assert_eq!(
-            d.read_prefix(NO, &mut r, 99),
+            d.read_prefix(NO, &mut r, UriId(99)),
             Err(ExiError::StringTable("uri identifier out of range"))
         );
     }
@@ -1054,20 +1066,20 @@ mod tests {
         for (uri, local) in seq {
             ids.push(
                 t.write_qname(NO, &mut w, uri, local)
-                    .unwrap_or(QNameId::new(NONE, NONE)),
+                    .unwrap_or(QNameId::new(UriId::NONE, LocalId::NONE)),
             );
         }
-        assert_eq!(ids[0], QNameId::new(2, 1));
-        assert_eq!(ids[1], QNameId::new(4, 0));
-        assert_eq!(ids[2], QNameId::new(4, 1));
+        assert_eq!(ids[0], QNameId::new(UriId(2), LocalId(1)));
+        assert_eq!(ids[1], QNameId::new(UriId(4), LocalId(0)));
+        assert_eq!(ids[2], QNameId::new(UriId(4), LocalId(1)));
         assert_eq!(ids[3], ids[1]);
-        assert_eq!(ids[4], QNameId::new(0, 0));
-        assert_eq!(ids[5], QNameId::new(3, 18));
+        assert_eq!(ids[4], QNameId::new(UriId(0), LocalId(0)));
+        assert_eq!(ids[5], QNameId::new(UriId(3), LocalId(18)));
         assert_eq!(t.qname_id(NO, "urn:ex", "child"), Some(ids[2]));
         assert_eq!(t.qname_id(NO, "urn:ex", "nope"), None);
         assert_eq!(t.qname_id(NO, "urn:nope", "root"), None);
         assert_eq!(t.qname(NO, ids[2]), Some(("urn:ex", "child")));
-        assert_eq!(t.qname(NO, QNameId::new(4, 9)), None);
+        assert_eq!(t.qname(NO, QNameId::new(UriId(4), LocalId(9))), None);
         let bytes = finish(w);
         let mut d = StringTable::with_initial_entries(true);
         let mut r = BitReader::new(bytes.as_slice());
@@ -1080,8 +1092,8 @@ mod tests {
     #[test]
     fn value_first_miss_then_local_then_global_hit() {
         let mut t = default_table();
-        let at = QNameId::new(0, 0);
-        let el = QNameId::new(0, 1);
+        let at = QNameId::new(UriId(0), LocalId(0));
+        let el = QNameId::new(UriId(0), LocalId(1));
         let mut w = BitWriter::new(Vec::new());
         // Miss: length 3 + 2 = 5, then "abc".
         assert_eq!(t.write_value(&mut w, at, "abc"), Ok(()));
@@ -1122,25 +1134,28 @@ mod tests {
     fn byte_aligned_mode_round_trips_everything() {
         let mut t = StringTable::with_initial_entries(true);
         let mut w = BitWriter::with_alignment(Vec::new(), true);
-        let ctx = QNameId::new(0, 0);
+        let ctx = QNameId::new(UriId(0), LocalId(0));
         assert_eq!(
             t.write_qname(NO, &mut w, "urn:ex", "root"),
-            Ok(QNameId::new(4, 0))
+            Ok(QNameId::new(UriId(4), LocalId(0)))
         );
         assert_eq!(
             t.write_qname(NO, &mut w, "urn:ex", "root"),
-            Ok(QNameId::new(4, 0))
+            Ok(QNameId::new(UriId(4), LocalId(0)))
         );
-        assert_eq!(t.write_prefix(NO, &mut w, 4, "ex"), Ok(0));
-        assert_eq!(t.write_prefix(NO, &mut w, 4, "ex"), Ok(0));
+        assert_eq!(t.write_prefix(NO, &mut w, UriId(4), "ex"), Ok(PrefixId(0)));
+        assert_eq!(t.write_prefix(NO, &mut w, UriId(4), "ex"), Ok(PrefixId(0)));
         assert_eq!(
             t.write_qname(NO, &mut w, XML_NS_URI, "lang"),
-            Ok(QNameId::new(1, 2))
+            Ok(QNameId::new(UriId(1), LocalId(2)))
         );
         for v in ["one", "two", "one", "", "three", "two"] {
             assert_eq!(t.write_value(&mut w, ctx, v), Ok(()));
         }
-        assert_eq!(t.write_value(&mut w, QNameId::new(4, 0), "three"), Ok(()));
+        assert_eq!(
+            t.write_value(&mut w, QNameId::new(UriId(4), LocalId(0)), "three"),
+            Ok(())
+        );
         // In byte-aligned mode the 3-bit uri hit (5 entries) takes a whole octet.
         let bytes = finish(w);
         let mut r = BitReader::with_alignment(bytes.as_slice(), true);
@@ -1149,20 +1164,32 @@ mod tests {
 
         let mut d = StringTable::with_initial_entries(true);
         let mut r = BitReader::with_alignment(bytes.as_slice(), true);
-        assert_eq!(d.read_qname(NO, &mut r), Ok(QNameId::new(4, 0)));
-        assert_eq!(d.read_qname(NO, &mut r), Ok(QNameId::new(4, 0)));
-        assert_eq!(d.read_prefix(NO, &mut r, 4), Ok(0));
-        assert_eq!(d.read_prefix(NO, &mut r, 4), Ok(0));
-        assert_eq!(d.read_qname(NO, &mut r), Ok(QNameId::new(1, 2)));
+        assert_eq!(
+            d.read_qname(NO, &mut r),
+            Ok(QNameId::new(UriId(4), LocalId(0)))
+        );
+        assert_eq!(
+            d.read_qname(NO, &mut r),
+            Ok(QNameId::new(UriId(4), LocalId(0)))
+        );
+        assert_eq!(d.read_prefix(NO, &mut r, UriId(4)), Ok(PrefixId(0)));
+        assert_eq!(d.read_prefix(NO, &mut r, UriId(4)), Ok(PrefixId(0)));
+        assert_eq!(
+            d.read_qname(NO, &mut r),
+            Ok(QNameId::new(UriId(1), LocalId(2)))
+        );
         let mut s = String::new();
         for v in ["one", "two", "one", "", "three", "two"] {
             assert_eq!(d.read_value(&mut r, ctx, &mut s), Ok(()));
             assert_eq!(s, v);
         }
-        assert_eq!(d.read_value(&mut r, QNameId::new(4, 0), &mut s), Ok(()));
+        assert_eq!(
+            d.read_value(&mut r, QNameId::new(UriId(4), LocalId(0)), &mut s),
+            Ok(())
+        );
         assert_eq!(s, "three");
-        assert_eq!(d.uri(NO, 4), Some("urn:ex"));
-        assert_eq!(d.prefix(NO, 4, 0), Some("ex"));
+        assert_eq!(d.uri(NO, UriId(4)), Some("urn:ex"));
+        assert_eq!(d.prefix(NO, UriId(4), PrefixId(0)), Some("ex"));
     }
 
     /// Deterministic pseudo-random generator (no dependencies).
@@ -1198,9 +1225,15 @@ mod tests {
         (0..n)
             .map(|_| match rng.next() % 4 {
                 0 => Op::Qname(rng.pick(&uris).to_owned(), rng.pick(&locals).to_owned()),
-                1 => Op::Prefix((rng.next() % 3) as UriId, rng.pick(&prefixes).to_owned()),
+                1 => Op::Prefix(
+                    UriId::new((rng.next() % 3) as u32),
+                    rng.pick(&prefixes).to_owned(),
+                ),
                 _ => Op::Value(
-                    QNameId::new((rng.next() % 3) as UriId, (rng.next() % 3) as LocalId),
+                    QNameId::new(
+                        UriId::new((rng.next() % 3) as u32),
+                        LocalId::new((rng.next() % 3) as u32),
+                    ),
                     rng.pick(&values).to_owned(),
                 ),
             })

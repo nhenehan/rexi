@@ -44,7 +44,9 @@
 use std::collections::HashMap;
 
 use rexi_core::grammar::{GrammarTables, Production, Terminal};
-use rexi_core::{DatatypeKind, DateTimeKind, ElemIdx, NONE, QNameId, RuleIdx, TypeIdx, WhiteSpace};
+use rexi_core::{
+    DatatypeKind, DateTimeKind, ElemIdx, LocalId, QNameId, RuleIdx, TypeIdx, UriId, WhiteSpace,
+};
 
 /// One grammar in the dump. Most are made up to match EXIficient's objects; only
 /// `Rule` is a rule of rexi's tables as is.
@@ -101,7 +103,7 @@ struct RuleInfo {
 struct Dumper<'t, T: GrammarTables> {
     t: &'t T,
     rule_info: HashMap<RuleIdx, RuleInfo>,
-    /// For each type: (start rule, content start rule). `(NONE, NONE)` when the
+    /// For each type: (start rule, content start rule). `(RuleIdx::NONE, RuleIdx::NONE)` when the
     /// type's grammar has no rules.
     bounds: Vec<(RuleIdx, RuleIdx)>,
     /// The grammar number given to each node.
@@ -140,15 +142,15 @@ impl<T: GrammarTables> Dumper<'_, T> {
     fn analyse(&mut self) {
         for (ti, td) in self.t.types().iter().enumerate() {
             let Some(r0) = self.t.grammar_start_rule(td.grammar) else {
-                self.bounds.push((NONE, NONE));
+                self.bounds.push((RuleIdx::NONE, RuleIdx::NONE));
                 continue;
             };
-            let grammar = self.t.grammars()[td.grammar as usize];
+            let grammar = self.t.grammars()[td.grammar.index()];
             for r in grammar.rules.range() {
                 self.rule_info.insert(
-                    r as RuleIdx,
+                    RuleIdx::new(r as u32),
                     RuleInfo {
-                        type_idx: ti as TypeIdx,
+                        type_idx: TypeIdx::new(ti as u32),
                         start_tag: false,
                     },
                 );
@@ -162,7 +164,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 i += 1;
                 for p in self.t.rule_productions(r) {
                     if let Terminal::At(..) = p.terminal
-                        && p.next != NONE
+                        && !p.next.is_none()
                         && !chain.contains(&p.next)
                     {
                         chain.push(p.next);
@@ -193,11 +195,11 @@ impl<T: GrammarTables> Dumper<'_, T> {
     /// nillable or its type is typecastable (as EXIficient does), otherwise its
     /// type's shared start rule.
     fn elem_node(&self, e: ElemIdx) -> Node {
-        let decl = self.t.elements()[e as usize];
+        let decl = self.t.elements()[e.index()];
         let castable = self
             .t
             .types()
-            .get(decl.type_idx as usize)
+            .get(decl.type_idx.index())
             .is_some_and(|d| d.typecastable);
         if castable || decl.nillable {
             Node::ElemStart(e)
@@ -215,7 +217,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
     }
 
     fn type_name(&self, ti: TypeIdx) -> String {
-        match self.t.types().get(ti as usize) {
+        match self.t.types().get(ti.index()) {
             Some(td) if !td.is_anonymous() => self.qname_text(td.qname),
             _ => "{}<anonymous>".to_string(),
         }
@@ -232,7 +234,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
         let kind = self
             .t
             .types()
-            .get(ti as usize)
+            .get(ti.index())
             .and_then(|d| d.datatype)
             .unwrap_or(DatatypeKind::Untyped);
         match kind {
@@ -290,10 +292,10 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 let values: Vec<&str> = (0..self
                     .t
                     .enum_sets()
-                    .get(set as usize)
+                    .get(set.index())
                     .map_or(0, |s| s.len as usize))
                     .filter_map(|i| {
-                        let span = self.t.enum_sets()[set as usize];
+                        let span = self.t.enum_sets()[set.index()];
                         self.t
                             .enum_values()
                             .get(span.start as usize + i)
@@ -324,7 +326,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
         let kind = self
             .t
             .types()
-            .get(ti as usize)
+            .get(ti.index())
             .and_then(|d| d.datatype)
             .unwrap_or(DatatypeKind::Untyped);
         match kind {
@@ -362,7 +364,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
             Terminal::Ed => "ED".into(),
             Terminal::Ee => "EE".into(),
             Terminal::Se(e) => {
-                let q = self.t.elements()[e as usize].qname;
+                let q = self.t.elements()[e.index()].qname;
                 format!("SE {}", self.qname_text(q))
             }
             Terminal::SeNs(u) => format!("SE {{{}}}*", self.t.uri_str(u).unwrap_or("")),
@@ -393,9 +395,9 @@ impl<T: GrammarTables> Dumper<'_, T> {
     fn map_rule(&self, r: RuleIdx, ti: TypeIdx, self_node: Node, content_node: bool) -> Vec<DProd> {
         let (r0, r2) = self
             .bounds
-            .get(ti as usize)
+            .get(ti.index())
             .copied()
-            .unwrap_or((NONE, NONE));
+            .unwrap_or((RuleIdx::NONE, RuleIdx::NONE));
         let mut out = Vec::new();
         for p in self.t.rule_productions(r) {
             let attr = is_attribute(p.terminal);
@@ -406,7 +408,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 Terminal::Se(e) => Some(self.elem_node(e)),
                 _ => None,
             };
-            let next = if p.next == NONE {
+            let next = if p.next.is_none() {
                 Node::End
             } else if matches!(p.terminal, Terminal::Ch(_)) {
                 Node::SimpleEnd
@@ -466,16 +468,16 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 next: Node::End,
             }],
             Node::ElemStart(e) => {
-                let ti = self.t.elements()[e as usize].type_idx;
-                let (r0, _) = self.bounds[ti as usize];
+                let ti = self.t.elements()[e.index()].type_idx;
+                let (r0, _) = self.bounds[ti.index()];
                 self.map_rule(r0, ti, node, false)
             }
             Node::TypeStart(ti) => {
-                let (r0, _) = self.bounds[ti as usize];
+                let (r0, _) = self.bounds[ti.index()];
                 self.map_rule(r0, ti, node, false)
             }
             Node::Content(ti) | Node::ContentOrig(ti) => {
-                let (_, r2) = self.bounds[ti as usize];
+                let (_, r2) = self.bounds[ti.index()];
                 self.map_rule(r2, ti, node, true)
             }
             Node::Rule(r) => match self.rule_info.get(&r) {
@@ -491,11 +493,12 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 // Every element, global or local, sorted by local name, then by
                 // URI. Each name is listed once, even if several declarations
                 // share it.
-                let mut elems: Vec<ElemIdx> = (0..self.t.elements().len() as ElemIdx).collect();
+                let mut elems: Vec<ElemIdx> =
+                    (0..self.t.elements().len() as u32).map(ElemIdx).collect();
                 elems.sort_by(|&a, &b| {
                     let (qa, qb) = (
-                        self.t.elements()[a as usize].qname,
-                        self.t.elements()[b as usize].qname,
+                        self.t.elements()[a.index()].qname,
+                        self.t.elements()[b.index()].qname,
                     );
                     self.t
                         .local_name_str(qa)
@@ -505,7 +508,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 let mut v = Vec::new();
                 let mut seen: Vec<QNameId> = Vec::new();
                 for e in elems {
-                    let q = self.t.elements()[e as usize].qname;
+                    let q = self.t.elements()[e.index()].qname;
                     if seen.contains(&q) {
                         continue;
                     }
@@ -536,7 +539,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
     /// other node.
     fn element_content(&self, node: Node) -> Option<Node> {
         match node {
-            Node::ElemStart(e) => Some(Node::Content(self.t.elements()[e as usize].type_idx)),
+            Node::ElemStart(e) => Some(Node::Content(self.t.elements()[e.index()].type_idx)),
             Node::TypeStart(ti) => Some(Node::Content(ti)),
             Node::Rule(r) => {
                 let info = self.rule_info.get(&r)?;
@@ -578,7 +581,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
             .iter()
             .enumerate()
             .filter(|(_, d)| !d.is_anonymous())
-            .map(|(i, d)| (d.qname, i as TypeIdx))
+            .map(|(i, d)| (d.qname, TypeIdx::new(i as u32)))
             .collect();
         named.sort();
         for (_, ti) in named {
@@ -612,8 +615,8 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 "type=SCHEMA_INFORMED_FRAGMENT_CONTENT declared-attributes=0 label=\"FragmentContent\" has-EE=false".into()
             }
             Node::ElemStart(e) => {
-                let decl = self.t.elements()[e as usize];
-                let castable = self.t.types().get(decl.type_idx as usize).is_some_and(|d| d.typecastable);
+                let decl = self.t.elements()[e.index()];
+                let castable = self.t.types().get(decl.type_idx.index()).is_some_and(|d| d.typecastable);
                 format!(
                     "type=SCHEMA_INFORMED_FIRST_START_TAG_CONTENT nillable={} typecastable={} declared-attributes={declared} has-EE={has_ee} element-content={}",
                     decl.nillable,
@@ -667,12 +670,12 @@ impl<T: GrammarTables> Dumper<'_, T> {
                 let Some(&s) = self.t.local_names().get(i) else {
                     continue;
                 };
-                let q = QNameId::new(ui as u32, li as u32);
+                let q = QNameId::new(UriId::new(ui as u32), LocalId::new(li as u32));
                 let mut line = format!("  local {li} \"{}\"", self.t.string(s));
                 if let Some(ti) = self.t.types().iter().position(|d| d.qname == q) {
                     line.push_str(&format!(
                         " type-grammar={}",
-                        self.id(Node::TypeStart(ti as TypeIdx))
+                        self.id(Node::TypeStart(TypeIdx::new(ti as u32)))
                     ));
                 }
                 if let Some(e) = self.t.find_global_element(q) {
@@ -754,24 +757,24 @@ pub fn canonical_dump(t: &impl GrammarTables) -> String {
     for (ti, td) in t.types().iter().enumerate() {
         out.push_str(&format!(
             "type {ti} {} typecastable={} datatype={}\n",
-            d.type_name(ti as TypeIdx),
+            d.type_name(TypeIdx::new(ti as u32)),
             td.typecastable,
             td.datatype.map_or("none".to_string(), |k| format!("{k:?}"))
         ));
         for (label, g) in [("grammar", td.grammar), ("empty", td.empty_grammar)] {
-            let Some(grammar) = t.grammars().get(g as usize) else {
+            let Some(grammar) = t.grammars().get(g.index()) else {
                 continue;
             };
             let start = grammar.rules.start;
             for r in grammar.rules.range() {
                 let prods: Vec<String> = t
-                    .rule_productions(r as RuleIdx)
+                    .rule_productions(RuleIdx::new(r as u32))
                     .iter()
                     .map(|p: &Production| {
-                        let next = if p.next == NONE {
+                        let next = if p.next.is_none() {
                             "END".to_string()
                         } else {
-                            (p.next - start).to_string()
+                            (p.next.0 - start).to_string()
                         };
                         format!("{} -> {next}", d.terminal_label(p.terminal))
                     })

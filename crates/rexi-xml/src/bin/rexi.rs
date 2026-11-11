@@ -10,7 +10,8 @@ use std::process::ExitCode;
 
 use rexi_core::grammar::runtime::describe_terminal;
 use rexi_core::{
-    Alignment, DecodeLimits, ExiOptions, GrammarSetBuf, GrammarTables, HeaderConfig, SchemaId,
+    Alignment, DecodeLimits, ExiOptions, GrammarSetBuf, GrammarTables, HeaderConfig, RuleIdx,
+    SchemaId,
 };
 use rexi_xml::{
     XmlError, decode_events_with_limits, decode_to_xml_with_limits, encode_xml, events_dump,
@@ -321,7 +322,7 @@ fn grammar_listing(tables: &impl GrammarTables) -> String {
         );
         for rule in g.rules.range() {
             let prods: Vec<String> = tables
-                .rule_productions(rule as u32)
+                .rule_productions(RuleIdx::new(rule as u32))
                 .iter()
                 .enumerate()
                 .map(|(code, prod)| {

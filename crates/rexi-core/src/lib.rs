@@ -118,8 +118,7 @@ pub use error::{ExiError, ExiResult, Feature, IoErrorKind};
 pub use event::{Event, OwnedEvent, QName};
 pub use grammar::{GrammarSet, GrammarSetBuf, GrammarTables};
 pub use ids::{
-    ElemIdx, EnumSetIdx, GrammarIdx, LocalId, NONE, PrefixId, QNameId, RuleIdx, StrIdx, TypeIdx,
-    UriId,
+    ElemIdx, EnumSetIdx, GrammarIdx, LocalId, PrefixId, QNameId, RuleIdx, StrIdx, TypeIdx, UriId,
 };
 pub use limits::{DecodeLimits, Limit};
 pub use options::{Alignment, ExiOptions, HeaderConfig, Preserve, SchemaId};

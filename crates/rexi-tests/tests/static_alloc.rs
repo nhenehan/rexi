@@ -16,7 +16,7 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
 
-use rexi_core::{Encoder, ExiOptions, GrammarTables, HeaderConfig, TypeResolver};
+use rexi_core::{Encoder, EnumSetIdx, ExiOptions, GrammarTables, HeaderConfig, TypeResolver};
 use rexi_tests::generated::order_complex as oc;
 
 struct Counting;
@@ -83,10 +83,10 @@ fn exercise(g: &impl GrammarTables) -> usize {
             continue;
         };
         for p in g.rule_productions(start) {
-            sum += p.next as usize % 7;
+            sum += p.next.index() % 7;
         }
     }
-    for set in 0..g.enum_sets().len() as u32 {
+    for set in (0..g.enum_sets().len() as u32).map(EnumSetIdx) {
         for i in 0..g.enum_count(set) {
             sum += g.enum_value(set, i).map_or(0, str::len);
         }

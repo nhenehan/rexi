@@ -21,7 +21,7 @@ use crate::prelude::*;
 use rexi_core::io::ByteSink;
 
 use rexi_core::grammar::Terminal;
-use rexi_core::ids::{NONE, QNameId};
+use rexi_core::ids::QNameId;
 use rexi_core::{
     DatatypeKind, Decimal, Encoder, Float, GrammarTables, Int, OwnedValue, TypeResolver, Uint,
     Value,
@@ -475,13 +475,13 @@ fn find_child<W: ByteSink, G: GrammarTables>(
 }
 
 /// Finds the one named schema type that `name` names, for `xsi:type`. Anonymous
-/// types (their qname URI is the `NONE` marker value) are skipped. No match, or more than
+/// types (their qname URI is `UriId::NONE`) are skipped. No match, or more than
 /// one, is an error.
 fn resolve_type(t: &impl GrammarTables, name: Name<'_>) -> Result<(String, String)> {
     let matches: Vec<QNameId> = t
         .types()
         .iter()
-        .filter(|d| d.qname.uri != NONE)
+        .filter(|d| !d.qname.uri.is_none())
         .map(|d| d.qname)
         .filter(|&q| name_matches(t, name, q))
         .collect();

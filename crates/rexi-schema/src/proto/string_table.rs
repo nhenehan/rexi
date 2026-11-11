@@ -14,7 +14,7 @@ use rexi_core::grammar::well_known::{
     XML_LOCAL_NAMES, XML_NS, XSD_LOCAL_NAMES, XSD_NS, XSI_LOCAL_NAMES, XSI_NS,
 };
 use rexi_core::grammar::{GrammarSetBuf, Span, UriEntry};
-use rexi_core::{QNameId, UriId};
+use rexi_core::{LocalId, QNameId, UriId};
 
 use super::event_codes::QNameNames;
 use crate::xsd::model::Model;
@@ -125,29 +125,29 @@ impl StringTable {
         self.uris
             .iter()
             .position(|u| u.uri == uri)
-            .map(|i| i as UriId)
+            .map(|i| UriId::new(i as u32))
     }
 
     /// The qname id of `{ns}local`, if the table has both the URI and the name.
     pub fn qname(&self, ns: &str, local: &str) -> Option<QNameId> {
         let uri = self.uri_id(ns)?;
-        let l = self.uris[uri as usize]
+        let l = self.uris[uri.index()]
             .local_names
             .iter()
             .position(|n| n == local)?;
-        Some(QNameId::new(uri, l as u32))
+        Some(QNameId::new(uri, LocalId::new(l as u32)))
     }
 
     /// The URI behind a URI id, or `""` for an unknown id.
     pub fn uri_str(&self, u: UriId) -> &str {
-        self.uris.get(u as usize).map_or("", |p| p.uri.as_str())
+        self.uris.get(u.index()).map_or("", |p| p.uri.as_str())
     }
 
     /// The local name behind a qname id, or `""` for an unknown id.
     pub fn local_name(&self, q: QNameId) -> &str {
         self.uris
-            .get(q.uri as usize)
-            .and_then(|p| p.local_names.get(q.local as usize))
+            .get(q.uri.index())
+            .and_then(|p| p.local_names.get(q.local.index()))
             .map_or("", String::as_str)
     }
 

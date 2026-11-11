@@ -491,30 +491,39 @@ mod tests {
     impl TypeResolver for Mock {
         fn datatype(&self, t: TypeIdx) -> DatatypeKind {
             match t {
-                0 => DatatypeKind::Integer,
-                1 => DatatypeKind::String {
+                TypeIdx(0) => DatatypeKind::Integer,
+                TypeIdx(1) => DatatypeKind::String {
                     whitespace: WhiteSpace::Collapse,
                 },
-                2 => DatatypeKind::Float,
-                3 => DatatypeKind::Decimal,
-                4 => DatatypeKind::List { item: 0 },
-                5 => DatatypeKind::NBit { min: 2, bits: 4 },
-                6 => DatatypeKind::Enumeration { set: 0, item: 1 },
-                7 => DatatypeKind::Enumeration { set: 1, item: 0 },
-                _ => DatatypeKind::Enumeration { set: 2, item: 3 },
+                TypeIdx(2) => DatatypeKind::Float,
+                TypeIdx(3) => DatatypeKind::Decimal,
+                TypeIdx(4) => DatatypeKind::List { item: TypeIdx(0) },
+                TypeIdx(5) => DatatypeKind::NBit { min: 2, bits: 4 },
+                TypeIdx(6) => DatatypeKind::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1),
+                },
+                TypeIdx(7) => DatatypeKind::Enumeration {
+                    set: EnumSetIdx(1),
+                    item: TypeIdx(0),
+                },
+                _ => DatatypeKind::Enumeration {
+                    set: EnumSetIdx(2),
+                    item: TypeIdx(3),
+                },
             }
         }
         fn enum_count(&self, set: EnumSetIdx) -> usize {
             match set {
-                0 => COLOURS.len(),
-                1 => NUMBERS.len(),
+                EnumSetIdx(0) => COLOURS.len(),
+                EnumSetIdx(1) => NUMBERS.len(),
                 _ => DECIMALS.len(),
             }
         }
         fn enum_value(&self, set: EnumSetIdx, ordinal: usize) -> Option<&str> {
             match set {
-                0 => COLOURS.get(ordinal).copied(),
-                1 => NUMBERS.get(ordinal).copied(),
+                EnumSetIdx(0) => COLOURS.get(ordinal).copied(),
+                EnumSetIdx(1) => NUMBERS.get(ordinal).copied(),
                 _ => DECIMALS.get(ordinal).copied(),
             }
         }
@@ -596,14 +605,34 @@ mod tests {
             (D::HexBinary, Value::Binary(&[0x0F, 0xB7]), " 0fb7 "),
             (D::Base64Binary, Value::Binary(&[0x0F, 0xB7]), "D7c=\n"),
             (
-                D::Enumeration { set: 0, item: 1 },
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1),
+                },
                 Value::Enum(1),
                 "  green ",
             ),
-            (D::Enumeration { set: 1, item: 0 }, Value::Enum(3), "+10"),
-            (D::Enumeration { set: 2, item: 3 }, Value::Enum(1), "02.50"),
             (
-                D::Enumeration { set: 2, item: 3 },
+                D::Enumeration {
+                    set: EnumSetIdx(1),
+                    item: TypeIdx(0),
+                },
+                Value::Enum(3),
+                "+10",
+            ),
+            (
+                D::Enumeration {
+                    set: EnumSetIdx(2),
+                    item: TypeIdx(3),
+                },
+                Value::Enum(1),
+                "02.50",
+            ),
+            (
+                D::Enumeration {
+                    set: EnumSetIdx(2),
+                    item: TypeIdx(3),
+                },
                 Value::Decimal(Decimal::new(false, 1.into(), 0.into())),
                 "1",
             ),
@@ -649,7 +678,10 @@ mod tests {
         assert_eq!(
             enc(
                 false,
-                D::Enumeration { set: 0, item: 1 },
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1)
+                },
                 &Value::Lexical("blue")
             ),
             Ok(vec![0b1000_0000])
@@ -657,7 +689,10 @@ mod tests {
         assert_eq!(
             enc(
                 true,
-                D::Enumeration { set: 1, item: 0 },
+                D::Enumeration {
+                    set: EnumSetIdx(1),
+                    item: TypeIdx(0)
+                },
                 &Value::Lexical("3")
             ),
             Ok(vec![0x02])
@@ -726,17 +761,26 @@ mod tests {
         )));
         assert!(value_err(enc(
             false,
-            D::Enumeration { set: 0, item: 1 },
+            D::Enumeration {
+                set: EnumSetIdx(0),
+                item: TypeIdx(1)
+            },
             &Value::Lexical("purple")
         )));
         assert!(value_err(enc(
             false,
-            D::Enumeration { set: 0, item: 1 },
+            D::Enumeration {
+                set: EnumSetIdx(0),
+                item: TypeIdx(1)
+            },
             &Value::Enum(3)
         )));
         assert!(value_err(enc(
             false,
-            D::Enumeration { set: 1, item: 0 },
+            D::Enumeration {
+                set: EnumSetIdx(1),
+                item: TypeIdx(0)
+            },
             &Value::Lexical("4")
         )));
         assert!(value_err(enc(
@@ -757,7 +801,7 @@ mod tests {
             },
             D::Untyped,
             D::QName,
-            D::List { item: 0 },
+            D::List { item: TypeIdx(0) },
         ] {
             assert!(
                 matches!(
@@ -773,7 +817,14 @@ mod tests {
         }
         // Decoding an enumeration ordinal past the end.
         assert!(matches!(
-            dec(false, D::Enumeration { set: 0, item: 1 }, &[0b1100_0000]),
+            dec(
+                false,
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1)
+                },
+                &[0b1100_0000]
+            ),
             Err(ExiError::Value { .. })
         ));
     }
@@ -781,7 +832,7 @@ mod tests {
     #[test]
     fn parse_and_format() {
         use DatatypeKind as D;
-        let list = parse_lexical(D::List { item: 0 }, " 1  -2\n3 ", &Mock);
+        let list = parse_lexical(D::List { item: TypeIdx(0) }, " 1  -2\n3 ", &Mock);
         assert_eq!(
             list,
             Ok(OwnedValue::List(vec![
@@ -792,18 +843,22 @@ mod tests {
         );
         let list = list.unwrap_or(OwnedValue::List(Vec::new()));
         assert_eq!(
-            format_value(D::List { item: 0 }, &list.to_value(), &Mock),
+            format_value(D::List { item: TypeIdx(0) }, &list.to_value(), &Mock),
             Ok("1 -2 3".to_string())
         );
         assert_eq!(
-            format_value(D::List { item: 0 }, &Value::Lexical(" 1  -2\n3 "), &Mock),
+            format_value(
+                D::List { item: TypeIdx(0) },
+                &Value::Lexical(" 1  -2\n3 "),
+                &Mock
+            ),
             Ok("1 -2 3".to_string())
         );
         assert_eq!(
-            parse_lexical(D::List { item: 0 }, "", &Mock),
+            parse_lexical(D::List { item: TypeIdx(0) }, "", &Mock),
             Ok(OwnedValue::List(Vec::new()))
         );
-        assert!(parse_lexical(D::List { item: 0 }, "1 x", &Mock).is_err());
+        assert!(parse_lexical(D::List { item: TypeIdx(0) }, "1 x", &Mock).is_err());
         assert_eq!(
             parse_lexical(
                 D::String {
@@ -819,11 +874,25 @@ mod tests {
             Ok(OwnedValue::String(" a  b ".into()))
         );
         assert_eq!(
-            parse_lexical(D::Enumeration { set: 0, item: 1 }, "blue", &Mock),
+            parse_lexical(
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1)
+                },
+                "blue",
+                &Mock
+            ),
             Ok(OwnedValue::Enum(2))
         );
         assert_eq!(
-            parse_lexical(D::Enumeration { set: 2, item: 3 }, "+1.00", &Mock),
+            parse_lexical(
+                D::Enumeration {
+                    set: EnumSetIdx(2),
+                    item: TypeIdx(3)
+                },
+                "+1.00",
+                &Mock
+            ),
             Ok(OwnedValue::Enum(0))
         );
         assert_eq!(
@@ -839,10 +908,27 @@ mod tests {
         );
         assert!(parse_lexical(D::QName, "a:b", &Mock).is_err());
         assert_eq!(
-            format_value(D::Enumeration { set: 0, item: 1 }, &Value::Enum(1), &Mock),
+            format_value(
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1)
+                },
+                &Value::Enum(1),
+                &Mock
+            ),
             Ok("green".into())
         );
-        assert!(format_value(D::Enumeration { set: 0, item: 1 }, &Value::Enum(9), &Mock).is_err());
+        assert!(
+            format_value(
+                D::Enumeration {
+                    set: EnumSetIdx(0),
+                    item: TypeIdx(1)
+                },
+                &Value::Enum(9),
+                &Mock
+            )
+            .is_err()
+        );
         assert_eq!(
             format_value(D::Float, &Value::Lexical("12.0"), &Mock),
             Ok("12E0".into())
@@ -900,7 +986,13 @@ mod tests {
             ),
             (D::Float, Value::Float(Float::NEG_INFINITY)),
             (D::HexBinary, Value::Binary(&[1, 2, 3])),
-            (D::Enumeration { set: 1, item: 0 }, Value::Enum(2)),
+            (
+                D::Enumeration {
+                    set: EnumSetIdx(1),
+                    item: TypeIdx(0),
+                },
+                Value::Enum(2),
+            ),
         ];
         for (kind, value) in &cases {
             for aligned in [false, true] {

@@ -18,7 +18,7 @@ use crate::event::{Event, QName};
 use crate::grammar::ir::{GrammarTables, Terminal};
 use crate::grammar::runtime::{Cursor, Frame};
 use crate::header::{self, HeaderInfo};
-use crate::ids::{ElemIdx, NONE, QNameId, TypeIdx};
+use crate::ids::{ElemIdx, QNameId, TypeIdx};
 use crate::io::{BitReader, ceil_log2};
 use crate::limits::{DecodeLimits, Limit};
 use crate::options::ExiOptions;
@@ -51,7 +51,7 @@ pub struct Decoder<R, G> {
     frames: Vec<Frame>,
     cursor: Cursor,
     value: OwnedValue,
-    /// The type of the last value read, as a type index (`NONE` for untyped
+    /// The type of the last value read, as a type index (`TypeIdx::NONE` for untyped
     /// text); `None` before the first value. The datatype itself is looked up only
     /// when asked for: keeping the index is cheaper on every event.
     last_type: Option<TypeIdx>,
@@ -324,7 +324,7 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
                 Ok(Step::Ch)
             }
             Terminal::ChUntyped => {
-                self.last_type = Some(NONE);
+                self.last_type = Some(TypeIdx::NONE);
                 self.read_value_in_place(DatatypeKind::Untyped, context)?;
                 self.top_mut()?.rule = prod.next;
                 Ok(Step::Ch)

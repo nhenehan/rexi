@@ -109,7 +109,7 @@ impl ReferencePartitions {
     /// The caller has already checked [`Self::is_addable`] and that the value is
     /// not present.
     fn add(&mut self, context: QNameId, value: String) {
-        let local_id = self.local_count(context) as LocalId;
+        let local_id = LocalId::new(self.local_count(context) as u32);
         let global_id = self.next_global;
         let slot = GlobalSlot {
             value: value.clone(),
@@ -123,7 +123,7 @@ impl ReferencePartitions {
                 let old = core::mem::replace(&mut self.global[global_id as usize], slot);
                 self.index.remove(&old.value);
                 if let Some(old_local) = self.local.get_mut(&old.context)
-                    && let Some(entry) = old_local.get_mut(old.local_id as usize)
+                    && let Some(entry) = old_local.get_mut(old.local_id.index())
                 {
                     *entry = None;
                 }

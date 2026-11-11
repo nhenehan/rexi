@@ -31,7 +31,9 @@ use std::fmt::Write as _;
 
 use rexi_core::datatype::{DatatypeKind, WhiteSpace};
 use rexi_core::grammar::{GrammarSetBuf, GrammarTables, Span, Terminal};
-use rexi_core::ids::{NONE, QNameId};
+use rexi_core::ids::{
+    ElemIdx, EnumSetIdx, GrammarIdx, LocalId, PrefixId, QNameId, RuleIdx, StrIdx, TypeIdx, UriId,
+};
 
 /// Rendering options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -59,7 +61,7 @@ impl Default for RenderOptions<'_> {
 ///
 /// Each table becomes a private `static` slice named `<NAME>_<TABLE>` (such as
 /// `GRAMMARS_RULES`). Then the public `<NAME>` static points at all of them. Index
-/// values equal to `NONE` are written as `NONE`.
+/// values that are the "no index" marker are written as `<Type>::NONE`.
 ///
 /// # Examples
 ///
@@ -97,7 +99,11 @@ pub fn render(tables: &GrammarSetBuf, opts: &RenderOptions<'_>) -> String {
         "use {}::grammar::{{ElementDecl, GlobalAttribute, Grammar, GrammarSet, Production, Rule, Span, Terminal, TypeDecl, UriEntry}};",
         opts.core_path
     );
-    let _ = writeln!(o, "use {}::ids::{{NONE, QNameId}};", opts.core_path);
+    let _ = writeln!(
+        o,
+        "use {}::ids::{{ElemIdx, EnumSetIdx, GrammarIdx, LocalId, PrefixId, QNameId, RuleIdx, StrIdx, TypeIdx, UriId}};",
+        opts.core_path
+    );
     let _ = writeln!(o, "use {}::value::DateTimeKind;", opts.core_path);
     let _ = writeln!(o);
 
@@ -115,15 +121,15 @@ pub fn render(tables: &GrammarSetBuf, opts: &RenderOptions<'_>) -> String {
         let _ = writeln!(
             o,
             "    UriEntry {{ uri: {}, prefixes: {}, local_names: {} }},",
-            u.uri,
+            idx(u.uri),
             span(u.prefixes),
             span(u.local_names)
         );
     }
     let _ = writeln!(o, "];\n");
 
-    u32_slice(o, &p("PREFIXES"), &tables.prefixes);
-    u32_slice(o, &p("LOCAL_NAMES"), &tables.local_names);
+    id_slice(o, &p("PREFIXES"), &tables.prefixes);
+    id_slice(o, &p("LOCAL_NAMES"), &tables.local_names);
 
     let _ = writeln!(o, "static {}: &[Production] = &[", p("PRODUCTIONS"));
     for pr in &tables.productions {
@@ -161,7 +167,7 @@ pub fn render(tables: &GrammarSetBuf, opts: &RenderOptions<'_>) -> String {
     }
     let _ = writeln!(o, "];\n");
 
-    u32_slice(o, &p("GLOBAL_ELEMENTS"), &tables.global_elements);
+    id_slice(o, &p("GLOBAL_ELEMENTS"), &tables.global_elements);
 
     let _ = writeln!(
         o,
@@ -201,7 +207,7 @@ pub fn render(tables: &GrammarSetBuf, opts: &RenderOptions<'_>) -> String {
     }
     let _ = writeln!(o, "];\n");
 
-    u32_slice(o, &p("ENUM_VALUES"), &tables.enum_values);
+    id_slice(o, &p("ENUM_VALUES"), &tables.enum_values);
 
     let schema_id = match &tables.schema_id {
         Some(s) => format!("Some({s:?})"),
@@ -295,9 +301,29 @@ pub(crate) fn screaming_snake(s: &str) -> String {
     out
 }
 
-/// Writes a `static <name>: &[u32]`, 16 values per line.
-fn u32_slice(o: &mut String, name: &str, v: &[u32]) {
-    let _ = writeln!(o, "static {name}: &[u32] = &[");
+/// An index type the generated code names: its Rust name and its raw value.
+trait Index: Copy {
+    const NAME: &'static str;
+    fn raw(self) -> u32;
+}
+
+macro_rules! index {
+    ($($t:ident),*) => {
+        $(impl Index for $t {
+            const NAME: &'static str = stringify!($t);
+            fn raw(self) -> u32 {
+                self.0
+            }
+        })*
+    };
+}
+index!(
+    UriId, LocalId, PrefixId, TypeIdx, ElemIdx, GrammarIdx, RuleIdx, EnumSetIdx, StrIdx
+);
+
+/// Writes a `static <name>: &[<Type>]`, 16 values per line.
+fn id_slice<T: Index>(o: &mut String, name: &str, v: &[T]) {
+    let _ = writeln!(o, "static {name}: &[{}] = &[", T::NAME);
     for chunk in v.chunks(16) {
         let items: Vec<String> = chunk.iter().map(|x| idx(*x)).collect();
         let _ = writeln!(o, "    {},", items.join(", "));
@@ -305,13 +331,13 @@ fn u32_slice(o: &mut String, name: &str, v: &[u32]) {
     let _ = writeln!(o, "];\n");
 }
 
-/// An index as Rust source: `NONE` for the "no index" marker value, else the
-/// number.
-fn idx(i: u32) -> String {
-    if i == NONE {
-        "NONE".to_string()
+/// An index as Rust source: `<Type>::NONE` for the "no index" marker value,
+/// else `<Type>(n)`.
+fn idx<T: Index>(i: T) -> String {
+    if i.raw() == u32::MAX {
+        format!("{}::NONE", T::NAME)
     } else {
-        i.to_string()
+        format!("{}({})", T::NAME, i.raw())
     }
 }
 

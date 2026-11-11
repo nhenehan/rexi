@@ -230,7 +230,7 @@ impl ValuePartitions {
             None => self
                 .entries
                 .iter()
-                .position(|e| e.context == context && e.local_id as usize == local_id),
+                .position(|e| e.context == context && e.local_id.index() == local_id),
         }
     }
 
@@ -261,14 +261,14 @@ impl ValuePartitions {
         let index = self.entries.len() as u32;
         // With the per-context index, one lookup gives the local id and records
         // the new entry.
-        let local_id = match &mut self.by_context {
+        let local_id = LocalId::new(match &mut self.by_context {
             Some(map) => {
                 let list = map.entry(context).or_insert_with(|| Vec::with_capacity(8));
                 list.push(index);
                 list.len() - 1
             }
             None => self.local_count(context),
-        } as LocalId;
+        } as u32);
         let global_id = self.next_global;
         match self.value_partition_capacity {
             Some(capacity) if (global_id as usize) < self.global.len() => {
@@ -528,10 +528,11 @@ impl ValuePartitions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ids::UriId;
 
-    const A: QNameId = QNameId::new(0, 0);
-    const B: QNameId = QNameId::new(0, 1);
-    const C: QNameId = QNameId::new(0, 2);
+    const A: QNameId = QNameId::new(UriId(0), LocalId(0));
+    const B: QNameId = QNameId::new(UriId(0), LocalId(1));
+    const C: QNameId = QNameId::new(UriId(0), LocalId(2));
 
     fn encode(vp: &mut ValuePartitions, byte_aligned: bool, items: &[(QNameId, &str)]) -> Vec<u8> {
         let mut w = BitWriter::with_alignment(Vec::new(), byte_aligned);
@@ -674,11 +675,11 @@ mod tests {
     #[test]
     fn exificient_string_table_value() {
         // StringTableCoreTest.testStringTableValue.
-        let at1 = QNameId::new(0, 0);
-        let elx2 = QNameId::new(0, 1);
-        let elx3 = QNameId::new(0, 2);
-        let elxx1 = QNameId::new(0, 3);
-        let elxx2 = QNameId::new(0, 4);
+        let at1 = QNameId::new(UriId(0), LocalId(0));
+        let elx2 = QNameId::new(UriId(0), LocalId(1));
+        let elx3 = QNameId::new(UriId(0), LocalId(2));
+        let elxx1 = QNameId::new(UriId(0), LocalId(3));
+        let elxx2 = QNameId::new(UriId(0), LocalId(4));
         round_trip(
             None,
             None,
@@ -823,7 +824,13 @@ mod tests {
 
     fn random_items(seed: u64, n: usize) -> Vec<(QNameId, String)> {
         let mut rng = Lcg(seed);
-        let contexts = [A, B, C, QNameId::new(1, 0), QNameId::new(2, 5)];
+        let contexts = [
+            A,
+            B,
+            C,
+            QNameId::new(UriId(1), LocalId(0)),
+            QNameId::new(UriId(2), LocalId(5)),
+        ];
         (0..n)
             .map(|_| {
                 let ctx = contexts[(rng.next() % contexts.len() as u64) as usize];

@@ -4,17 +4,18 @@
 
 use super::StringTable;
 use crate::grammar::GrammarSet;
+use crate::ids::UriId;
 
 /// Compact identifier of the empty URI (Table D-1,
 /// [EXI D.1](https://www.w3.org/TR/exi/#initialUriValues)).
-pub const EMPTY_URI_ID: u32 = 0;
+pub const EMPTY_URI_ID: UriId = UriId(0);
 /// Compact identifier of the XML namespace (Table D-1).
-pub const XML_NS_URI_ID: u32 = 1;
+pub const XML_NS_URI_ID: UriId = UriId(1);
 /// Compact identifier of the XML Schema instance namespace (Table D-1).
-pub const XSI_NS_URI_ID: u32 = 2;
+pub const XSI_NS_URI_ID: UriId = UriId(2);
 /// Compact identifier of the XML Schema namespace, present only when schemas are
 /// used (Table D-2).
-pub const XSD_NS_URI_ID: u32 = 3;
+pub const XSD_NS_URI_ID: UriId = UriId(3);
 
 /// The XML namespace URI, bound to the `xml` prefix.
 pub const XML_NS_URI: &str = "http://www.w3.org/XML/1998/namespace";
@@ -122,6 +123,7 @@ impl StringTable {
 mod tests {
     use super::*;
     use crate::grammar::GrammarSet;
+    use crate::ids::{LocalId, PrefixId};
 
     const NO: &GrammarSet<'static> = &GrammarSet::EMPTY;
     use crate::prelude::*;
@@ -131,25 +133,25 @@ mod tests {
         // InitialEntriesStringTablePartitionsTestCase.testSchemaLess
         let t = StringTable::with_initial_entries(false);
         assert_eq!(t.uri_count(), 3);
-        assert_eq!(t.uri(NO, 0), Some(""));
-        assert_eq!(t.uri(NO, 1), Some(XML_NS_URI));
-        assert_eq!(t.uri(NO, 2), Some(XSI_NS_URI));
-        assert_eq!(t.prefix_count(0), 1);
-        assert_eq!(t.prefix(NO, 0, 0), Some(""));
-        assert_eq!(t.prefix_count(1), 1);
-        assert_eq!(t.prefix(NO, 1, 0), Some("xml"));
-        assert_eq!(t.prefix_count(2), 1);
-        assert_eq!(t.prefix(NO, 2, 0), Some("xsi"));
-        assert_eq!(t.local_name_count(0), 0);
-        assert_eq!(t.local_name_count(1), 4);
-        assert_eq!(t.local_name(NO, 1, 0), Some("base"));
-        assert_eq!(t.local_name(NO, 1, 1), Some("id"));
-        assert_eq!(t.local_name(NO, 1, 2), Some("lang"));
-        assert_eq!(t.local_name(NO, 1, 3), Some("space"));
-        assert_eq!(t.local_name_count(2), 2);
-        assert_eq!(t.local_name(NO, 2, 0), Some("nil"));
-        assert_eq!(t.local_name(NO, 2, 1), Some("type"));
-        assert_eq!(t.uri(NO, 3), None);
+        assert_eq!(t.uri(NO, UriId(0)), Some(""));
+        assert_eq!(t.uri(NO, UriId(1)), Some(XML_NS_URI));
+        assert_eq!(t.uri(NO, UriId(2)), Some(XSI_NS_URI));
+        assert_eq!(t.prefix_count(UriId(0)), 1);
+        assert_eq!(t.prefix(NO, UriId(0), PrefixId(0)), Some(""));
+        assert_eq!(t.prefix_count(UriId(1)), 1);
+        assert_eq!(t.prefix(NO, UriId(1), PrefixId(0)), Some("xml"));
+        assert_eq!(t.prefix_count(UriId(2)), 1);
+        assert_eq!(t.prefix(NO, UriId(2), PrefixId(0)), Some("xsi"));
+        assert_eq!(t.local_name_count(UriId(0)), 0);
+        assert_eq!(t.local_name_count(UriId(1)), 4);
+        assert_eq!(t.local_name(NO, UriId(1), LocalId(0)), Some("base"));
+        assert_eq!(t.local_name(NO, UriId(1), LocalId(1)), Some("id"));
+        assert_eq!(t.local_name(NO, UriId(1), LocalId(2)), Some("lang"));
+        assert_eq!(t.local_name(NO, UriId(1), LocalId(3)), Some("space"));
+        assert_eq!(t.local_name_count(UriId(2)), 2);
+        assert_eq!(t.local_name(NO, UriId(2), LocalId(0)), Some("nil"));
+        assert_eq!(t.local_name(NO, UriId(2), LocalId(1)), Some("type"));
+        assert_eq!(t.uri(NO, UriId(3)), None);
     }
 
     #[test]
@@ -157,15 +159,21 @@ mod tests {
         // InitialEntriesStringTablePartitionsTestCase.testXsdTypesOnly
         let t = StringTable::with_initial_entries(true);
         assert_eq!(t.uri_count(), 4);
-        assert_eq!(t.uri(NO, 3), Some(XSD_NS_URI));
-        assert_eq!(t.prefix_count(3), 0);
-        assert_eq!(t.local_name_count(3), 46);
-        assert_eq!(t.local_name(NO, 3, 0), Some("ENTITIES"));
-        assert_eq!(t.local_name(NO, 3, 45), Some("unsignedShort"));
-        assert_eq!(t.find_local_name(NO, 3, "dateTime"), Some(18));
+        assert_eq!(t.uri(NO, UriId(3)), Some(XSD_NS_URI));
+        assert_eq!(t.prefix_count(UriId(3)), 0);
+        assert_eq!(t.local_name_count(UriId(3)), 46);
+        assert_eq!(t.local_name(NO, UriId(3), LocalId(0)), Some("ENTITIES"));
+        assert_eq!(
+            t.local_name(NO, UriId(3), LocalId(45)),
+            Some("unsignedShort")
+        );
+        assert_eq!(
+            t.find_local_name(NO, UriId(3), "dateTime"),
+            Some(LocalId(18))
+        );
         assert_eq!(
             t.qname_id(NO, XSI_NS_URI, "type"),
-            Some(crate::ids::QNameId::new(2, 1))
+            Some(crate::ids::QNameId::new(UriId(2), LocalId(1)))
         );
     }
 
@@ -175,11 +183,13 @@ mod tests {
         // listed in that order, so sorting must change nothing.
         let mut t = StringTable::with_initial_entries(true);
         let before: Vec<Option<String>> = (0..46)
-            .map(|i| t.local_name(NO, 3, i).map(str::to_owned))
+            .map(LocalId)
+            .map(|i| t.local_name(NO, UriId(3), i).map(str::to_owned))
             .collect();
         t.sort_local_names();
         let after: Vec<Option<String>> = (0..46)
-            .map(|i| t.local_name(NO, 3, i).map(str::to_owned))
+            .map(LocalId)
+            .map(|i| t.local_name(NO, UriId(3), i).map(str::to_owned))
             .collect();
         assert_eq!(before, after);
         assert!(XML_LOCAL_NAMES.windows(2).all(|w| w[0] < w[1]));

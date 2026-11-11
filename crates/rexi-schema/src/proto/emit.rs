@@ -15,7 +15,7 @@ use rexi_core::grammar::{
     ElementDecl, GlobalAttribute, Grammar, GrammarSetBuf, Production, Rule, Span, Terminal,
     TypeDecl,
 };
-use rexi_core::{DatatypeKind, ElemIdx, GrammarIdx, NONE, QNameId, TypeIdx};
+use rexi_core::{DatatypeKind, ElemIdx, GrammarIdx, LocalId, QNameId, RuleIdx, TypeIdx, UriId};
 
 use super::string_table::StringTable;
 use super::{
@@ -43,17 +43,17 @@ pub fn emit_with(model: &Model, max_grammar_size: Option<usize>) -> Result<Gramm
     let mut elem_ir: Vec<ElemIdx> = Vec::with_capacity(model.elements.len());
     for e in &model.elements {
         let qname = qname_of(&table, &e.qname.ns, &e.qname.local)?;
-        let key = (qname, e.type_id as TypeIdx, e.nillable);
+        let key = (qname, TypeIdx::new(e.type_id as u32), e.nillable);
         let idx = match elem_keys.get(&key) {
             Some(&i) => {
-                buf.elements[i as usize].global |= e.global;
+                buf.elements[i.index()].global |= e.global;
                 i
             }
             None => {
-                let i = buf.elements.len() as ElemIdx;
+                let i = ElemIdx::new(buf.elements.len() as u32);
                 buf.elements.push(ElementDecl {
                     qname,
-                    type_idx: e.type_id as TypeIdx,
+                    type_idx: TypeIdx::new(e.type_id as u32),
                     nillable: e.nillable,
                     global: e.global,
                 });
@@ -71,13 +71,10 @@ pub fn emit_with(model: &Model, max_grammar_size: Option<usize>) -> Result<Gramm
         .iter()
         .enumerate()
         .filter(|(_, e)| e.global)
-        .map(|(i, _)| i as ElemIdx)
+        .map(|(i, _)| ElemIdx::new(i as u32))
         .collect();
     globals.sort_by(|&a, &b| {
-        let (qa, qb) = (
-            buf.elements[a as usize].qname,
-            buf.elements[b as usize].qname,
-        );
+        let (qa, qb) = (buf.elements[a.index()].qname, buf.elements[b.index()].qname);
         table
             .local_name(qa)
             .cmp(table.local_name(qb))
@@ -89,7 +86,7 @@ pub fn emit_with(model: &Model, max_grammar_size: Option<usize>) -> Result<Gramm
         if a.global {
             buf.global_attributes.push(GlobalAttribute {
                 qname: qname_of(&table, &a.qname.ns, &a.qname.local)?,
-                type_idx: a.type_id as TypeIdx,
+                type_idx: TypeIdx::new(a.type_id as u32),
             });
         }
     }
@@ -126,7 +123,7 @@ pub fn emit_with(model: &Model, max_grammar_size: Option<usize>) -> Result<Gramm
         let empty_grammar = push_grammar(&mut buf, &table, empty, max_grammar_size)?;
         let qname = match &def.name {
             Some(q) => qname_of(&table, &q.ns, &q.local)?,
-            None => QNameId::new(NONE, NONE),
+            None => QNameId::new(UriId::NONE, LocalId::NONE),
         };
         let is_union =
             matches!(&def.kind, TypeKind::Simple(s) if matches!(s.variety, Variety::Union { .. }));
@@ -174,7 +171,7 @@ fn qname_of(table: &StringTable, ns: &str, local: &str) -> Result<QNameId> {
 
 /// Normalizes a grammar, assigns its event codes and adds it to the tables.
 /// Rule numbers become absolute indices into `buf.rules`. `EE` has no next rule
-/// (`NONE`). A bare non-terminal should not be left after normalizing; if one is,
+/// (`RuleIdx::NONE`). A bare non-terminal should not be left after normalizing; if one is,
 /// it is written as `EE`.
 fn push_grammar(
     buf: &mut GrammarSetBuf,
@@ -190,10 +187,10 @@ fn push_grammar(
         for p in &rule.prods {
             buf.productions.push(match *p {
                 PProd::Term { terminal, next, .. } => {
-                    Production::new(terminal, rules_start + next as u32)
+                    Production::new(terminal, RuleIdx::new(rules_start + next as u32))
                 }
-                PProd::Ee => Production::new(Terminal::Ee, NONE),
-                PProd::NonTerm(_) => Production::new(Terminal::Ee, NONE),
+                PProd::Ee => Production::new(Terminal::Ee, RuleIdx::NONE),
+                PProd::NonTerm(_) => Production::new(Terminal::Ee, RuleIdx::NONE),
             });
         }
         buf.rules.push(Rule {
@@ -203,7 +200,7 @@ fn push_grammar(
     buf.grammars.push(Grammar {
         rules: Span::new(rules_start, g.rules.len() as u32),
     });
-    Ok((buf.grammars.len() - 1) as GrammarIdx)
+    Ok(GrammarIdx::new((buf.grammars.len() - 1) as u32))
 }
 
 struct Builder<'a> {
@@ -228,7 +225,9 @@ impl Builder<'_> {
     fn type_protos(&mut self, t: TypeId) -> Result<(Proto, Proto)> {
         let def = &self.model.types[t];
         let ct = match &def.kind {
-            TypeKind::Simple(_) => return Ok((simple_content(t as TypeIdx), Proto::ee())),
+            TypeKind::Simple(_) => {
+                return Ok((simple_content(TypeIdx::new(t as u32)), Proto::ee()));
+            }
             TypeKind::Complex(c) => c,
         };
         let mut uses: Vec<(String, String, Proto)> = Vec::new();
@@ -238,7 +237,7 @@ impl Builder<'_> {
             uses.push((
                 a.qname.local.clone(),
                 a.qname.ns.clone(),
-                attribute_use(qname, a.type_id as TypeIdx, u.required),
+                attribute_use(qname, TypeIdx::new(a.type_id as u32), u.required),
             ));
         }
         uses.sort_by(|x, y| x.0.cmp(&y.0).then_with(|| x.1.cmp(&y.1)));
@@ -254,13 +253,13 @@ impl Builder<'_> {
         self.order = 0;
         let content = match &ct.content {
             Content::Empty => Proto::ee(),
-            Content::Simple(s) => simple_content(*s as TypeIdx),
+            Content::Simple(s) => simple_content(TypeIdx::new(*s as u32)),
             Content::Particle(p) => self.particle(p)?,
         };
         Ok(complex_type(&uses, &wildcard, &content, ct.mixed))
     }
 
-    fn uri_id(&self, uri: &str) -> Result<u32> {
+    fn uri_id(&self, uri: &str) -> Result<UriId> {
         self.table.uri_id(uri).ok_or_else(|| {
             SchemaError::Invalid(format!("namespace '{uri}' missing from the string table"))
         })

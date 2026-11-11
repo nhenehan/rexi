@@ -34,6 +34,7 @@ const EXIFICIENT: &str = "80001ae00406f003c0";
 fn attribute_wildcard_uris_join_the_uri_partition() {
     let t = rexi_schema::compile_str(XSD, None).unwrap_or_else(|e| panic!("{e}"));
     let uris: Vec<&str> = (0..t.uris().len() as u32)
+        .map(rexi_core::UriId)
         .filter_map(|u| t.uri_str(u))
         .collect();
     assert_eq!(

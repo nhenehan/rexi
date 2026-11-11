@@ -1,7 +1,7 @@
 //! `Encoder::start_element_id` / `attribute_id` give the same bytes as
 //! the string forms, and `find_qname`'s binary search finds what a scan finds.
 
-use rexi_core::{Encoder, Event, ExiOptions, GrammarTables, HeaderConfig};
+use rexi_core::{Encoder, Event, ExiOptions, GrammarTables, HeaderConfig, LocalId, StrIdx, UriId};
 use rexi_tests::{cases, generated};
 
 /// Every strict bit-packed interop fixture, decoded and re-encoded with the
@@ -68,7 +68,10 @@ fn find_qname_matches_a_linear_scan() {
                 assert_eq!(scan, i, "{}: duplicate name {local}", case.name);
                 assert_eq!(
                     t.find_qname(uri, local),
-                    Some(rexi_core::QNameId::new(u as u32, i as u32)),
+                    Some(rexi_core::QNameId::new(
+                        UriId::new(u as u32),
+                        LocalId::new(i as u32)
+                    )),
                     "{}: {uri} {local}",
                     case.name
                 );
@@ -84,11 +87,11 @@ fn find_qname_falls_back_on_unsorted_tables() {
     use rexi_core::grammar::{GrammarSet, Span, UriEntry};
     static STRINGS: [&str; 4] = ["", "zeta", "alpha", "mid"];
     static URIS: [UriEntry; 1] = [UriEntry {
-        uri: 0,
+        uri: StrIdx(0),
         prefixes: Span::new(0, 0),
         local_names: Span::new(0, 3),
     }];
-    static LOCALS: [u32; 3] = [1, 2, 3];
+    static LOCALS: [StrIdx; 3] = [StrIdx(1), StrIdx(2), StrIdx(3)];
     let t = GrammarSet {
         strings: &STRINGS,
         uris: &URIS,
@@ -98,7 +101,7 @@ fn find_qname_falls_back_on_unsorted_tables() {
     for (i, name) in ["zeta", "alpha", "mid"].iter().enumerate() {
         assert_eq!(
             t.find_qname("", name),
-            Some(rexi_core::QNameId::new(0, i as u32)),
+            Some(rexi_core::QNameId::new(UriId(0), LocalId::new(i as u32))),
             "{name}"
         );
     }
@@ -114,11 +117,11 @@ fn string_table_falls_back_on_unsorted_tables() {
     use rexi_core::string_table::StringTable;
     static STRINGS: [&str; 4] = ["", "zeta", "alpha", "mid"];
     static URIS: [UriEntry; 1] = [UriEntry {
-        uri: 0,
+        uri: StrIdx(0),
         prefixes: Span::new(0, 0),
         local_names: Span::new(0, 3),
     }];
-    static LOCALS: [u32; 3] = [1, 2, 3];
+    static LOCALS: [StrIdx; 3] = [StrIdx(1), StrIdx(2), StrIdx(3)];
     let t = GrammarSet {
         strings: &STRINGS,
         uris: &URIS,
@@ -129,11 +132,18 @@ fn string_table_falls_back_on_unsorted_tables() {
     assert!(st.borrows_initial_entries());
     assert!(!st.initial_entries_sorted(&t));
     for (i, name) in ["zeta", "alpha", "mid"].iter().enumerate() {
-        assert_eq!(st.find_local_name(&t, 0, name), Some(i as u32), "{name}");
-        assert_eq!(st.local_name(&t, 0, i as u32), Some(*name));
+        assert_eq!(
+            st.find_local_name(&t, UriId(0), name),
+            Some(LocalId::new(i as u32)),
+            "{name}"
+        );
+        assert_eq!(
+            st.local_name(&t, UriId(0), LocalId::new(i as u32)),
+            Some(*name)
+        );
     }
-    assert_eq!(st.find_local_name(&t, 0, "beta"), None);
-    assert_eq!(st.add_local_name(&t, 0, "beta"), 3);
-    assert_eq!(st.add_local_name(&t, 0, "alpha"), 1);
-    assert_eq!(st.local_name_count(0), 4);
+    assert_eq!(st.find_local_name(&t, UriId(0), "beta"), None);
+    assert_eq!(st.add_local_name(&t, UriId(0), "beta"), LocalId(3));
+    assert_eq!(st.add_local_name(&t, UriId(0), "alpha"), LocalId(1));
+    assert_eq!(st.local_name_count(UriId(0)), 4);
 }

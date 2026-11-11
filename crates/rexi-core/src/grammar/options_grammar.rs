@@ -27,58 +27,58 @@ use crate::datatype::{DatatypeKind, WhiteSpace};
 use crate::grammar::ir::{
     ElementDecl, Grammar, GrammarSet, Production, Rule, Span, Terminal, TypeDecl, UriEntry,
 };
-use crate::ids::{NONE, QNameId};
+use crate::ids::{ElemIdx, GrammarIdx, LocalId, QNameId, RuleIdx, StrIdx, TypeIdx, UriId};
 
 /// URI partition id of `http://www.w3.org/2009/exi` in [`OPTIONS_GRAMMARS`].
-pub const EXI_URI: u32 = 4;
+pub const EXI_URI: UriId = UriId(4);
 
 // Local-name ids (compact identifiers) of the options elements in the exi
 // partition. The partition is sorted by code point, so each id is the name's place
 // in that sorted list.
 /// Local-name id of `<header>`.
-pub const LN_HEADER: u32 = 20;
+pub const LN_HEADER: LocalId = LocalId(20);
 /// Local-name id of `<lesscommon>`.
-pub const LN_LESSCOMMON: u32 = 25;
+pub const LN_LESSCOMMON: LocalId = LocalId(25);
 /// Local-name id of `<uncommon>`.
-pub const LN_UNCOMMON: u32 = 36;
+pub const LN_UNCOMMON: LocalId = LocalId(36);
 /// Local-name id of `<alignment>`.
-pub const LN_ALIGNMENT: u32 = 0;
+pub const LN_ALIGNMENT: LocalId = LocalId(0);
 /// Local-name id of `<byte>`.
-pub const LN_BYTE: u32 = 4;
+pub const LN_BYTE: LocalId = LocalId(4);
 /// Local-name id of `<pre-compress>`.
-pub const LN_PRE_COMPRESS: u32 = 28;
+pub const LN_PRE_COMPRESS: LocalId = LocalId(28);
 /// Local-name id of `<selfContained>`.
-pub const LN_SELFCONTAINED: u32 = 32;
+pub const LN_SELFCONTAINED: LocalId = LocalId(32);
 /// Local-name id of `<valueMaxLength>`.
-pub const LN_VALUEMAXLENGTH: u32 = 37;
+pub const LN_VALUEMAXLENGTH: LocalId = LocalId(37);
 /// Local-name id of `<valuePartitionCapacity>`.
-pub const LN_VALUEPARTITIONCAPACITY: u32 = 38;
+pub const LN_VALUEPARTITIONCAPACITY: LocalId = LocalId(38);
 /// Local-name id of `<datatypeRepresentationMap>`.
-pub const LN_DATATYPEREPRESENTATIONMAP: u32 = 8;
+pub const LN_DATATYPEREPRESENTATIONMAP: LocalId = LocalId(8);
 /// Local-name id of `<preserve>`.
-pub const LN_PRESERVE: u32 = 30;
+pub const LN_PRESERVE: LocalId = LocalId(30);
 /// Local-name id of `<dtd>`.
-pub const LN_DTD: u32 = 13;
+pub const LN_DTD: LocalId = LocalId(13);
 /// Local-name id of `<prefixes>`.
-pub const LN_PREFIXES: u32 = 29;
+pub const LN_PREFIXES: LocalId = LocalId(29);
 /// Local-name id of `<lexicalValues>`.
-pub const LN_LEXICALVALUES: u32 = 26;
+pub const LN_LEXICALVALUES: LocalId = LocalId(26);
 /// Local-name id of `<comments>`.
-pub const LN_COMMENTS: u32 = 5;
+pub const LN_COMMENTS: LocalId = LocalId(5);
 /// Local-name id of `<pis>`.
-pub const LN_PIS: u32 = 27;
+pub const LN_PIS: LocalId = LocalId(27);
 /// Local-name id of `<blockSize>`.
-pub const LN_BLOCKSIZE: u32 = 2;
+pub const LN_BLOCKSIZE: LocalId = LocalId(2);
 /// Local-name id of `<common>`.
-pub const LN_COMMON: u32 = 6;
+pub const LN_COMMON: LocalId = LocalId(6);
 /// Local-name id of `<compression>`.
-pub const LN_COMPRESSION: u32 = 7;
+pub const LN_COMPRESSION: LocalId = LocalId(7);
 /// Local-name id of `<fragment>`.
-pub const LN_FRAGMENT: u32 = 14;
+pub const LN_FRAGMENT: LocalId = LocalId(14);
 /// Local-name id of `<schemaId>`.
-pub const LN_SCHEMAID: u32 = 31;
+pub const LN_SCHEMAID: LocalId = LocalId(31);
 /// Local-name id of `<strict>`.
-pub const LN_STRICT: u32 = 33;
+pub const LN_STRICT: LocalId = LocalId(33);
 
 static STRINGS: &[&str] = &[
     "",
@@ -167,127 +167,214 @@ static STRINGS: &[&str] = &[
 
 static URIS: &[UriEntry] = &[
     UriEntry {
-        uri: 0,
+        uri: StrIdx(0),
         prefixes: Span::new(0, 1),
         local_names: Span::new(0, 0),
     },
     UriEntry {
-        uri: 1,
+        uri: StrIdx(1),
         prefixes: Span::new(1, 1),
         local_names: Span::new(0, 4),
     },
     UriEntry {
-        uri: 2,
+        uri: StrIdx(2),
         prefixes: Span::new(2, 1),
         local_names: Span::new(4, 2),
     },
     UriEntry {
-        uri: 3,
+        uri: StrIdx(3),
         prefixes: Span::new(3, 0),
         local_names: Span::new(6, 46),
     },
     UriEntry {
-        uri: 4,
+        uri: StrIdx(4),
         prefixes: Span::new(3, 0),
         local_names: Span::new(52, 39),
     },
 ];
 
-static PREFIXES: &[u32] = &[0, 5, 6];
+static PREFIXES: &[StrIdx] = &[StrIdx(0), StrIdx(5), StrIdx(6)];
 
-static LOCAL_NAMES: &[u32] = &[
-    7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-    31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-    55, 56, 57, 58, 59, 27, 60, 28, 29, 61, 62, 63, 64, 30, 31, 32, 33, 65, 66, 36, 37, 38, 39, 40,
-    67, 41, 68, 69, 43, 70, 71, 72, 73, 74, 75, 76, 77, 78, 52, 53, 79, 80, 81,
+static LOCAL_NAMES: &[StrIdx] = &[
+    StrIdx(7),
+    StrIdx(8),
+    StrIdx(9),
+    StrIdx(10),
+    StrIdx(11),
+    StrIdx(12),
+    StrIdx(13),
+    StrIdx(14),
+    StrIdx(15),
+    StrIdx(16),
+    StrIdx(17),
+    StrIdx(18),
+    StrIdx(19),
+    StrIdx(20),
+    StrIdx(21),
+    StrIdx(22),
+    StrIdx(23),
+    StrIdx(24),
+    StrIdx(25),
+    StrIdx(26),
+    StrIdx(27),
+    StrIdx(28),
+    StrIdx(29),
+    StrIdx(30),
+    StrIdx(31),
+    StrIdx(32),
+    StrIdx(33),
+    StrIdx(34),
+    StrIdx(35),
+    StrIdx(36),
+    StrIdx(37),
+    StrIdx(38),
+    StrIdx(39),
+    StrIdx(40),
+    StrIdx(41),
+    StrIdx(42),
+    StrIdx(43),
+    StrIdx(44),
+    StrIdx(45),
+    StrIdx(46),
+    StrIdx(47),
+    StrIdx(48),
+    StrIdx(49),
+    StrIdx(50),
+    StrIdx(51),
+    StrIdx(52),
+    StrIdx(53),
+    StrIdx(54),
+    StrIdx(55),
+    StrIdx(56),
+    StrIdx(57),
+    StrIdx(58),
+    StrIdx(59),
+    StrIdx(27),
+    StrIdx(60),
+    StrIdx(28),
+    StrIdx(29),
+    StrIdx(61),
+    StrIdx(62),
+    StrIdx(63),
+    StrIdx(64),
+    StrIdx(30),
+    StrIdx(31),
+    StrIdx(32),
+    StrIdx(33),
+    StrIdx(65),
+    StrIdx(66),
+    StrIdx(36),
+    StrIdx(37),
+    StrIdx(38),
+    StrIdx(39),
+    StrIdx(40),
+    StrIdx(67),
+    StrIdx(41),
+    StrIdx(68),
+    StrIdx(69),
+    StrIdx(43),
+    StrIdx(70),
+    StrIdx(71),
+    StrIdx(72),
+    StrIdx(73),
+    StrIdx(74),
+    StrIdx(75),
+    StrIdx(76),
+    StrIdx(77),
+    StrIdx(78),
+    StrIdx(52),
+    StrIdx(53),
+    StrIdx(79),
+    StrIdx(80),
+    StrIdx(81),
 ];
 
 static PRODUCTIONS: &[Production] = &[
-    Production::new(Terminal::Se(1), 1),
-    Production::new(Terminal::Se(17), 2),
-    Production::new(Terminal::Se(21), 3),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(17), 2),
-    Production::new(Terminal::Se(21), 3),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(21), 3),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(2), 5),
-    Production::new(Terminal::Se(10), 6),
-    Production::new(Terminal::Se(16), 7),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(10), 6),
-    Production::new(Terminal::Se(16), 7),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(16), 7),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(3), 9),
-    Production::new(Terminal::Se(6), 10),
-    Production::new(Terminal::Se(7), 11),
-    Production::new(Terminal::Se(8), 12),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::SeAny, 8),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(6), 10),
-    Production::new(Terminal::Se(7), 11),
-    Production::new(Terminal::Se(8), 12),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(7), 11),
-    Production::new(Terminal::Se(8), 12),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(8), 12),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(9), 13),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(4), 15),
-    Production::new(Terminal::Se(5), 15),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ch(5), 18),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::SeAny, 20),
-    Production::new(Terminal::SeAny, 21),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(11), 23),
-    Production::new(Terminal::Se(12), 24),
-    Production::new(Terminal::Se(13), 25),
-    Production::new(Terminal::Se(14), 26),
-    Production::new(Terminal::Se(15), 27),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(12), 24),
-    Production::new(Terminal::Se(13), 25),
-    Production::new(Terminal::Se(14), 26),
-    Production::new(Terminal::Se(15), 27),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(13), 25),
-    Production::new(Terminal::Se(14), 26),
-    Production::new(Terminal::Se(15), 27),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(14), 26),
-    Production::new(Terminal::Se(15), 27),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(15), 27),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(18), 29),
-    Production::new(Terminal::Se(19), 30),
-    Production::new(Terminal::Se(20), 31),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(19), 30),
-    Production::new(Terminal::Se(20), 31),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Se(20), 31),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ee, NONE),
-    Production::new(Terminal::Ch(9), 33),
-    Production::new(Terminal::Ee, NONE),
+    Production::new(Terminal::Se(ElemIdx(1)), RuleIdx(1)),
+    Production::new(Terminal::Se(ElemIdx(17)), RuleIdx(2)),
+    Production::new(Terminal::Se(ElemIdx(21)), RuleIdx(3)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(17)), RuleIdx(2)),
+    Production::new(Terminal::Se(ElemIdx(21)), RuleIdx(3)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(21)), RuleIdx(3)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(2)), RuleIdx(5)),
+    Production::new(Terminal::Se(ElemIdx(10)), RuleIdx(6)),
+    Production::new(Terminal::Se(ElemIdx(16)), RuleIdx(7)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(10)), RuleIdx(6)),
+    Production::new(Terminal::Se(ElemIdx(16)), RuleIdx(7)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(16)), RuleIdx(7)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(3)), RuleIdx(9)),
+    Production::new(Terminal::Se(ElemIdx(6)), RuleIdx(10)),
+    Production::new(Terminal::Se(ElemIdx(7)), RuleIdx(11)),
+    Production::new(Terminal::Se(ElemIdx(8)), RuleIdx(12)),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::SeAny, RuleIdx(8)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(6)), RuleIdx(10)),
+    Production::new(Terminal::Se(ElemIdx(7)), RuleIdx(11)),
+    Production::new(Terminal::Se(ElemIdx(8)), RuleIdx(12)),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(7)), RuleIdx(11)),
+    Production::new(Terminal::Se(ElemIdx(8)), RuleIdx(12)),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(8)), RuleIdx(12)),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(9)), RuleIdx(13)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(4)), RuleIdx(15)),
+    Production::new(Terminal::Se(ElemIdx(5)), RuleIdx(15)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ch(TypeIdx(5)), RuleIdx(18)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::SeAny, RuleIdx(20)),
+    Production::new(Terminal::SeAny, RuleIdx(21)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(11)), RuleIdx(23)),
+    Production::new(Terminal::Se(ElemIdx(12)), RuleIdx(24)),
+    Production::new(Terminal::Se(ElemIdx(13)), RuleIdx(25)),
+    Production::new(Terminal::Se(ElemIdx(14)), RuleIdx(26)),
+    Production::new(Terminal::Se(ElemIdx(15)), RuleIdx(27)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(12)), RuleIdx(24)),
+    Production::new(Terminal::Se(ElemIdx(13)), RuleIdx(25)),
+    Production::new(Terminal::Se(ElemIdx(14)), RuleIdx(26)),
+    Production::new(Terminal::Se(ElemIdx(15)), RuleIdx(27)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(13)), RuleIdx(25)),
+    Production::new(Terminal::Se(ElemIdx(14)), RuleIdx(26)),
+    Production::new(Terminal::Se(ElemIdx(15)), RuleIdx(27)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(14)), RuleIdx(26)),
+    Production::new(Terminal::Se(ElemIdx(15)), RuleIdx(27)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(15)), RuleIdx(27)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(18)), RuleIdx(29)),
+    Production::new(Terminal::Se(ElemIdx(19)), RuleIdx(30)),
+    Production::new(Terminal::Se(ElemIdx(20)), RuleIdx(31)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(19)), RuleIdx(30)),
+    Production::new(Terminal::Se(ElemIdx(20)), RuleIdx(31)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Se(ElemIdx(20)), RuleIdx(31)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
+    Production::new(Terminal::Ch(TypeIdx(9)), RuleIdx(33)),
+    Production::new(Terminal::Ee, RuleIdx::NONE),
 ];
 
 static RULES: &[Rule] = &[
@@ -430,134 +517,134 @@ static GRAMMARS: &[Grammar] = &[
 
 static ELEMENTS: &[ElementDecl] = &[
     ElementDecl {
-        qname: QNameId::new(4, 20),
-        type_idx: 0,
+        qname: QNameId::new(UriId(4), LocalId(20)),
+        type_idx: TypeIdx(0),
         nillable: false,
         global: true,
     },
     ElementDecl {
-        qname: QNameId::new(4, 25),
-        type_idx: 1,
+        qname: QNameId::new(UriId(4), LocalId(25)),
+        type_idx: TypeIdx(1),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 36),
-        type_idx: 2,
+        qname: QNameId::new(UriId(4), LocalId(36)),
+        type_idx: TypeIdx(2),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 0),
-        type_idx: 3,
+        qname: QNameId::new(UriId(4), LocalId(0)),
+        type_idx: TypeIdx(3),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 4),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(4)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 28),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(28)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 32),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(32)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 37),
-        type_idx: 5,
+        qname: QNameId::new(UriId(4), LocalId(37)),
+        type_idx: TypeIdx(5),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 38),
-        type_idx: 5,
+        qname: QNameId::new(UriId(4), LocalId(38)),
+        type_idx: TypeIdx(5),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 8),
-        type_idx: 6,
+        qname: QNameId::new(UriId(4), LocalId(8)),
+        type_idx: TypeIdx(6),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 30),
-        type_idx: 7,
+        qname: QNameId::new(UriId(4), LocalId(30)),
+        type_idx: TypeIdx(7),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 13),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(13)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 29),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(29)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 26),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(26)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 5),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(5)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 27),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(27)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 2),
-        type_idx: 5,
+        qname: QNameId::new(UriId(4), LocalId(2)),
+        type_idx: TypeIdx(5),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 6),
-        type_idx: 8,
+        qname: QNameId::new(UriId(4), LocalId(6)),
+        type_idx: TypeIdx(8),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 7),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(7)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 14),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(14)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 31),
-        type_idx: 9,
+        qname: QNameId::new(UriId(4), LocalId(31)),
+        type_idx: TypeIdx(9),
         nillable: true,
         global: false,
     },
     ElementDecl {
-        qname: QNameId::new(4, 33),
-        type_idx: 4,
+        qname: QNameId::new(UriId(4), LocalId(33)),
+        type_idx: TypeIdx(4),
         nillable: false,
         global: false,
     },
@@ -565,72 +652,72 @@ static ELEMENTS: &[ElementDecl] = &[
 
 static TYPES: &[TypeDecl] = &[
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 0,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(0),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 1,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(1),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 2,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(2),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 3,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(3),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 4,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(4),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 5,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(5),
+        empty_grammar: GrammarIdx(4),
         datatype: Some(DatatypeKind::UnsignedInteger),
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 6,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(6),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 7,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(7),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 8,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(8),
+        empty_grammar: GrammarIdx(4),
         datatype: None,
         typecastable: false,
     },
     TypeDecl {
-        qname: QNameId::new(NONE, 0),
-        grammar: 9,
-        empty_grammar: 4,
+        qname: QNameId::new(UriId::NONE, LocalId(0)),
+        grammar: GrammarIdx(9),
+        empty_grammar: GrammarIdx(4),
         datatype: Some(DatatypeKind::String {
             whitespace: WhiteSpace::Preserve,
         }),
@@ -639,7 +726,7 @@ static TYPES: &[TypeDecl] = &[
 ];
 
 // Only `header` is a global element, so the document grammar has one SE(G_0).
-static GLOBAL_ELEMENTS: &[u32] = &[0];
+static GLOBAL_ELEMENTS: &[ElemIdx] = &[ElemIdx(0)];
 
 /// The full grammar set for encoding and decoding EXI Options documents.
 pub static OPTIONS_GRAMMARS: GrammarSet<'static> = GrammarSet {
@@ -682,22 +769,22 @@ mod tests {
         );
         assert_eq!(
             g.find_qname("http://www.w3.org/2001/XMLSchema", "unsignedShort"),
-            Some(QNameId::new(3, 45))
+            Some(QNameId::new(UriId(3), LocalId(45)))
         );
         for p in g.productions() {
             match p.terminal {
-                Terminal::Ee => assert_eq!(p.next, NONE),
-                _ => assert!((p.next as usize) < g.rules().len()),
+                Terminal::Ee => assert_eq!(p.next, RuleIdx::NONE),
+                _ => assert!(p.next.index() < g.rules().len()),
             }
             if let Terminal::Se(e) = p.terminal {
-                assert!((e as usize) < g.elements().len());
+                assert!(e.index() < g.elements().len());
             }
         }
         for e in g.elements() {
-            assert!((e.type_idx as usize) < g.types().len());
+            assert!(e.type_idx.index() < g.types().len());
             assert!(g.local_name_str(e.qname).map(str::len).unwrap_or(0) > 0);
         }
         let root = g.find_global_element(QNameId::new(EXI_URI, LN_HEADER));
-        assert_eq!(root, Some(0));
+        assert_eq!(root, Some(ElemIdx(0)));
     }
 }

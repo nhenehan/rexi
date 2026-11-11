@@ -280,11 +280,12 @@ impl RuleSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rexi_core::ElemIdx;
     use rexi_core::grammar::Terminal;
 
     fn se(e: u32, next: usize) -> PProd {
         PProd::Term {
-            terminal: Terminal::Se(e),
+            terminal: Terminal::Se(ElemIdx::new(e)),
             next,
             order: e,
         }
@@ -317,7 +318,7 @@ mod tests {
         assert!(matches!(
             n.rules[0].prods[0],
             PProd::Term {
-                terminal: Terminal::Se(0),
+                terminal: Terminal::Se(ElemIdx(0)),
                 ..
             }
         ));
@@ -331,7 +332,7 @@ mod tests {
         assert!(union.iter().any(|p| matches!(
             p,
             PProd::Term {
-                terminal: Terminal::Se(1),
+                terminal: Terminal::Se(ElemIdx(1)),
                 ..
             }
         )));

@@ -32,6 +32,7 @@ use crate::error::{ExiError, ExiResult, Feature};
 use crate::event::Event;
 use crate::grammar::options_grammar as og;
 use crate::grammar::options_grammar::{EXI_URI, OPTIONS_GRAMMARS};
+use crate::ids::LocalId;
 use crate::io::{BitReader, BitWriter};
 use crate::options::{Alignment, ExiOptions, HeaderConfig, SchemaId};
 use crate::value::{Int, Uint, Value};
@@ -296,7 +297,7 @@ pub fn read_options_document<R: ByteSource>(
     let mut dec = Decoder::for_body(reader, &OPTIONS_GRAMMARS, ExiOptions::strict())?;
     let mut options = ExiOptions::default();
     // The open elements, as local-name ids. Values are read when a CH arrives.
-    let mut path: Vec<u32> = Vec::new();
+    let mut path: Vec<LocalId> = Vec::new();
     while let Some(ev) = dec.next_event()? {
         match ev {
             Event::StartDocument | Event::EndDocument => {}
@@ -379,7 +380,7 @@ pub fn read_options_document<R: ByteSource>(
 /// The local-name id of `local` in the exi namespace partition of the options
 /// grammar, or `None` if it is not one of the names declared there.
 #[allow(non_snake_case)]
-fn OPTIONS_GRAMMARS_local(local: &str) -> Option<u32> {
+fn OPTIONS_GRAMMARS_local(local: &str) -> Option<LocalId> {
     use crate::grammar::ir::GrammarTables;
     OPTIONS_GRAMMARS
         .find_qname(EXI_NS, local)

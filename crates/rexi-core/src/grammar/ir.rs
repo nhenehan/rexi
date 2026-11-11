@@ -18,7 +18,9 @@
 //! those starting entries.
 
 use crate::datatype::{DatatypeKind, TypeResolver};
-use crate::ids::{ElemIdx, EnumSetIdx, GrammarIdx, NONE, QNameId, RuleIdx, StrIdx, TypeIdx, UriId};
+use crate::ids::{
+    ElemIdx, EnumSetIdx, GrammarIdx, LocalId, QNameId, RuleIdx, StrIdx, TypeIdx, UriId,
+};
 
 /// A contiguous range inside one of the flat tables.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -112,7 +114,7 @@ pub enum Terminal {
 pub struct Production {
     /// The event this production matches.
     pub terminal: Terminal,
-    /// Next rule (absolute index), or [`NONE`] after `EE` / `ED`.
+    /// Next rule (absolute index), or [`RuleIdx::NONE`] after `EE` / `ED`.
     pub next: RuleIdx,
 }
 
@@ -158,7 +160,7 @@ pub struct ElementDecl {
 /// A type definition, simple or complex.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TypeDecl {
-    /// Name, or `QNameId { uri: NONE, .. }` for anonymous types.
+    /// Name, or `QNameId { uri: UriId::NONE, .. }` for anonymous types.
     pub qname: QNameId,
     /// Grammar for the type's content (`Type_i`,
     /// [EXI 8.5.4.1.3](https://www.w3.org/TR/exi/#typeGrammars)).
@@ -176,7 +178,7 @@ pub struct TypeDecl {
 impl TypeDecl {
     /// Whether the type has no name.
     pub fn is_anonymous(&self) -> bool {
-        self.qname.uri == NONE
+        self.qname.uri.is_none()
     }
 }
 
@@ -280,20 +282,20 @@ pub trait GrammarTables {
 
     /// The text of URI `uri`, or `None` if there is no such partition.
     fn uri_str(&self, uri: UriId) -> Option<&str> {
-        self.uris().get(uri as usize).map(|u| self.string(u.uri))
+        self.uris().get(uri.index()).map(|u| self.string(u.uri))
     }
 
     /// The local-name text of `qname`, or `None` if it is not in the starting
     /// partitions.
     fn local_name_str(&self, qname: QNameId) -> Option<&str> {
-        let entry = self.uris().get(qname.uri as usize)?;
-        let idx = entry.local_names.range().nth(qname.local as usize)?;
+        let entry = self.uris().get(qname.uri.index())?;
+        let idx = entry.local_names.range().nth(qname.local.index())?;
         self.local_names().get(idx).map(|&s| self.string(s))
     }
 
     /// The productions of `rule` (empty if out of range).
     fn rule_productions(&self, rule: RuleIdx) -> &[Production] {
-        match self.rules().get(rule as usize) {
+        match self.rules().get(rule.index()) {
             Some(r) => self.productions().get(r.productions.range()).unwrap_or(&[]),
             None => &[],
         }
@@ -301,17 +303,19 @@ pub trait GrammarTables {
 
     /// The start rule of `grammar`.
     fn grammar_start_rule(&self, grammar: GrammarIdx) -> Option<RuleIdx> {
-        self.grammars().get(grammar as usize).map(|g| g.rules.start)
+        self.grammars()
+            .get(grammar.index())
+            .map(|g| RuleIdx::new(g.rules.start))
     }
 
     /// Element declaration `e`.
     fn element(&self, e: ElemIdx) -> Option<ElementDecl> {
-        self.elements().get(e as usize).copied()
+        self.elements().get(e.index()).copied()
     }
 
     /// Type definition `t`.
     fn type_decl(&self, t: TypeIdx) -> Option<TypeDecl> {
-        self.types().get(t as usize).copied()
+        self.types().get(t.index()).copied()
     }
 
     /// The named type `qname`, by linear search.
@@ -319,14 +323,14 @@ pub trait GrammarTables {
         self.types()
             .iter()
             .position(|t| t.qname == qname)
-            .map(|i| i as TypeIdx)
+            .map(|i| TypeIdx::new(i as u32))
     }
 
     /// The global element `qname`, by linear search.
     fn find_global_element(&self, qname: QNameId) -> Option<ElemIdx> {
         self.global_elements().iter().copied().find(|&e| {
             self.elements()
-                .get(e as usize)
+                .get(e.index())
                 .is_some_and(|d| d.qname == qname)
         })
     }
@@ -337,8 +341,8 @@ pub trait GrammarTables {
     /// [EXI D.3](https://www.w3.org/TR/exi/#initialLocalNames)), with a linear scan
     /// as a fallback for hand-built tables that are not sorted.
     fn find_qname(&self, uri: &str, local: &str) -> Option<QNameId> {
-        let uri_id = self.uris().iter().position(|u| self.string(u.uri) == uri)? as UriId;
-        let entry = self.uris().get(uri_id as usize)?;
+        let uri_id = UriId::new(self.uris().iter().position(|u| self.string(u.uri) == uri)? as u32);
+        let entry = self.uris().get(uri_id.index())?;
         let names = self.local_names().get(entry.local_names.range())?;
         let local_id = match names.binary_search_by(|&s| self.string(s).cmp(local)) {
             // Step back to the first of any equal neighbors, the one the linear scan
@@ -351,7 +355,7 @@ pub trait GrammarTables {
             }
             Err(_) => names.iter().position(|&s| self.string(s) == local)?,
         } as u32;
-        Some(QNameId::new(uri_id, local_id))
+        Some(QNameId::new(uri_id, LocalId::new(local_id)))
     }
 }
 
@@ -364,7 +368,7 @@ impl Default for GrammarSet<'_> {
 
 impl GrammarTables for GrammarSet<'_> {
     fn string(&self, i: StrIdx) -> &str {
-        self.strings.get(i as usize).copied().unwrap_or("")
+        self.strings.get(i.index()).copied().unwrap_or("")
     }
     fn uris(&self) -> &[UriEntry] {
         self.uris
@@ -416,12 +420,12 @@ impl<G: GrammarTables + ?Sized> TypeResolver for G {
 
     fn enum_count(&self, set: EnumSetIdx) -> usize {
         self.enum_sets()
-            .get(set as usize)
+            .get(set.index())
             .map_or(0, |s| s.len as usize)
     }
 
     fn enum_value(&self, set: EnumSetIdx, ordinal: usize) -> Option<&str> {
-        let span = self.enum_sets().get(set as usize)?;
+        let span = self.enum_sets().get(set.index())?;
         if ordinal >= span.len as usize {
             return None;
         }
@@ -482,13 +486,13 @@ pub mod well_known {
     use crate::ids::UriId;
 
     /// The empty URI (no namespace).
-    pub const URI_EMPTY: UriId = 0;
+    pub const URI_EMPTY: UriId = UriId(0);
     /// The `xml` namespace.
-    pub const URI_XML: UriId = 1;
+    pub const URI_XML: UriId = UriId(1);
     /// The `xsi` namespace.
-    pub const URI_XSI: UriId = 2;
+    pub const URI_XSI: UriId = UriId(2);
     /// Present only when the grammars are schema-informed.
-    pub const URI_XSD: UriId = 3;
+    pub const URI_XSD: UriId = UriId(3);
 
     /// The `xml` namespace URI.
     pub const XML_NS: &str = "http://www.w3.org/XML/1998/namespace";

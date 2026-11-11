@@ -23,7 +23,7 @@
 
 use std::collections::HashMap;
 
-use rexi_core::{DatatypeKind, TypeIdx, WhiteSpace};
+use rexi_core::{DatatypeKind, EnumSetIdx, TypeIdx, WhiteSpace};
 
 use crate::builtin::{self, BUILTINS, Category};
 use crate::charset::{self, CharSet};
@@ -81,7 +81,7 @@ impl<'m> DatatypeMapper<'m> {
         };
         Ok(Some(match &simple.variety {
             Variety::List { item } => DatatypeKind::List {
-                item: *item as TypeIdx,
+                item: TypeIdx::new(*item as u32),
             },
             Variety::Union { .. } => DatatypeKind::String {
                 whitespace: WhiteSpace::Collapse,
@@ -137,8 +137,8 @@ impl<'m> DatatypeMapper<'m> {
                 let set = self.enum_sets.len() as u32;
                 self.enum_sets.push(values);
                 Ok(DatatypeKind::Enumeration {
-                    set,
-                    item: base as TypeIdx,
+                    set: EnumSetIdx::new(set),
+                    item: TypeIdx::new(base as u32),
                 })
             }
         }
@@ -204,7 +204,7 @@ impl<'m> DatatypeMapper<'m> {
             Category::Base64Binary => DatatypeKind::Base64Binary,
             Category::HexBinary => DatatypeKind::HexBinary,
             Category::List(item) => DatatypeKind::List {
-                item: item as TypeIdx,
+                item: TypeIdx::new(item as u32),
             },
             Category::Integer { min, max } => {
                 let (mut lo, mut hi) = (min, max);

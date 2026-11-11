@@ -47,10 +47,10 @@ impl GrammarSetBuf {
     /// returns its index. The lookup is a linear scan.
     pub fn intern(&mut self, s: &str) -> StrIdx {
         if let Some(i) = self.strings.iter().position(|x| x == s) {
-            return i as StrIdx;
+            return StrIdx::new(i as u32);
         }
         self.strings.push(s.to_string());
-        (self.strings.len() - 1) as StrIdx
+        StrIdx::new((self.strings.len() - 1) as u32)
     }
 
     /// Gives the tables a `schemaId`, which a decoder checks the stream's against
@@ -93,7 +93,7 @@ impl GrammarSetBuf {
 
 impl GrammarTables for GrammarSetBuf {
     fn string(&self, i: StrIdx) -> &str {
-        self.strings.get(i as usize).map_or("", String::as_str)
+        self.strings.get(i.index()).map_or("", String::as_str)
     }
     fn uris(&self) -> &[UriEntry] {
         &self.uris
