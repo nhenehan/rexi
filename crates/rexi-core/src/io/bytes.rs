@@ -22,7 +22,7 @@ pub trait ByteSource {
     /// # Errors
     ///
     /// The source's own read error.
-    fn get_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind>;
+    fn read_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind>;
 
     /// Fills `buf` completely, or fails with [`IoErrorKind::UnexpectedEof`].
     ///
@@ -30,9 +30,9 @@ pub trait ByteSource {
     ///
     /// [`IoErrorKind::UnexpectedEof`] when the source ends first, or the source's
     /// own read error.
-    fn get_bytes_exact(&mut self, mut buf: &mut [u8]) -> Result<(), IoErrorKind> {
+    fn read_bytes_exact(&mut self, mut buf: &mut [u8]) -> Result<(), IoErrorKind> {
         while !buf.is_empty() {
-            match self.get_bytes(buf)? {
+            match self.read_bytes(buf)? {
                 0 => return Err(IoErrorKind::UnexpectedEof),
                 n => buf = &mut buf[n..],
             }
@@ -66,7 +66,7 @@ pub trait ByteSink {
 impl<R: std::io::Read + ?Sized> ByteSource for R {
     /// Retries when the read is interrupted (`ErrorKind::Interrupted`), as
     /// `std::io` callers are expected to.
-    fn get_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
+    fn read_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
         loop {
             match std::io::Read::read(self, buf) {
                 Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
@@ -75,7 +75,7 @@ impl<R: std::io::Read + ?Sized> ByteSource for R {
         }
     }
 
-    fn get_bytes_exact(&mut self, buf: &mut [u8]) -> Result<(), IoErrorKind> {
+    fn read_bytes_exact(&mut self, buf: &mut [u8]) -> Result<(), IoErrorKind> {
         std::io::Read::read_exact(self, buf).map_err(IoErrorKind::from)
     }
 }
@@ -96,7 +96,7 @@ impl<W: std::io::Write + ?Sized> ByteSink for W {
 
 #[cfg(not(feature = "std"))]
 impl ByteSource for &[u8] {
-    fn get_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
+    fn read_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
         let n = buf.len().min(self.len());
         let (head, tail) = self.split_at(n);
         buf[..n].copy_from_slice(head);
@@ -107,12 +107,12 @@ impl ByteSource for &[u8] {
 
 #[cfg(not(feature = "std"))]
 impl<R: ByteSource + ?Sized> ByteSource for &mut R {
-    fn get_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
-        (**self).get_bytes(buf)
+    fn read_bytes(&mut self, buf: &mut [u8]) -> Result<usize, IoErrorKind> {
+        (**self).read_bytes(buf)
     }
 
-    fn get_bytes_exact(&mut self, buf: &mut [u8]) -> Result<(), IoErrorKind> {
-        (**self).get_bytes_exact(buf)
+    fn read_bytes_exact(&mut self, buf: &mut [u8]) -> Result<(), IoErrorKind> {
+        (**self).read_bytes_exact(buf)
     }
 }
 
@@ -223,10 +223,10 @@ mod tests {
     fn slice_source_reads_then_ends() {
         let mut src: &[u8] = &[1, 2, 3];
         let mut buf = [0u8; 2];
-        assert_eq!(src.get_bytes(&mut buf), Ok(2));
+        assert_eq!(src.read_bytes(&mut buf), Ok(2));
         assert_eq!(buf, [1, 2]);
         assert_eq!(
-            src.get_bytes_exact(&mut buf),
+            src.read_bytes_exact(&mut buf),
             Err(IoErrorKind::UnexpectedEof)
         );
     }

@@ -91,6 +91,8 @@ impl GrammarSetBuf {
     }
 }
 
+impl crate::__private::Sealed for GrammarSetBuf {}
+
 impl GrammarTables for GrammarSetBuf {
     fn string(&self, i: StrIdx) -> &str {
         self.strings.get(i.index()).map_or("", String::as_str)

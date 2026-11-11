@@ -250,7 +250,35 @@ impl GrammarSet<'static> {
 
 /// Read access to grammar tables, implemented by [`GrammarSet`] and
 /// [`super::GrammarSetBuf`].
-pub trait GrammarTables {
+///
+/// The trait is sealed: only rexi's own types implement it, so new methods can be
+/// added in a minor release. Build tables with `rexi-schema` (at run time) or
+/// `rexi-schema-gen` (ahead of time) instead. This does not compile:
+///
+/// ```compile_fail,E0277
+/// use rexi_core::grammar::*;
+/// use rexi_core::{ElemIdx, GrammarTables, StrIdx};
+///
+/// // Every method is there; only the seal is missing.
+/// struct Wrapped(GrammarSet<'static>);
+/// impl GrammarTables for Wrapped {
+///     fn string(&self, i: StrIdx) -> &str { self.0.string(i) }
+///     fn uris(&self) -> &[UriEntry] { self.0.uris() }
+///     fn prefixes(&self) -> &[StrIdx] { self.0.prefixes() }
+///     fn local_names(&self) -> &[StrIdx] { self.0.local_names() }
+///     fn productions(&self) -> &[Production] { self.0.productions() }
+///     fn rules(&self) -> &[Rule] { self.0.rules() }
+///     fn grammars(&self) -> &[Grammar] { self.0.grammars() }
+///     fn elements(&self) -> &[ElementDecl] { self.0.elements() }
+///     fn global_elements(&self) -> &[ElemIdx] { self.0.global_elements() }
+///     fn global_attributes(&self) -> &[GlobalAttribute] { self.0.global_attributes() }
+///     fn types(&self) -> &[TypeDecl] { self.0.types() }
+///     fn enum_sets(&self) -> &[Span] { self.0.enum_sets() }
+///     fn enum_values(&self) -> &[StrIdx] { self.0.enum_values() }
+///     fn schema_id(&self) -> Option<&str> { self.0.schema_id() }
+/// }
+/// ```
+pub trait GrammarTables: crate::__private::Sealed {
     /// String `i` of the string pool (empty if out of range).
     fn string(&self, i: StrIdx) -> &str;
     /// See [`GrammarSet::uris`].
@@ -366,6 +394,8 @@ impl Default for GrammarSet<'_> {
     }
 }
 
+impl crate::__private::Sealed for GrammarSet<'_> {}
+
 impl GrammarTables for GrammarSet<'_> {
     fn string(&self, i: StrIdx) -> &str {
         self.strings.get(i.index()).copied().unwrap_or("")
@@ -434,6 +464,8 @@ impl<G: GrammarTables + ?Sized> TypeResolver for G {
             .map(|&s| self.string(s))
     }
 }
+
+impl<G: GrammarTables + ?Sized> crate::__private::Sealed for &G {}
 
 impl<G: GrammarTables + ?Sized> GrammarTables for &G {
     fn string(&self, i: StrIdx) -> &str {
@@ -560,4 +592,64 @@ pub mod well_known {
         "unsignedLong",
         "unsignedShort",
     ];
+}
+
+#[cfg(test)]
+mod sealed_tests {
+    use super::*;
+
+    // The same impl as in the trait's compile_fail example, plus the seal: it
+    // builds. So in that example the seal is the only thing missing.
+    struct Wrapped(GrammarSet<'static>);
+    impl crate::__private::Sealed for Wrapped {}
+    impl GrammarTables for Wrapped {
+        fn string(&self, i: StrIdx) -> &str {
+            self.0.string(i)
+        }
+        fn uris(&self) -> &[UriEntry] {
+            self.0.uris()
+        }
+        fn prefixes(&self) -> &[StrIdx] {
+            self.0.prefixes()
+        }
+        fn local_names(&self) -> &[StrIdx] {
+            self.0.local_names()
+        }
+        fn productions(&self) -> &[Production] {
+            self.0.productions()
+        }
+        fn rules(&self) -> &[Rule] {
+            self.0.rules()
+        }
+        fn grammars(&self) -> &[Grammar] {
+            self.0.grammars()
+        }
+        fn elements(&self) -> &[ElementDecl] {
+            self.0.elements()
+        }
+        fn global_elements(&self) -> &[ElemIdx] {
+            self.0.global_elements()
+        }
+        fn global_attributes(&self) -> &[GlobalAttribute] {
+            self.0.global_attributes()
+        }
+        fn types(&self) -> &[TypeDecl] {
+            self.0.types()
+        }
+        fn enum_sets(&self) -> &[Span] {
+            self.0.enum_sets()
+        }
+        fn enum_values(&self) -> &[StrIdx] {
+            self.0.enum_values()
+        }
+        fn schema_id(&self) -> Option<&str> {
+            self.0.schema_id()
+        }
+    }
+
+    #[test]
+    fn a_sealed_wrapper_works() {
+        let w = Wrapped(crate::grammar::options_grammar::OPTIONS_GRAMMARS);
+        assert_eq!(w.schema_id(), Some("http://www.w3.org/2009/exi"));
+    }
 }

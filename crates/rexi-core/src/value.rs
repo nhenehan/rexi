@@ -11,7 +11,11 @@ pub use crate::datatype::unsigned::Uint;
 
 /// A signed integer of any size
 /// ([EXI 7.1.5](https://www.w3.org/TR/exi/#encodingInteger)).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+///
+/// Values compare and hash by number, not by variant: a `Big` that holds a number
+/// that fits in `i64` equals the `Small` with that number, and a negative zero
+/// equals zero.
+#[derive(Debug, Clone)]
 pub enum Int {
     /// A value that fits in `i64`.
     Small(i64),
@@ -56,6 +60,38 @@ impl Int {
             negative,
             magnitude,
         })
+    }
+}
+
+impl Int {
+    /// One form per number: `Ok` when it fits in `i64`, else sign and size.
+    fn canonical(&self) -> Result<i64, (bool, &BigUint)> {
+        match self {
+            Int::Small(v) => Ok(*v),
+            Int::Big {
+                negative,
+                magnitude,
+            } => match magnitude.to_u64() {
+                Some(m) if !*negative => i64::try_from(m).map_err(|_| (false, magnitude)),
+                // -m fits in i64 when m <= 2^63.
+                Some(m) if m <= 1 << 63 => Ok((-i128::from(m)) as i64),
+                _ => Err((*negative, magnitude)),
+            },
+        }
+    }
+}
+
+impl PartialEq for Int {
+    fn eq(&self, other: &Self) -> bool {
+        self.canonical() == other.canonical()
+    }
+}
+
+impl Eq for Int {}
+
+impl core::hash::Hash for Int {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.canonical().hash(state);
     }
 }
 
@@ -384,5 +420,70 @@ mod conversion_tests {
             OwnedValue::from(&Value::Boolean(true)),
             OwnedValue::Boolean(true)
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::hash::{Hash, Hasher};
+
+    /// FNV-1a, so the hash checks also run without `std`.
+    struct Fnv(u64);
+    impl Hasher for Fnv {
+        fn finish(&self) -> u64 {
+            self.0
+        }
+        fn write(&mut self, bytes: &[u8]) {
+            for b in bytes {
+                self.0 = (self.0 ^ u64::from(*b)).wrapping_mul(0x100_0000_01b3);
+            }
+        }
+    }
+
+    fn hash<T: Hash>(v: &T) -> u64 {
+        let mut h = Fnv(0xcbf2_9ce4_8422_2325);
+        v.hash(&mut h);
+        h.finish()
+    }
+
+    fn big(negative: bool, m: u64) -> Int {
+        Int::Big {
+            negative,
+            magnitude: BigUint::from_u64(m),
+        }
+    }
+
+    #[test]
+    fn int_compares_by_number() {
+        for (b, s) in [
+            (big(false, 5), Int::Small(5)),
+            (big(true, 5), Int::Small(-5)),
+            (big(true, 0), Int::Small(0)),
+            (big(false, i64::MAX as u64), Int::Small(i64::MAX)),
+            (big(true, 1 << 63), Int::Small(i64::MIN)),
+        ] {
+            assert_eq!(b, s);
+            assert_eq!(hash(&b), hash(&s));
+        }
+        // Past i64: equal only to the same big number.
+        assert_ne!(big(false, 1 << 63), Int::Small(i64::MIN));
+        assert_eq!(big(false, 1 << 63), big(false, 1 << 63));
+        assert_ne!(big(true, (1 << 63) + 1), big(false, (1 << 63) + 1));
+        assert_ne!(big(false, 5), Int::Small(-5));
+    }
+
+    #[test]
+    fn uint_compares_by_number() {
+        let b = Uint::Big(BigUint::from_u64(7));
+        assert_eq!(b, Uint::Small(7));
+        assert_eq!(hash(&b), hash(&Uint::Small(7)));
+        assert_ne!(b, Uint::Small(8));
+        // 2^64, one past u64::MAX.
+        let two_64 = || Uint::Big(BigUint::from_u64(u64::MAX).add_one());
+        let past = two_64();
+        assert_eq!(past, two_64());
+        assert_eq!(hash(&past), hash(&two_64()));
+        assert_ne!(past, Uint::Small(0));
     }
 }

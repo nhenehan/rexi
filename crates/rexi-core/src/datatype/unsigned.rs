@@ -188,7 +188,10 @@ pub fn read_unsigned_any<R: ByteSource>(r: &mut BitReader<R>) -> ExiResult<Uint>
 
 /// An unsigned integer value of any size: `Small` when it fits in `u64`, `Big`
 /// otherwise.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+///
+/// Values compare and hash by number, not by variant: a `Big` that holds a small
+/// number equals the `Small` with that number.
+#[derive(Debug, Clone)]
 pub enum Uint {
     /// A value that fits in `u64`.
     Small(u64),
@@ -227,6 +230,28 @@ impl Uint {
             Uint::Small(v) => *v == 0,
             Uint::Big(b) => b.is_zero(),
         }
+    }
+
+    /// One form per number: `Ok` when it fits in `u64`, else the big value.
+    fn canonical(&self) -> Result<u64, &BigUint> {
+        match self {
+            Uint::Small(v) => Ok(*v),
+            Uint::Big(b) => b.to_u64().ok_or(b),
+        }
+    }
+}
+
+impl PartialEq for Uint {
+    fn eq(&self, other: &Self) -> bool {
+        self.canonical() == other.canonical()
+    }
+}
+
+impl Eq for Uint {}
+
+impl core::hash::Hash for Uint {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.canonical().hash(state);
     }
 }
 

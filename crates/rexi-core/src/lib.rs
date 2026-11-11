@@ -111,6 +111,16 @@ pub mod options;
 pub mod string_table;
 pub mod value;
 
+/// Not part of the API: it may change in any release. Only rexi's own crates
+/// (rexi-capi) use it.
+#[doc(hidden)]
+pub mod __private {
+    /// Seals [`crate::GrammarTables`]: a type must implement this trait first, and
+    /// only rexi's own types do. So rexi can add methods to `GrammarTables` later
+    /// without breaking anyone.
+    pub trait Sealed {}
+}
+
 pub use datatype::{DatatypeKind, TypeResolver, WhiteSpace};
 pub use decoder::Decoder;
 pub use encoder::Encoder;

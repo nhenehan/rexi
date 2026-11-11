@@ -90,7 +90,7 @@ impl<R: ByteSource> BitReader<R> {
     #[inline]
     fn source_byte(&mut self) -> ExiResult<u8> {
         let mut buf = [0u8; 1];
-        match self.inner.get_bytes(&mut buf)? {
+        match self.inner.read_bytes(&mut buf)? {
             0 => Err(ExiError::Truncated),
             _ => Ok(buf[0]),
         }
@@ -206,7 +206,7 @@ impl<R: ByteSource> BitReader<R> {
     pub fn read_bytes(&mut self, out: &mut [u8]) -> ExiResult<()> {
         let pl = self.pending_len;
         if pl == 0 {
-            self.inner.get_bytes_exact(out)?;
+            self.inner.read_bytes_exact(out)?;
             self.bits_read += 8 * out.len() as u64;
             return Ok(());
         }
@@ -219,7 +219,7 @@ impl<R: ByteSource> BitReader<R> {
         // Off a boundary: fetch the source bytes in one call, then shift them in
         // place. Each output byte is the waiting bits followed by the high bits of
         // the next source byte, whose low bits wait in turn.
-        self.inner.get_bytes_exact(out)?;
+        self.inner.read_bytes_exact(out)?;
         let mut carry = self.pending;
         for slot in out.iter_mut() {
             let b = *slot;

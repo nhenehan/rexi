@@ -29,6 +29,9 @@ enum Tables {
 #[derive(Clone)]
 pub(crate) struct SharedTables(Arc<Tables>, Option<Arc<str>>);
 
+// `GrammarTables` is sealed; rexi-capi is one of rexi's own crates.
+impl rexi_core::__private::Sealed for SharedTables {}
+
 // Implements `GrammarTables` for `SharedTables` by forwarding each listed method
 // to the owned or static tables inside; `schema_id` is written out below it.
 macro_rules! delegate {
