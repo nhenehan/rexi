@@ -1,10 +1,10 @@
-//! The C entry points called from Rust: tables from generated statics
-//! (`RexiTables::from_static`), handles outliving their tables, and the
-//! last-error contract.
+// The C entry points called from Rust: tables from generated statics
+// (`RexiTables::from_static`), handles outliving their tables, and the
+// last-error contract.
 
 use std::ffi::{CStr, CString, c_int, c_void};
 
-use rexi::*;
+use crate::*;
 use rexi_tests::generated::order_complex as oc;
 
 fn last_error() -> String {

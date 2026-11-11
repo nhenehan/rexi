@@ -16,8 +16,12 @@ description = "C ABI over the rexi strict EXI codec (exip-style encoder and call
 build = "build.rs"
 
 [lib]
+# C links librexi.a / librexi.so. No rlib: the `rexi` facade crate owns that
+# name on the Rust side (two librexi.rlib files would collide in target/).
 name = "rexi"
-crate-type = ["cdylib", "staticlib", "rlib"]
+crate-type = ["cdylib", "staticlib"]
+# Its documentation is the C header, include/rexi.h.
+doc = false
 
 [dependencies]
 rexi-core = { workspace = true, features = ["std"] }

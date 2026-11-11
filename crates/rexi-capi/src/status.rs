@@ -160,7 +160,7 @@ pub extern "C" fn rexi_last_error() -> *const c_char {
     LAST_ERROR.with(|e| e.borrow().as_ptr())
 }
 
-/// The library version, for example `"0.2.0"`. Never NULL. The string lives for
+/// The library version, for example `"0.3.0"`. Never NULL. The string lives for
 /// the whole program; do not free it.
 #[unsafe(no_mangle)]
 pub extern "C" fn rexi_version() -> *const c_char {

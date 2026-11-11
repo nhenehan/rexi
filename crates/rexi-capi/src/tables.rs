@@ -81,10 +81,10 @@ pub struct RexiTables {
 }
 
 impl RexiTables {
-    /// Wraps tables that `rexi-schema-gen` wrote. This is for Rust crates that
-    /// build a generated schema into their code and hand it to C. Pass the result
-    /// through `Box::into_raw`; C frees it with `rexi_tables_free`.
-    pub fn from_static(set: &'static GrammarSet<'static>) -> Box<RexiTables> {
+    /// Wraps tables that `rexi-schema-gen` wrote (used by the tests). Pass the
+    /// result through `Box::into_raw`; C frees it with `rexi_tables_free`.
+    #[cfg(test)]
+    pub(crate) fn from_static(set: &'static GrammarSet<'static>) -> Box<RexiTables> {
         Box::new(RexiTables {
             tables: SharedTables(Arc::new(Tables::Static(set)), None),
         })

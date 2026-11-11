@@ -17,9 +17,8 @@
 //! - Input strings are NUL-terminated UTF-8. Output strings (`RexiStr`) are also
 //!   NUL-terminated, carry their length, and are valid only while the callback
 //!   that got them is running.
-//! - Grammar tables (`RexiTables`) come from XSD files (`rexi_tables_from_xsd`) or
-//!   from a static table that `rexi-schema-gen` wrote (`RexiTables::from_static`
-//!   on the Rust side). Each encoder and decoder keeps its own reference to them.
+//! - Grammar tables (`RexiTables`) come from XSD files (`rexi_tables_from_xsd`).
+//!   Each encoder and decoder keeps its own reference to them.
 //! - The decoder has limits (`RexiLimits`) on nesting depth, list length,
 //!   integer size and total string bytes, so a hostile stream cannot use up time
 //!   or memory. `rexi_decoder_new` uses safe defaults; pick others with
@@ -59,3 +58,6 @@ pub use tables::{
     rexi_tables_from_xsd_string,
 };
 pub use value::*;
+
+#[cfg(test)]
+mod rust_side_tests;
