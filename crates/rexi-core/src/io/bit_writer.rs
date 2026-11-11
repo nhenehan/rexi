@@ -9,7 +9,7 @@ use crate::error::{ExiError, ExiResult};
 /// When bytes reach the sink:
 ///
 /// * A byte goes to the sink as soon as all 8 of its bits are written. One call to
-///   `write_raw_bits` sends every byte it completes in a single `put_bytes` call.
+///   `write_raw_bits` sends every byte it completes in a single `write_bytes` call.
 /// * A partly filled last byte stays in `pending` until later writes fill it, or until
 ///   `align_to_byte` or `finish` pads it with zero bits.
 /// * `flush` only asks the sink to flush its own buffer. It does **not** send the
@@ -120,10 +120,12 @@ impl<W: ByteSink> BitWriter<W> {
         self.pending_len = rest as u8;
         // Fixed lengths for the common cases let the compiler inline the sink's copy.
         match buf {
-            [a, ..] if full == 1 => self.inner.put_bytes(&[a])?,
-            [a, b, ..] if full == 2 => self.inner.put_bytes(&[a, b])?,
-            [a, b, c, ..] if full == 3 => self.inner.put_bytes(&[a, b, c])?,
-            _ => self.inner.put_bytes(buf.get(..full).unwrap_or_default())?,
+            [a, ..] if full == 1 => self.inner.write_bytes(&[a])?,
+            [a, b, ..] if full == 2 => self.inner.write_bytes(&[a, b])?,
+            [a, b, c, ..] if full == 3 => self.inner.write_bytes(&[a, b, c])?,
+            _ => self
+                .inner
+                .write_bytes(buf.get(..full).unwrap_or_default())?,
         }
         Ok(())
     }
@@ -164,7 +166,7 @@ impl<W: ByteSink> BitWriter<W> {
     /// boundary (part in one output byte, part in the next).
     pub fn write_byte(&mut self, byte: u8) -> ExiResult<()> {
         if self.pending_len == 0 {
-            self.inner.put_bytes(&[byte])?;
+            self.inner.write_bytes(&[byte])?;
             self.bits_written += 8;
             Ok(())
         } else {
@@ -179,7 +181,7 @@ impl<W: ByteSink> BitWriter<W> {
     /// writes that with `write_raw_bits`.
     pub fn write_bytes(&mut self, bytes: &[u8]) -> ExiResult<()> {
         if self.pending_len == 0 {
-            self.inner.put_bytes(bytes)?;
+            self.inner.write_bytes(bytes)?;
             self.bits_written += 8 * bytes.len() as u64;
             Ok(())
         } else {

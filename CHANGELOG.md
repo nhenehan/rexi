@@ -13,7 +13,8 @@ The first release on crates.io. These changes break code written for 0.2.0:
   the options grammar's `LN_*` are typed. `rexi-schema-gen` writes typed values
   (`RuleIdx(5)`, `RuleIdx::NONE`), so tables made by 0.2.0 must be made again.
 - `ByteSource::get_bytes` and `get_bytes_exact` are now `read_bytes` and
-  `read_bytes_exact`, following the Rust API Guidelines' naming rules.
+  `read_bytes_exact`, following the Rust API Guidelines' naming rules, and
+  `ByteSink::put_bytes` is now `write_bytes` to match.
 - `GrammarTables` is sealed: only rexi's own table types implement it, so new
   methods can come in minor releases. Build tables with `rexi-schema` or
   `rexi-schema-gen`.

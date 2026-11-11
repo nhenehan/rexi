@@ -49,7 +49,7 @@ pub trait ByteSink {
     ///
     /// The sink's own write error; [`SliceSink`] fails with
     /// [`IoErrorKind::BufferFull`] when its buffer is full.
-    fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind>;
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind>;
 
     /// Pushes buffered bytes to where they are going. Does nothing for in-memory
     /// sinks.
@@ -82,7 +82,7 @@ impl<R: std::io::Read + ?Sized> ByteSource for R {
 
 #[cfg(feature = "std")]
 impl<W: std::io::Write + ?Sized> ByteSink for W {
-    fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
         std::io::Write::write_all(self, bytes).map_err(IoErrorKind::from)
     }
 
@@ -118,7 +118,7 @@ impl<R: ByteSource + ?Sized> ByteSource for &mut R {
 
 #[cfg(not(feature = "std"))]
 impl ByteSink for Vec<u8> {
-    fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
         self.extend_from_slice(bytes);
         Ok(())
     }
@@ -126,8 +126,8 @@ impl ByteSink for Vec<u8> {
 
 #[cfg(not(feature = "std"))]
 impl<W: ByteSink + ?Sized> ByteSink for &mut W {
-    fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
-        (**self).put_bytes(bytes)
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
+        (**self).write_bytes(bytes)
     }
 
     fn flush_bytes(&mut self) -> Result<(), IoErrorKind> {
@@ -199,7 +199,7 @@ impl<'a> SliceSink<'a> {
 impl ByteSink for SliceSink<'_> {
     /// Writes all of `bytes` or none of them: if they do not fit, it fails with
     /// [`IoErrorKind::BufferFull`] and leaves the buffer as it was.
-    fn put_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), IoErrorKind> {
         let end = self
             .len
             .checked_add(bytes.len())
@@ -234,8 +234,8 @@ mod tests {
     #[test]
     fn vec_sink_appends() {
         let mut out = Vec::new();
-        out.put_bytes(&[1, 2])
-            .and_then(|()| out.put_bytes(&[3]))
+        out.write_bytes(&[1, 2])
+            .and_then(|()| out.write_bytes(&[3]))
             .unwrap_or_default();
         assert_eq!(out, [1, 2, 3]);
     }
@@ -244,9 +244,9 @@ mod tests {
     fn slice_sink_fails_when_full() {
         let mut buf = [0u8; 3];
         let mut sink = SliceSink::new(&mut buf);
-        assert_eq!(sink.put_bytes(&[1, 2]), Ok(()));
-        assert_eq!(sink.put_bytes(&[3, 4]), Err(IoErrorKind::BufferFull));
-        assert_eq!(sink.put_bytes(&[3]), Ok(()));
+        assert_eq!(sink.write_bytes(&[1, 2]), Ok(()));
+        assert_eq!(sink.write_bytes(&[3, 4]), Err(IoErrorKind::BufferFull));
+        assert_eq!(sink.write_bytes(&[3]), Ok(()));
         assert_eq!(sink.written(), [1, 2, 3]);
     }
 }

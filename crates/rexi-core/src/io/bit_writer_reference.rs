@@ -75,7 +75,7 @@ impl<W: ByteSink> ReferenceWriter<W> {
             self.pending_len += take;
             remaining -= take;
             if self.pending_len == 8 {
-                self.inner.put_bytes(&[self.pending])?;
+                self.inner.write_bytes(&[self.pending])?;
                 self.pending = 0;
                 self.pending_len = 0;
             }
@@ -120,7 +120,7 @@ impl<W: ByteSink> ReferenceWriter<W> {
     /// output byte, part in the next).
     pub fn write_byte(&mut self, byte: u8) -> ExiResult<()> {
         if self.pending_len == 0 {
-            self.inner.put_bytes(&[byte])?;
+            self.inner.write_bytes(&[byte])?;
             self.bits_written += 8;
             Ok(())
         } else {
@@ -130,7 +130,7 @@ impl<W: ByteSink> ReferenceWriter<W> {
 
     pub fn write_bytes(&mut self, bytes: &[u8]) -> ExiResult<()> {
         if self.pending_len == 0 {
-            self.inner.put_bytes(bytes)?;
+            self.inner.write_bytes(bytes)?;
             self.bits_written += 8 * bytes.len() as u64;
             Ok(())
         } else {
