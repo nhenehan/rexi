@@ -49,7 +49,7 @@ use std::fmt;
 
 pub use codec::encode_xml;
 pub use dump::{events_dump, events_dump_with, plain_format};
-pub use reader::{parse_events, push_xml, to_lexical_event};
+pub use reader::{parse_events, parse_fragment_events, push_xml, to_lexical_event};
 pub use rexi_core::{OwnedEvent, OwnedValue};
 pub use writer::{
     decode_events, decode_events_typed, decode_events_typed_with_limits, decode_events_with_limits,

@@ -15,7 +15,7 @@ use rexi_core::{
 };
 use rexi_xml::{
     XmlError, decode_events_with_limits, decode_to_xml_with_limits, encode_xml, events_dump,
-    parse_events,
+    parse_events, parse_fragment_events,
 };
 
 const USAGE: &str = "\
@@ -32,6 +32,7 @@ options (encode: header contents; decode/dump-events: out-of-band options used w
 the stream carries none):
   --strict | --no-strict            strict schema-informed mode (default: strict)
   --alignment bit-packed|byte-aligned
+  --fragment                        the body is a fragment: any number of root elements
   --include-options                 write the EXI options document into the header
   --cookie                          write the $EXI cookie
   --schema-id ID | --schema-id-nil  schemaId option (default: absent); --schema-id also
@@ -69,6 +70,7 @@ struct Args {
     schema_root: Option<PathBuf>,
     strict: Option<bool>,
     alignment: Option<Alignment>,
+    fragment: bool,
     include_options: bool,
     cookie: bool,
     schema_id: Option<SchemaId>,
@@ -123,6 +125,7 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
                     other => return Err(format!("unknown alignment {other:?}")),
                 });
             }
+            "--fragment" => out.fragment = true,
             "--include-options" => out.include_options = true,
             "--cookie" => out.cookie = true,
             "--schema-id" => out.schema_id = Some(SchemaId::Id(value_of("--schema-id")?.clone())),
@@ -188,6 +191,7 @@ fn options_of(args: &Args) -> Result<ExiOptions, String> {
     }
     let mut options = ExiOptions::strict();
     options.alignment = args.alignment.unwrap_or_default();
+    options.fragment = args.fragment;
     options.value_max_length = args.value_max_length;
     options.value_partition_capacity = args.value_partition_capacity;
     options.schema_id = args.schema_id.clone().unwrap_or_default();
@@ -400,7 +404,12 @@ fn run(argv: &[String]) -> Result<(), String> {
                 return Err(USAGE.to_string());
             };
             let xml = read_file(input)?;
-            let events = parse_events(&xml).map_err(|e| e.to_string())?;
+            let events = if args.fragment {
+                parse_fragment_events(&xml)
+            } else {
+                parse_events(&xml)
+            }
+            .map_err(|e| e.to_string())?;
             print_out(&events_dump(&events))
         }
         "bench" => bench(&args),
@@ -460,7 +469,12 @@ fn bench(args: &Args) -> Result<(), String> {
                     .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
             }
             let ns = if args.from_events {
-                let events = parse_events(&data).map_err(|e| e.to_string())?;
+                let events = if options.fragment {
+                    parse_fragment_events(&data)
+                } else {
+                    parse_events(&data)
+                }
+                .map_err(|e| e.to_string())?;
                 time_runs((warmup, warmup_ms), iterations, || {
                     let mut enc = rexi_core::Encoder::new(
                         Vec::with_capacity(encoded.len()),

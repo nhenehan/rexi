@@ -48,3 +48,22 @@ non-strict: refused as unsupported
 
 rexi refuses options it doesn't support when you build the encoder, so you find
 out right away.
+
+## Fragments
+
+A normal EXI body holds one document with one root element. Set the `fragment`
+option to send a run of elements instead, such as tank level and flow readings
+with no wrapper around them ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). Each
+element may be any element the schema declares, even one that is only declared
+inside another element.
+
+```rust,ignore
+let options = ExiOptions::strict().with_fragment(true);
+let xml = b"<level>...</level><flow>...</flow>"; // several roots, no wrapper
+let exi = rexi::xml::encode_xml(xml, &tables, options.clone(), HeaderConfig::default())?;
+let back = rexi::xml::decode_to_xml(&exi[..], &tables, Some(options))?;
+```
+
+The `rexi` tool takes `--fragment` for the same thing. One case is refused: when
+two local elements share a name but have different types, EXI would read that
+name at the top of a fragment with a looser grammar that rexi does not build.

@@ -44,8 +44,25 @@ use crate::{Result, XmlError, XmlSyntaxError, syntax};
 /// [`XmlError::Unsupported`] for XML this front end does not handle (a DOCTYPE,
 /// an undeclared prefix, an attribute given twice, ...).
 pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
+    parse_owned(xml, false)
+}
+
+/// Like [`parse_events`], for an XML fragment: zero or more root elements in a
+/// row, as an EXI fragment holds them
+/// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). Encode the
+/// events with [`ExiOptions::fragment`](rexi_core::ExiOptions::fragment) set.
+///
+/// # Errors
+///
+/// The same as [`parse_events`], except that more than one root (or none) is
+/// allowed.
+pub fn parse_fragment_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
+    parse_owned(xml, true)
+}
+
+fn parse_owned(xml: &[u8], fragment: bool) -> Result<Vec<OwnedEvent>> {
     let mut events = Vec::new();
-    parse_into(xml, |ev| {
+    parse_into(xml, fragment, |ev| {
         events.extend(OwnedEvent::from_event(ev));
         Ok(())
     })?;
@@ -60,10 +77,17 @@ pub fn parse_events(xml: &[u8]) -> Result<Vec<OwnedEvent>> {
 ///
 /// # Errors
 ///
+/// When the encoder's options ask for a fragment
+/// ([`ExiOptions::fragment`](rexi_core::ExiOptions::fragment)), `xml` may hold any
+/// number of root elements, as with [`parse_fragment_events`].
+///
+/// # Errors
+///
 /// The errors of [`parse_events`], and [`XmlError::Exi`] when the encoder
 /// refuses an event or a value.
 pub fn push_xml<W: ByteSink, G: GrammarTables>(xml: &[u8], enc: &mut Encoder<W, G>) -> Result<()> {
-    parse_into(xml, |ev| enc.push(ev).map_err(XmlError::from))
+    let fragment = enc.options().fragment;
+    parse_into(xml, fragment, |ev| enc.push(ev).map_err(XmlError::from))
 }
 
 /// An event for the encoder (see [`OwnedEvent::to_event`]), with text values turned into
@@ -422,11 +446,15 @@ fn push_range(buf: &mut String, s: &str) -> Range<usize> {
 
 /// The streaming core: parses `xml` and hands every event to `sink` in order.
 ///
-/// It checks that there is exactly one root element, no text outside it other than
-/// whitespace, and no DOCTYPE. Comments, processing instructions and the XML
+/// It checks that there is exactly one root element (any number for a
+/// `fragment`), no text outside it other than whitespace, and no DOCTYPE. Comments, processing instructions and the XML
 /// declaration are dropped. An empty-element tag (`<a/>`) gives an `SE` and an `EE`
 /// right away.
-fn parse_into(xml: &[u8], mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>) -> Result<()> {
+fn parse_into(
+    xml: &[u8],
+    fragment: bool,
+    mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>,
+) -> Result<()> {
     let mut reader = Reader::from_reader(xml);
     let mut depth = 0usize;
     let mut seen_root = false;
@@ -443,7 +471,7 @@ fn parse_into(xml: &[u8], mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>) -> 
             Event::Start(start) | Event::Empty(start) => {
                 flush_text(&mut scratch, depth, &mut sink)?;
                 if depth == 0 {
-                    if seen_root {
+                    if seen_root && !fragment {
                         return Err(XmlError::Unsupported("more than one root element".into()));
                     }
                     seen_root = true;
@@ -495,7 +523,7 @@ fn parse_into(xml: &[u8], mut sink: impl FnMut(&ExiEvent<'_>) -> Result<()>) -> 
             "document ends inside an element".into(),
         ));
     }
-    if !seen_root {
+    if !seen_root && !fragment {
         return Err(XmlError::Unsupported("document has no root element".into()));
     }
     sink(&ExiEvent::EndDocument)

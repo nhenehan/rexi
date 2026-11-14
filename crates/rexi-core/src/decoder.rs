@@ -16,7 +16,7 @@ use crate::datatype::{self, DatatypeKind, TypeResolver, binary, lexical};
 use crate::error::{ExiError, ExiResult, Feature};
 use crate::event::{Event, QName};
 use crate::grammar::ir::{GrammarTables, Terminal};
-use crate::grammar::runtime::{Cursor, Frame};
+use crate::grammar::runtime::{Cursor, FragmentEntry, Frame, fragment_entries};
 use crate::header::{self, HeaderInfo};
 use crate::ids::{ElemIdx, QNameId, TypeIdx};
 use crate::io::{BitReader, ceil_log2};
@@ -50,6 +50,10 @@ pub struct Decoder<R, G> {
     strings: StringTable,
     frames: Vec<Frame>,
     cursor: Cursor,
+    /// The `SE(F_i)` list of `FragmentContent` when the body is a fragment
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). Built only
+    /// for fragments, so documents allocate nothing extra.
+    fragment: Option<Vec<FragmentEntry>>,
     value: OwnedValue,
     /// The type of the last value read, as a type index (`TypeIdx::NONE` for untyped
     /// text); `None` before the first value. The datatype itself is looked up only
@@ -175,6 +179,7 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
         options.validate()?;
         reader.set_max_integer_bits(limits.max_integer_bits);
         let strings = crate::encoder::init_string_table(&tables, &options);
+        let fragment = options.fragment.then(|| fragment_entries(&tables));
         Ok(Self {
             inp: reader,
             tables,
@@ -183,6 +188,7 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             strings,
             frames: Vec::new(),
             cursor: Cursor::Document,
+            fragment,
             value: OwnedValue::Boolean(false),
             last_type: None,
             text: String::new(),
@@ -271,6 +277,9 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             Cursor::DocContent => {}
         }
         if self.frames.is_empty() {
+            if let Some(entries) = &self.fragment {
+                return self.step_fragment_content(entries.len());
+            }
             // DocContent : SE(G_0) ... SE(G_n-1) SE(*)  (EXI 8.5.1)
             // A code of n or more is SE(*), which would need a built-in grammar.
             let globals = self.tables.global_elements();
@@ -331,7 +340,8 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             }
             Terminal::Ee => {
                 self.frames.pop();
-                if self.frames.is_empty() {
+                // A fragment goes back to FragmentContent for the next element.
+                if self.frames.is_empty() && self.fragment.is_none() {
                     self.cursor = Cursor::DocEnd;
                 }
                 Ok(Step::Ee)
@@ -517,6 +527,37 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     /// Opens a frame for element `elem`, starting at the first rule of its type's
     /// grammar, and returns the element's qname. Fails when one more open element
     /// would be over [`DecodeLimits::max_depth`].
+    /// Reads one code of a fragment's top level:
+    /// `FragmentContent : SE(F_0) ... SE(F_n-1) SE(*) ED`
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)), so codes
+    /// `0..n` start an element, `n` is `SE(*)` and `n + 1` is `ED`.
+    #[cold]
+    fn step_fragment_content(&mut self, n: usize) -> ExiResult<Step> {
+        let width = ceil_log2(n + 2);
+        let code = self.inp.read_nbit_unsigned(width)? as usize;
+        if code == n + 1 {
+            self.cursor = Cursor::Done;
+            return Ok(Step::Ed);
+        }
+        if code == n {
+            return Err(ExiError::Unsupported(Feature::BuiltInElementGrammar));
+        }
+        let elem = match self.fragment.as_ref().and_then(|f| f.get(code)) {
+            Some(e) => e.elem,
+            None => {
+                return Err(ExiError::Grammar {
+                    expected: format!("fragment event code <= {}", n + 1),
+                    got: format!("{code} at bit {}", self.inp.bit_position()),
+                });
+            }
+        };
+        if elem.is_none() {
+            return Err(ExiError::Unsupported(Feature::RelaxedElementGrammar));
+        }
+        let qname = self.push_element(elem)?;
+        Ok(Step::Se(qname))
+    }
+
     fn push_element(&mut self, elem: ElemIdx) -> ExiResult<QNameId> {
         if let Some(max) = self.limits.max_depth
             && self.frames.len() >= max as usize

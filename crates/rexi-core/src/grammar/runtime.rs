@@ -21,6 +21,17 @@
 //! one `SE(G_i)` per global element in sorted order, followed by `SE(*)`, so its
 //! first-level width is `ceil_log2(n + 1)`.
 //!
+//! # Fragment grammar
+//!
+//! When the `fragment` option is set, the body is a fragment
+//! ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)), and its
+//! `FragmentContent` rule is built from every element declaration, global or
+//! local, not stored in the tables either. It has one `SE(F_i)` per element name
+//! (sorted by local name, then by URI, each name once), then `SE(*)`, then `ED`.
+//! Each `SE` comes back to `FragmentContent` after the element ends, so a
+//! fragment holds any number of elements, and the width is `ceil_log2(n + 2)`.
+//! See [`FragmentEntry`].
+//!
 //! # Escapes for `xsi:type` and `xsi:nil`
 //!
 //! Second-level escapes in strict mode
@@ -189,4 +200,57 @@ pub fn describe_terminal(tables: &impl GrammarTables, t: &Terminal) -> String {
         Terminal::ChUntyped => "CH[untyped]".into(),
         other => format!("{other:?}"),
     }
+}
+
+/// One `SE(F_i)` of a fragment's `FragmentContent` rule
+/// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FragmentEntry {
+    /// The element name.
+    pub qname: QNameId,
+    /// The declaration whose grammar the element is read with, or
+    /// `ElemIdx::NONE` when several declarations share the name but differ in
+    /// type or `nillable`. EXI then reads the element with the relaxed element
+    /// grammar, which rexi refuses
+    /// ([`Feature::RelaxedElementGrammar`](crate::Feature::RelaxedElementGrammar)).
+    pub elem: ElemIdx,
+}
+
+/// Builds the `SE(F_0) ... SE(F_n-1)` list of `FragmentContent`: every element
+/// declaration, global or local, one entry per name, sorted by local name and then
+/// by URI (both by code point). The `SE(*)` and `ED` productions that follow are
+/// not in the list: their codes are `n` and `n + 1`.
+pub fn fragment_entries(tables: &impl GrammarTables) -> Vec<FragmentEntry> {
+    let elems = tables.elements();
+    let mut order: Vec<usize> = (0..elems.len()).collect();
+    let key = |i: usize| {
+        let q = elems[i].qname;
+        (
+            tables.local_name_str(q).unwrap_or(""),
+            tables.uri_str(q.uri).unwrap_or(""),
+        )
+    };
+    // A stable sort keeps declarations of one name in table order.
+    order.sort_by(|&a, &b| key(a).cmp(&key(b)));
+    let mut out: Vec<FragmentEntry> = Vec::new();
+    for i in order {
+        let d = elems[i];
+        if let Some(last) = out.last_mut()
+            && last.qname == d.qname
+        {
+            // Same name again: it keeps its specific grammar only when the type
+            // and `nillable` agree with the first declaration.
+            if let Some(first) = tables.element(last.elem)
+                && (first.type_idx != d.type_idx || first.nillable != d.nillable)
+            {
+                last.elem = ElemIdx::NONE;
+            }
+            continue;
+        }
+        out.push(FragmentEntry {
+            qname: d.qname,
+            elem: ElemIdx::new(i as u32),
+        });
+    }
+    out
 }

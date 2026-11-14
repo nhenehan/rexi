@@ -43,7 +43,18 @@ pub enum Feature {
     /// EXI fragments: several root elements in one body
     /// ([EXI 8.4.2](https://www.w3.org/TR/exi/#builtinFragGrammars),
     /// [EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)).
+    ///
+    /// No longer used: schema-informed fragments are supported since 0.3.1 (set
+    /// [`ExiOptions::fragment`](crate::ExiOptions::fragment)). The variant stays so
+    /// that code matching on it still compiles.
     Fragment,
+    /// The relaxed element grammar of a fragment
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). A fragment
+    /// may start with any element the schema declares, global or local. When two
+    /// declarations share a name but differ in type or in `nillable`, EXI reads
+    /// that name with a looser grammar that rexi does not build. Only that name
+    /// is refused; the other elements of the fragment work.
+    RelaxedElementGrammar,
     /// Built-in element grammars: the grammars used when there is no schema. They
     /// "learn", adding productions as new events show up
     /// ([EXI 8.4.3](https://www.w3.org/TR/exi/#builtinElemGrammars)).
@@ -88,6 +99,7 @@ impl fmt::Display for Feature {
             Feature::DatatypeRepresentationMap => "datatypeRepresentationMap",
             Feature::RestrictedCharacterSet => "restricted character sets",
             Feature::Fragment => "fragment grammars",
+            Feature::RelaxedElementGrammar => "relaxed element grammars (fragments)",
             Feature::BuiltInElementGrammar => "built-in (schema-less) element grammars",
             Feature::Wildcard => "wildcards (xs:any, xs:anyAttribute)",
             Feature::NonStrictSchemaInformed => "non-strict schema-informed grammars",

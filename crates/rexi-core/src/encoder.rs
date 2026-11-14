@@ -29,7 +29,9 @@ use crate::datatype::{self, DatatypeKind, TypeResolver, lexical};
 use crate::error::{ExiError, ExiResult, Feature};
 use crate::event::Event;
 use crate::grammar::ir::{GrammarTables, Production, Terminal};
-use crate::grammar::runtime::{Cursor, Frame, describe_rule, find_production};
+use crate::grammar::runtime::{
+    Cursor, FragmentEntry, Frame, describe_rule, find_production, fragment_entries,
+};
 use crate::header;
 use crate::ids::QNameId;
 use crate::io::{BitWriter, ceil_log2};
@@ -61,6 +63,10 @@ pub struct Encoder<W, G> {
     strings: StringTable,
     frames: Vec<Frame>,
     cursor: Cursor,
+    /// The `SE(F_i)` list of `FragmentContent` when the body is a fragment
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). Built only
+    /// for fragments, so documents allocate nothing extra.
+    fragment: Option<Vec<FragmentEntry>>,
     pending_chars: String,
     has_pending_chars: bool,
     /// No `CH` or `EE` since the last start tag (its attributes do not count).
@@ -138,6 +144,7 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     pub fn for_body(writer: BitWriter<W>, tables: G, options: ExiOptions) -> ExiResult<Self> {
         options.validate()?;
         let strings = init_string_table(&tables, &options);
+        let fragment = options.fragment.then(|| fragment_entries(&tables));
         Ok(Self {
             out: writer,
             tables,
@@ -145,6 +152,7 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
             strings,
             frames: Vec::new(),
             cursor: Cursor::Document,
+            fragment,
             pending_chars: String::new(),
             has_pending_chars: false,
             after_start_tag: false,
@@ -265,6 +273,15 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// with the errors of [`Encoder::characters`] for text still held back.
     pub fn end_document(&mut self) -> ExiResult<()> {
         self.flush_chars(false)?;
+        if let Some(n) = self.fragment.as_ref().map(Vec::len) {
+            // FragmentContent : ... SE(*) ED, so ED is code n + 1 (EXI 8.5.2).
+            if self.cursor != Cursor::DocContent || !self.frames.is_empty() {
+                return Err(self.mismatch("ED"));
+            }
+            self.emit_code("ED", n as u64 + 1, ceil_log2(n + 2))?;
+            self.cursor = Cursor::Done;
+            return Ok(());
+        }
         if self.cursor != Cursor::DocEnd {
             return Err(self.mismatch("ED"));
         }
@@ -312,6 +329,27 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         crate::event::QName::new(uri, local).to_string()
     }
 
+    /// Writes `SE(F_i)` at a fragment's top level: the code is the name's place in
+    /// the sorted list of all element names
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)).
+    fn start_fragment_element(&mut self, qname: Option<QNameId>) -> ExiResult<()> {
+        let Some(entries) = &self.fragment else {
+            return Err(ExiError::Internal("not a fragment"));
+        };
+        let width = ceil_log2(entries.len() + 2);
+        // A name the schema does not declare would need SE(*) and a built-in grammar.
+        let found = qname.and_then(|q| entries.iter().position(|e| e.qname == q));
+        let Some(pos) = found else {
+            return Err(ExiError::Unsupported(Feature::BuiltInElementGrammar));
+        };
+        let FragmentEntry { qname, elem } = entries[pos];
+        if elem.is_none() {
+            return Err(ExiError::Unsupported(Feature::RelaxedElementGrammar));
+        }
+        self.emit_code("SE(fragment)", pos as u64, width)?;
+        self.push_element(elem, qname)
+    }
+
     /// Writes the event code for `SE(qname)` and opens the child element. At
     /// document level the code comes from `DocContent`; inside an element it is the
     /// position of the matching `SE` production in the current rule.
@@ -324,6 +362,9 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         if self.frames.is_empty() {
             if self.cursor != Cursor::DocContent {
                 return Err(self.mismatch("SE"));
+            }
+            if self.fragment.is_some() {
+                return self.start_fragment_element(qname);
             }
             // DocContent : SE(G_0) ... SE(G_n-1) SE(*)  (EXI 8.5.1)
             // The root's code is its place among the sorted global elements. A root
@@ -597,7 +638,8 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         self.emit_code("EE", idx as u64, width)?;
         self.frames.pop();
         self.after_start_tag = false;
-        if self.frames.is_empty() {
+        // A fragment goes back to FragmentContent for the next element.
+        if self.frames.is_empty() && self.fragment.is_none() {
             self.cursor = Cursor::DocEnd;
         }
         Ok(())

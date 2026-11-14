@@ -65,7 +65,9 @@ pub struct ExiOptions {
     /// Only what the schema declares may appear
     /// ([EXI 8.5.4.4.2](https://www.w3.org/TR/exi/#addingProductionsStrict)).
     pub strict: bool,
-    /// The body is a fragment (any number of root elements) instead of a document.
+    /// The body is a fragment (any number of root elements, each one any element
+    /// the schema declares, global or local) instead of a document
+    /// ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)).
     pub fragment: bool,
     /// Which kinds of events and values are kept.
     pub preserve: Preserve,
@@ -141,6 +143,23 @@ impl ExiOptions {
         self
     }
 
+    /// Makes the body a fragment: zero or more root elements in a row, instead of
+    /// exactly one ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rexi_core::ExiOptions;
+    ///
+    /// let options = ExiOptions::strict().with_fragment(true);
+    /// assert!(options.fragment);
+    /// ```
+    #[must_use]
+    pub const fn with_fragment(mut self, fragment: bool) -> Self {
+        self.fragment = fragment;
+        self
+    }
+
     /// Checks the spec's rules on which options may be combined
     /// ([EXI 5.4](https://www.w3.org/TR/exi/#options)) and this codec's limits.
     ///
@@ -164,9 +183,6 @@ impl ExiOptions {
         }
         if self.datatype_representation_map {
             return Err(ExiError::Unsupported(Feature::DatatypeRepresentationMap));
-        }
-        if self.fragment {
-            return Err(ExiError::Unsupported(Feature::Fragment));
         }
         if self.strict
             && (self.preserve.dtd
