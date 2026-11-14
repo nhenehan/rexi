@@ -1,34 +1,9 @@
-//! The core of an EXI codec, with no outside dependencies. EXI is Efficient XML
-//! Interchange 1.0, Second Edition
+//! The core of rexi's EXI codec: the encoder, the decoder, options and values, with
+//! no outside dependencies. EXI is Efficient XML Interchange 1.0, Second Edition
 //! ([spec](https://www.w3.org/TR/exi/)), a compact binary form of XML.
 //!
-//! Layers, from the bottom up: [`io`] reads and writes bits, [`datatype`] encodes
-//! typed values, [`string_table`] gives strings their compact identifiers (small
-//! numbers that stand for strings already seen,
-//! [EXI 7.3](https://www.w3.org/TR/exi/#stringTable)), [`grammar`] holds the grammar
-//! tables and the code that walks them, and on top sit the SAX-like (event by event)
-//! [`Encoder`] and [`Decoder`].
-//!
-//! The setup this crate aims at first is: schema-informed (the grammars come from an
-//! XML Schema, [EXI 8.5](https://www.w3.org/TR/exi/#informedGrammars)), strict (only
-//! what the schema declares may appear), bit-packed (no padding between items), with
-//! no `$EXI` cookie, and with the options usually agreed outside the stream. Anything
-//! else is either supported or refused with [`ExiError::Unsupported`]. Nothing is
-//! quietly encoded in some "close enough" way. For example, a string type whose
-//! pattern gives a restricted character set
-//! ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) is written as
-//! EXI says, but when the pattern cannot be read, so the set is unknown, its values
-//! are refused; see [`DatatypeKind::RestrictedString`].
-//!
-//! The decoder is meant to be safe on input you do not trust. [`DecodeLimits`]
-//! caps nesting depth, list length, integer size and the total bytes of decoded
-//! strings, with defaults far above what normal documents need. Going over one
-//! stops decoding with [`ExiError::LimitExceeded`]. [`Decoder::new`] uses the
-//! defaults; [`Decoder::with_limits`] takes others. See [`limits`].
-//!
-//! The crate is `no_std` and needs `alloc` (string tables and grammars allocate).
-//! The default `std` feature adds `std::io` support: every `std::io::Read` /
-//! `Write` is also an [`io::ByteSource`] / [`io::ByteSink`].
+//! Part of [rexi](https://docs.rs/rexi). Most programs depend on `rexi`, which
+//! re-exports this crate at its top level (`rexi::Encoder`, `rexi::ExiOptions`, ...).
 //!
 //! # Example
 //!
@@ -69,7 +44,36 @@
 //! # Ok(())
 //! # }
 //! ```
-
+//!
+//! # How it works
+//!
+//! Layers, from the bottom up: [`io`] reads and writes bits, [`datatype`] encodes
+//! typed values, [`string_table`] gives strings their compact identifiers (small
+//! numbers that stand for strings already seen,
+//! [EXI 7.3](https://www.w3.org/TR/exi/#stringTable)), [`grammar`] holds the grammar
+//! tables and the code that walks them, and on top sit the SAX-like (event by event)
+//! [`Encoder`] and [`Decoder`].
+//!
+//! The setup this crate aims at first is: schema-informed (the grammars come from an
+//! XML Schema, [EXI 8.5](https://www.w3.org/TR/exi/#informedGrammars)), strict (only
+//! what the schema declares may appear), bit-packed (no padding between items), with
+//! no `$EXI` cookie, and with the options usually agreed outside the stream. Anything
+//! else is either supported or refused with [`ExiError::Unsupported`]. Nothing is
+//! quietly encoded in some "close enough" way. For example, a string type whose
+//! pattern gives a restricted character set
+//! ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)) is written as
+//! EXI says, but when the pattern cannot be read, so the set is unknown, its values
+//! are refused; see [`DatatypeKind::RestrictedString`].
+//!
+//! The decoder is meant to be safe on input you do not trust. [`DecodeLimits`]
+//! caps nesting depth, list length, integer size and the total bytes of decoded
+//! strings, with defaults far above what normal documents need. Going over one
+//! stops decoding with [`ExiError::LimitExceeded`]. [`Decoder::new`] uses the
+//! defaults; [`Decoder::with_limits`] takes others. See [`limits`].
+//!
+//! The crate is `no_std` and needs `alloc` (string tables and grammars allocate).
+//! The default `std` feature adds `std::io` support: every `std::io::Read` /
+//! `Write` is also an [`io::ByteSource`] / [`io::ByteSink`].
 #![no_std]
 // docs.rs builds with `--cfg docsrs` and marks the `trace` items as needing it.
 #![cfg_attr(docsrs, feature(doc_cfg))]

@@ -1,24 +1,13 @@
-//! EXI (Efficient XML Interchange, a [W3C standard](https://www.w3.org/TR/exi/))
-//! for Rust, in one crate. It turns XML into small binary messages and back, using
-//! your XML Schema.
+//! EXI (Efficient XML Interchange) for Rust: small, fast binary XML, driven by your
+//! XML Schema.
 //!
-//! This crate only re-exports rexi's other crates, so you can depend on one name:
+//! EXI is a [W3C standard](https://www.w3.org/TR/exi/) for sending XML as compact
+//! binary messages. Both ends compile the same XML Schema, so a message leaves out
+//! everything the schema already says: element names become a few bits, and numbers
+//! are sent as numbers. This crate is the one dependency for all of rexi.
 //!
-//! | Path | Crate | Feature |
-//! |---|---|---|
-//! | `rexi::*` | [`rexi_core`]: encoder, decoder, options, values | always |
-//! | [`rexi::schema`](mod@schema) | `rexi-schema`: `.xsd` to grammar tables | `schema` (default) |
-//! | [`rexi::xml`](mod@xml) | `rexi-xml`: XML text to EXI and back | `xml` (default) |
-//! | `rexi::serde` | `rexi-serde`: your Rust types to EXI and back | `serde` |
-//!
-//! On a small device without `std`, turn the default features off. That leaves
-//! rexi-core (and rexi-serde, if you ask for it), which need only `alloc`:
-//!
-//! ```toml
-//! rexi = { version = "0.3", default-features = false, features = ["serde"] }
-//! ```
-//!
-//! The `rexi` command line tool lives in `rexi-xml`: `cargo install rexi-xml`.
+//! The [user guide](https://nhenehan.github.io/rexi/) walks through one idea per
+//! chapter, from a first round trip to small devices and C.
 //!
 //! # Example
 //!
@@ -44,6 +33,53 @@
 //! # #[cfg(not(feature = "xml"))]
 //! # fn main() {}
 //! ```
+//!
+//! # Ways to use it
+//!
+//! - **XML text in and out:** `xml::encode_xml` and `xml::decode_to_xml`
+//!   (feature `xml`).
+//! - **Your own Rust types:** `serde::to_exi` and `serde::from_exi` (feature
+//!   `serde`). The schema decides the XML shape, not serde's defaults.
+//! - **Event by event:** [`Encoder`] and [`Decoder`], for streaming or for a front
+//!   end of your own.
+//! - **Tables built ahead of time:** the `rexi-schema-gen` tool writes a schema's
+//!   grammar tables as Rust source, so a small device needs no schema compiler and
+//!   reading the tables never allocates.
+//! - **Input you do not trust:** the decoder stops early on hostile streams; see
+//!   [`DecodeLimits`].
+//! - **Fragments:** several root elements in one message, with
+//!   [`ExiOptions::with_fragment`].
+//!
+//! # Feature flags
+//!
+//! - `std` (default): every `std::io::Read` and `Write` works as a byte source and
+//!   sink.
+//! - `schema` (default): [`rexi::schema`](mod@schema), compiling an XML Schema
+//!   (`.xsd`) into grammar tables at run time. Needs `std`.
+//! - `xml` (default): [`rexi::xml`](mod@xml), XML text to EXI and back. Needs
+//!   `schema`.
+//! - `serde`: `rexi::serde`, your own Rust types to EXI and back. Works without
+//!   `std`.
+//!
+//! On a small device without `std`, turn the default features off. That leaves
+//! rexi-core (and rexi-serde, if you ask for it), which need only `alloc`:
+//!
+//! ```toml
+//! rexi = { version = "0.3", default-features = false, features = ["serde"] }
+//! ```
+//!
+//! # Crates
+//!
+//! This crate only re-exports rexi's other crates:
+//!
+//! | Path | Crate | Feature |
+//! |---|---|---|
+//! | `rexi::*` | [`rexi_core`]: encoder, decoder, options, values | always |
+//! | [`rexi::schema`](mod@schema) | `rexi-schema`: `.xsd` to grammar tables | `schema` (default) |
+//! | [`rexi::xml`](mod@xml) | `rexi-xml`: XML text to EXI and back | `xml` (default) |
+//! | `rexi::serde` | `rexi-serde`: your Rust types to EXI and back | `serde` |
+//!
+//! The `rexi` command line tool lives in `rexi-xml`: `cargo install rexi-xml`.
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

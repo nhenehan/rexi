@@ -1,0 +1,50 @@
+# Builds the user guide (guide/, an mdBook) and publishes it with GitHub Pages at
+# https://nhenehan.github.io/rexi/ whenever the guide or the example programs it
+# includes change on main.
+name: guide
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "guide/**"
+      - "examples/basics/**"
+      - ".github/workflows/guide.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer push replaces a waiting one, never a running one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook,mdbook-mermaid
+      - name: Build the guide
+        run: |
+          mdbook-mermaid install guide
+          mdbook build guide
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: guide/book
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

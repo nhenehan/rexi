@@ -1,4 +1,28 @@
-//! Turns XSD (XML Schema) files into EXI schema-informed grammars.
+//! Compiles XML Schema (`.xsd`) files into the grammar tables that rexi's
+//! encoder and decoder run on.
+//!
+//! Part of [rexi](https://docs.rs/rexi). Most programs depend on `rexi`, which
+//! re-exports this crate as `rexi::schema`.
+//!
+//! # Where this crate fits
+//!
+//! `rexi-core` encodes and decodes, but it needs grammar tables to know what a
+//! document may hold. This crate makes those tables from XSD files while the
+//! program runs. `rexi-schema-gen` uses this crate at build time instead and writes
+//! the tables out as Rust source, so a program (or a `no_std` device) can carry
+//! them as a `static` and skip this crate. `rexi-xml`, `rexi-serde` and `rexi-capi`
+//! all take the tables from either path.
+//!
+//! ```
+//! let xsd = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+//!                <xs:element name="note" type="xs:string"/>
+//!              </xs:schema>"#;
+//! let grammars = rexi_schema::compile_str(xsd, None)?;
+//! # let _ = grammars;
+//! # Ok::<(), rexi_schema::SchemaError>(())
+//! ```
+//!
+//! # How it works
 //!
 //! A grammar is a set of rules that says which events (start tag, attribute, text,
 //! end tag, ...) may come next. A schema-informed grammar is built from a schema, so
@@ -26,24 +50,6 @@
 //! declare ("undeclared productions",
 //! [EXI 8.5.4.4](https://www.w3.org/TR/exi/#undeclaredProductions)) are left to the
 //! runtime.
-//!
-//! ## Where this crate fits
-//!
-//! `rexi-core` encodes and decodes, but it needs grammar tables to know what a
-//! document may hold. This crate makes those tables from XSD files while the
-//! program runs. `rexi-schema-gen` uses this crate at build time instead and writes
-//! the tables out as Rust source, so a program (or a `no_std` device) can carry
-//! them as a `static` and skip this crate. `rexi-xml`, `rexi-serde` and `rexi-capi`
-//! all take the tables from either path.
-//!
-//! ```
-//! let xsd = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-//!                <xs:element name="note" type="xs:string"/>
-//!              </xs:schema>"#;
-//! let grammars = rexi_schema::compile_str(xsd, None)?;
-//! # let _ = grammars;
-//! # Ok::<(), rexi_schema::SchemaError>(())
-//! ```
 
 #![warn(missing_docs)]
 

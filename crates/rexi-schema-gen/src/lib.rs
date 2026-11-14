@@ -1,6 +1,9 @@
 //! Builds grammar tables ahead of time, at build time instead of at run time (the
 //! gSOAP-style path).
 //!
+//! Part of [rexi](https://docs.rs/rexi). This is a build-time tool, so `rexi` does
+//! not re-export it: the code it writes needs only `rexi-core` (or `rexi`).
+//!
 //! [`render`] turns compiled grammar tables into Rust source code. The code declares
 //! a `pub static <NAME>: GrammarSet<'static>`, laid out like the hand-written
 //! `rexi_core::grammar::options_grammar`. It also declares a `pub const`

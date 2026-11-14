@@ -1,139 +1,137 @@
 # rexi
 
-rexi turns XML into small, fast binary messages and back, in Rust and C. The
-format is EXI (Efficient XML Interchange), a W3C standard. You give rexi your
-XML Schema. Both ends use it to agree on the format, so the messages can leave
-out element names and send numbers as numbers. In the guide's example, 538
-bytes of XML become 129 bytes of EXI.
+rexi turns XML into small, fast binary messages and back, in Rust and C. The format is EXI (Efficient XML Interchange), a W3C standard. You give rexi your XML Schema. Both ends use it to agree on the structure and types of the data, so element names and other information already defined by the schema don't need to be repeated in every message. In the guide's example, 538 bytes of XML become 129 bytes of EXI.
 
-**Supported profile:** EXI 1.0 (Second Edition), schema-informed, strict,
-bit-packed or byte-aligned, with or without the `$EXI` cookie, and options in
-the header or out of band (the smallest form has a one-byte header).
+**Supported profile:** EXI 1.0 (Second Edition), schema-informed, strict, bit-packed or byte-aligned, with or without the `$EXI` cookie, and options in the header or out of band (the smallest form has a one-byte header). Documents and fragments.
 
 ## Quick example
 
 ```rust
-use rexi_core::{ExiOptions, HeaderConfig};
+use rexi::{ExiOptions, HeaderConfig};
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile the schema once, then reuse the tables for every message.
-    let tables = rexi_schema::compile_files([Path::new("order.xsd")])?;
+    let tables = rexi::schema::compile_files([Path::new("order.xsd")])?;
     let xml = std::fs::read("order.xml")?;
     let options = ExiOptions::strict();
-    let exi = rexi_xml::encode_xml(&xml, &tables, options.clone(), HeaderConfig::default())?;
+    let exi = rexi::xml::encode_xml(
+        &xml, &tables, options.clone(), HeaderConfig::default()
+    )?;
+
     // The options are not in the stream, so the decoder is told them.
-    let back = rexi_xml::decode_to_xml(&exi[..], &tables, Some(options))?;
+    let back = rexi::xml::decode_to_xml(&exi[..], &tables, Some(options))?;
+
     println!("{} bytes of XML, {} bytes of EXI\n{back}", xml.len(), exi.len());
     Ok(())
 }
 ```
 
-The full version is [`examples/basics/src/bin/roundtrip.rs`](https://github.com/nhenehan/rexi/blob/main/examples/basics/src/bin/roundtrip.rs).
+See the full example in [`examples/basics/src/bin/roundtrip.rs`](https://github.com/nhenehan/rexi/blob/main/examples/basics/src/bin/roundtrip.rs).
 
 ## Add to your project
 
 ```toml
 [dependencies]
-rexi = "0.3"   # encoder, decoder, .xsd to grammar tables, XML text to EXI and back
+rexi = "0.3"
 ```
 
-The `rexi` crate gathers the others: `rexi::schema` (rexi-schema) and
-`rexi::xml` (rexi-xml) are on by default, and the `serde` feature adds
-`rexi::serde` (rexi-serde), to map your own Rust types. On a small device
-without `std`, use `rexi = { version = "0.3", default-features = false }`. You
-can also depend on the crates one by one (`rexi-core = "0.3"` and so on).
-`rexi-schema-gen` builds the tables ahead of time, and `cargo install rexi-xml`
-installs the `rexi` command line tool. rexi needs Rust 1.88 or newer.
+The `rexi` crate brings the other crates together. `rexi::schema` (rexi-schema) and `rexi::xml` (rexi-xml) are enabled by default. The `serde` feature adds `rexi::serde` (rexi-serde), which maps your own Rust types.
+
+On a small device without `std`, use:
+
+```toml
+rexi = { version = "0.3", default-features = false }
+```
+
+You can also depend on the individual crates (`rexi-core = "0.3"` and so on). `rexi-schema-gen` builds grammar tables ahead of time, and `cargo install rexi-xml` installs the `rexi` command-line tool.
+
+rexi needs Rust 1.88 or newer.
 
 ## Learn more
 
-- **The user guide** walks through one small program per idea, from a first
-  round trip to `no_std` and C. Build it with
-  `mdbook-mermaid install guide && mdbook serve guide` (you need `mdbook` and
-  `mdbook-mermaid`), or read the chapters in [`guide/src`](https://github.com/nhenehan/rexi/blob/main/guide/src/introduction.md).
-- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** has those programs. Each
-  has a Julia twin in JExi that prints the same output.
-- **[`examples/mqtt-todo`](https://github.com/nhenehan/rexi/blob/main/examples/mqtt-todo/README.md)** is a todo list over
-  MQTT, with a Rust server and Rust, C (rexi C API), Java (EXIficient) and C#
-  (Nagasena for .NET) clients.
-- **The C API** is one header, [`crates/rexi-capi/include/rexi.h`](https://github.com/nhenehan/rexi/blob/main/crates/rexi-capi/include/rexi.h),
-  for `librexi.a` or `librexi.so`. It has exip-style encoder calls and a
-  callback decoder.
+- **[The user guide](https://nhenehan.github.io/rexi/)** works through one small program per idea, from a first round trip to `no_std` and C. To read it offline, build it with `mdbook-mermaid install guide && mdbook serve guide` (you need `mdbook` and `mdbook-mermaid`).
+- **[API documentation](https://docs.rs/rexi)** on docs.rs.
+- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** contains the programs from the guide. Each has a Julia twin in JExi that prints the same output.
+- **[`examples/mqtt-todo`](https://github.com/nhenehan/rexi/blob/main/examples/mqtt-todo/README.md)** is a todo list over MQTT, with a Rust server and Rust, C (rexi C API), Java (EXIficient) and C# (Nagasena for .NET) clients.
+- **The C API** is defined in one header, [`crates/rexi-capi/include/rexi.h`](https://github.com/nhenehan/rexi/blob/main/crates/rexi-capi/include/rexi.h), for `librexi.a` or `librexi.so`. It has exip-style encoder calls and a callback decoder.
 
-## What it does
+## EXI 1.0 implementation
 
-- Encodes and decodes the profile above. Everything else in EXI is either done
-  or refused with `ExiError::Unsupported`. rexi never quietly writes something
-  "close enough".
-- Reads and writes XML text, a stream of events, or your own types through serde.
-- Compiles a schema at run time, or ahead of time into a `static` table that
-  never allocates.
-- Runs without `std`: `rexi-core` and `rexi-serde` need only `alloc`, and can
-  write into a fixed buffer.
-- Checks its output against other tools. The test fixtures encode to the same
-  bytes as EXIficient 1.0.7 (bit-packed and byte-aligned), decode to the same
-  events, encode again to the same bytes from those events, and are accepted by
-  exip's decoder. The W3C test suite's
-  declaredProductions group passes too.
-- Is timed in [rexi-interop](https://github.com/nhenehan/rexi-interop), which
-  encodes and decodes 14 documents with several EXI implementations. Its
-  `reports/latest.md` has the tables; run `scripts/run.sh` there to measure on
-  your machine.
+What the codec can encode and decode.
 
-## What it doesn't do yet
+| EXI feature | Status | Notes |
+|---|---|---|
+| Schema-informed grammars | Supported | Compiled from XML Schema |
+| Strict mode | Supported | Documents must match the schema |
+| Bit-packed encoding | Supported | |
+| Byte-aligned encoding | Supported | |
+| EXI header | Supported | Optional `$EXI` cookie; options document in the header |
+| Out-of-band options | Supported | |
+| Fragments | Supported | Any number of root elements; a name declared twice with different types is refused at the top level |
+| Restricted character sets | Partial | When the `xs:pattern` alphabet can be read |
+| Schema-less / built-in grammars | Not supported | |
+| Non-strict mode | Not supported | |
+| Compression | Not supported | |
+| Pre-compression | Not supported | |
+| Wildcards | Not supported | `xs:any`, `xs:anyAttribute` |
+| `Preserve.lexicalValues` | Not supported | |
+| `datatypeRepresentationMap` | Not supported | Uses standard datatype representations |
+| Preserve comments, PIs, DTD, prefixes | Not allowed in strict mode | EXI forbids them together with `strict` ([EXI 5.4](https://www.w3.org/TR/exi/#options)) |
+| `selfContained` | Not allowed in strict mode | Same rule |
 
-Each of these is refused with a clear error, such as `Unsupported(Wildcard)`.
-The schema still compiles; only the streams or values that need the feature
-fail. The rest of EXI 1.0 is planned for later releases.
+Every "Not supported" or "Not allowed" row fails with `ExiError::Unsupported` and names the feature. rexi never quietly writes something "close enough". A schema can still compile even if it contains features that aren't supported; only streams or values that need those features fail.
 
-- **Compression and pre-compression.** They help most with large documents; the
-  first release is built for small messages.
-- **Schema-less streams** (built-in grammars). rexi always needs the schema.
-- **Non-strict mode.** Documents must match the schema exactly.
-- **Preserve options.** Comments, processing instructions, DTDs and prefixes
-  can't be kept in strict mode. Keeping the exact text of values
-  (`lexicalValues`) is not built yet.
-- **Wildcards** (`xs:any`, `xs:anyAttribute`). The stream must then carry the
-  name of the element or attribute, and that path is not built yet. Documents
-  that don't use the wildcard work.
-- **Unreadable patterns on restricted strings.** A string type whose
-  `xs:pattern` allows fewer than 256 characters, such as `[A-Z]{2}[0-9]{4}`, has
-  its own compact form in EXI
-  ([7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)), which rexi writes.
-  When rexi cannot parse the pattern, the alphabet is unknown, and writing the
-  value as a plain string would give bytes that EXIficient misreads with no
-  error, so those values are refused on encode and decode.
-- **Fragments** (more than one root element in a stream). rexi handles whole
-  documents.
-- **selfContained.** EXI doesn't allow it in strict mode.
-- **datatypeRepresentationMap** (custom binary forms for types). rexi uses the
-  standard forms.
+For restricted character sets, EXI has a compact representation when an `xs:pattern` restricts a string to fewer than 256 characters ([EXI 1.0, 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)). rexi uses that representation when it can determine the alphabet. If it cannot parse the pattern, the value is refused on both encode and decode rather than producing bytes that another implementation might misread.
+
+A fragment may start with any element the schema declares, global or local ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)). When two local declarations share a name but differ in type, EXI reads that name at the top level with a looser "relaxed" grammar, which rexi does not build; that one name is refused there, and everything else works.
+
+## Conformance and interoperability
+
+Test results from rexi's CI (the `exificient` job, with the exip judges required). The fixtures are 6 documents in `crates/rexi-tests/fixtures/interop`.
+
+| Test | Profiles | Result |
+|---|---|---|
+| Encode, compared with EXIficient 1.0.7's bytes | strict bit-packed; strict bit-packed with options in the header; strict byte-aligned | Same bytes |
+| Decode EXIficient's streams, compared with EXIficient's events | the same | Same events |
+| Re-encode the decoded events | the same | Same bytes |
+| exip's decoder (exipd) reads rexi's output | strict bit-packed; strict byte-aligned | Accepted |
+| exip's own unit tests, cloned in `rexi-tests/tests/exip_clones.rs` | as in exip | Pass |
+
+rexi does not run the W3C EXI test suite in CI, so it makes no claim about it.
+
+[rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and JExi encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
+
+## Rust library features
+
+| Feature | Crate | Description |
+|---|---|---|
+| One dependency | `rexi` | Re-exports the crates below by feature |
+| Core encoder / decoder | `rexi-core` | Event-by-event EXI encoding and decoding |
+| Schema compiler | `rexi-schema` | Compile XSD at run time |
+| Static grammar generation | `rexi-schema-gen` | Generate Rust grammar tables ahead of time |
+| XML conversion | `rexi-xml` | XML text to EXI and back |
+| Serde | `rexi-serde` | Encode and decode Rust types |
+| C interface | `rexi-capi` | C ABI with static and shared libraries; built from source, not on crates.io |
+| `no_std` | `rexi-core`, `rexi-serde` | Need only `alloc` |
+| Fixed-buffer output | `rexi-core` | Write into a fixed buffer, without a growable output buffer |
+| CLI | `rexi-xml` | Command-line encoding and decoding |
 
 ## Safe with untrusted data
 
-A few hostile bytes can ask a decoder for a lot of work, such as a list of four
-billion items or endless nesting. rexi's decoder has four limits, on by default,
-that stop this early with `ExiError::LimitExceeded`. Schema loading has rules
-too: `xs:include` and `xs:import` read only regular files under the main
-schema's folder, never a URL. See the guide's
-[Untrusted input](https://github.com/nhenehan/rexi/blob/main/guide/src/untrusted-input.md) chapter to change either.
+A few hostile bytes can ask a decoder for a lot of work, such as a list of four billion items or endless nesting. rexi's decoder has four limits, enabled by default, that stop this early with `ExiError::LimitExceeded`.
+
+Schema loading has limits too: `xs:include` and `xs:import` read only regular files under the main schema's folder, never a URL.
+
+See the guide's [Untrusted input](https://nhenehan.github.io/rexi/untrusted-input.html) chapter to change either.
 
 ## Thanks
 
-EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly,
-with solid open libraries behind it. That work is what got this project started. rexi and JExi are
-my effort to take EXI further, to more languages and more places.
+EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly, with solid open libraries behind it. That work is what got this project started. rexi and JExi are my effort to take EXI further, to more languages and more places.
 
-- **Rumen Kyusakov** wrote [exip](https://exip.sourceforge.net/), a compact C implementation of EXI,
-  and co-edited the Second Edition of the [EXI specification](https://www.w3.org/TR/exi/). exip's
-  decoder is one of the checks rexi's output must pass.
-- **Daniel Peintner** wrote [EXIficient](https://exificient.github.io/) with Richard Kuntschke at
-  Siemens, co-edited the Second Edition, and edited the [EXI Primer](https://www.w3.org/TR/exi-primer/).
-  rexi's bytes are checked against EXIficient's.
-- **Takuki Kamiya** edited the First Edition, chaired the EXI Working Group, and wrote Nagasena
-  ([OpenEXI](https://sourceforge.net/projects/openexi/)). **John Schneider** also edited the First
-  Edition, and **Santiago Pericas-Geertsen** co-edited the Primer and wrote the W3C test framework.
+- **Rumen Kyusakov** wrote [exip](https://exip.sourceforge.net/), a compact C implementation of EXI, and co-edited the Second Edition of the [EXI specification](https://www.w3.org/TR/exi/). exip's decoder is one of the checks rexi's output must pass.
+- **Daniel Peintner** wrote [EXIficient](https://exificient.github.io/) with Richard Kuntschke at Siemens, co-edited the Second Edition, and edited the [EXI Primer](https://www.w3.org/TR/exi-primer/). rexi's bytes are checked against EXIficient's.
+- **Takuki Kamiya** edited the First Edition, chaired the EXI Working Group, and wrote Nagasena ([OpenEXI](https://sourceforge.net/projects/openexi/)). **John Schneider** also edited the First Edition, and **Santiago Pericas-Geertsen** co-edited the Primer and wrote the W3C test framework.
 - The **W3C EXI Working Group** as a whole made the specification that rexi follows closely.
 
 Thank you.
@@ -142,99 +140,4 @@ Thank you.
 
 BSD-3-Clause, see [LICENSE](https://github.com/nhenehan/rexi/blob/main/LICENSE).
 
-## For maintainers
-
-Version 0.3.0.
-
-| Crate | Purpose |
-|---|---|
-| `rexi` | Facade: re-exports rexi-core, and rexi-schema, rexi-xml and rexi-serde by feature |
-| `rexi-core` | Codec core with no dependencies: bit I/O, datatypes, string tables, grammar runtime, `Encoder`/`Decoder`, header and options document. `no_std` + `alloc` |
-| `rexi-schema` | XSD to `GrammarSetBuf` tables (roxmltree) |
-| `rexi-schema-gen` | XSD to a `static GrammarSet<'static>` (Rust source) |
-| `rexi-xml` | XML to events and back (quick-xml), and the `rexi` CLI |
-| `rexi-serde` | Serde `to_exi`/`from_exi`; the grammar decides attributes, namespaces, choices and value types. `no_std` + `alloc` |
-| `rexi-capi` | C ABI, `librexi.a`/`.so`, header regenerated by cbindgen on every build (commit it with the source change) |
-| `rexi-tests` | Conformance tests against EXIficient reference bytes, with exipd as judge |
-| `rexi-nostd-check` | Uses core and serde from a `#![no_std]` crate, built for `thumbv7em-none-eabihf`, tested on the host |
-
-- **`std` feature.** The default `std` feature of rexi-core and rexi-serde only
-  makes every `std::io::Read`/`Write` an `io::ByteSource`/`io::ByteSink`.
-  Without it, `&[u8]`, `Vec<u8>` and `io::SliceSink` are the sources and sinks;
-  depend with `default-features = false`.
-- **Tables.** Grammar tables are flat slices indexed by `u32` newtypes (`UriId`, `ElemIdx`, ...). Reading static
-  tables never allocates; the codec allocates its string table when an
-  `Encoder`/`Decoder` is built.
-- **Examples** and `fuzz/` are separate workspaces, built only on request.
-- **Untrusted input, in short** (the guide has the rest).
-  Decode limits: `max_depth` 256, `max_list_items` 1,000,000,
-  `max_integer_bits` 4096, `max_string_bytes` 256 MiB. Change them with
-  `DecodeLimits` and `Decoder::with_limits` (or the `*_with_limits` functions of
-  rexi-xml and rexi-serde), `RexiLimits` and `rexi_decoder_new_with_limits` in
-  C, or `--max-depth N` and friends (`--no-limits`) in the CLI. Schema rules:
-  includes and imports read only regular files under the main schema's folder,
-  at most 16 MiB each, never a URL, pipe or device. A location outside is
-  refused before any file is touched, so errors never tell which files exist.
-  Sets like UBL (`../common/...`) set a root with `SchemaLoadOptions` and
-  `compile_files_with`, `rexi_tables_from_xsd_with_root`, or `--schema-root DIR`;
-  breaking a rule gives `SchemaError::Refused`. One type's content may expand to
-  at most 100,000 grammar rules (`max_grammar_size`, else
-  `SchemaError::TooLarge`), and circular groups are refused.
-
-### Gate and commands
-
-`scripts/gate.sh` runs everything a commit must pass: the first eight lines
-below, plus the generated-table and EXIficient fixture checks. `--quick` skips
-the fixtures, which need Java.
-
-```bash
-cargo fmt --all --check
-cargo clippy --workspace --all-targets --no-deps
-cargo test --workspace
-cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check --all-targets --no-deps --no-default-features
-cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check --no-default-features
-cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf   # rustup target add thumbv7em-none-eabihf
-cargo +1.88 test --workspace   # oldest supported Rust (rust-version); rustup toolchain install 1.88
-cargo run -p rexi-xml --bin rexi -- encode --xsd a.xsd in.xml out.exi
-cargo run -p rexi-xml --bin rexi -- decode --xsd a.xsd out.exi
-cargo run -p rexi-xml --bin rexi -- decode --xsd a.xsd --max-depth 1024 out.exi   # or --no-limits
-cargo run -p rexi-schema-gen -- a.xsd [b.xsd ...] --out tables.rs [--name GRAMMARS] [--schema-id ID] [--check]
-fuzz/run.sh [seconds]   # fuzz targets, 60 s each by default (nightly, cargo install cargo-fuzz)
-```
-
-`cargo test -p rexi-capi` builds and runs the C smoke test in
-`crates/rexi-capi/tests/c` with CMake, ASan and UBSan.
-
-### Generated tables
-
-Generated tables are a module (`mod tables;`), not an `include!`, because they
-start with inner attributes. Each declared element and attribute name gets a
-`pub const LN_<NAME>: QNameId`. `scripts/gen-tables.sh` regenerates the test
-statics in `crates/rexi-tests/src/generated` (`--check` verifies them), and
-`fixtures_strict_static.rs` runs the strict fixture gate through them.
-
-### Reference fixtures
-
-`scripts/gen-fixtures.sh` regenerates the reference bytes in
-`crates/rexi-tests/fixtures/interop` with EXIficient 1.0.7 (from Maven Central),
-through the pinned exip's oracle `utils/xsd2exip`, a Maven project that
-`scripts/fetch-third-party.sh` checks out. See
-`cases.tsv` and `manifest.tsv` there; the manifest records a hash of the oracle
-sources. `--check` verifies the committed files are unchanged. Reference bytes
-change only on purpose (`--force`).
-
-### Third parties
-
-Nothing third-party lives in the working tree. `scripts/fetch-third-party.sh`
-checks out the commits pinned in `third-party.lock` (exip, for the exipd judge
-and its test-set, and the W3C exi-testsuite) into
-`${REXI_THIRD_PARTY:-${XDG_CACHE_HOME:-~/.cache}/rexi/third_party}`:
-
-```bash
-scripts/fetch-third-party.sh --build         # fetch pins, build exipd and the oracle jar
-scripts/fetch-third-party.sh --check         # every checkout present, clean, at its pin
-scripts/fetch-third-party.sh --update exip   # on purpose: re-pin to remote HEAD
-```
-
-Tests that need exipd or exip's test data skip when the cache is empty; set
-`REXI_REQUIRE_JUDGES=1` to make them required.
+For build instructions, tests, generated tables and other development details, see [CONTRIBUTING.md](https://github.com/nhenehan/rexi/blob/main/CONTRIBUTING.md).

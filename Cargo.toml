@@ -23,6 +23,7 @@ license = "BSD-3-Clause"
 version = "0.3.0"
 authors = ["Nathan Henehan <nhenehan@acm.org>"]
 repository = "https://github.com/nhenehan/rexi"
+homepage = "https://nhenehan.github.io/rexi/"
 keywords = ["exi", "xml", "binary", "encoding", "no-std"]
 categories = ["encoding", "parser-implementations", "no-std", "embedded"]
 

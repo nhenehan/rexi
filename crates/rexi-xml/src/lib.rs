@@ -1,6 +1,9 @@
 //! XML front end for the `rexi-core` codec: turns XML text into EXI events and
 //! back. The events are those of [EXI 4](https://www.w3.org/TR/exi/#streams).
 //!
+//! Part of [rexi](https://docs.rs/rexi). Most programs depend on `rexi`, which
+//! re-exports this crate as `rexi::xml`.
+//!
 //! * [`reader`] parses XML into the events that the strict codec accepts, with
 //!   attributes already sorted into grammar order.
 //! * [`writer`] writes events back out as XML and drives the

@@ -3,6 +3,9 @@
 //! ([EXI 8.5](https://www.w3.org/TR/exi/#informedGrammars)); "strict" means the
 //! stream may hold only what the schema allows.)
 //!
+//! Part of [rexi](https://docs.rs/rexi). Most programs depend on `rexi` with its
+//! `serde` feature, which re-exports this crate as `rexi::serde`.
+//!
 //! ```
 //! use rexi_core::{ExiOptions, HeaderConfig};
 //! use serde::{Deserialize, Serialize};
