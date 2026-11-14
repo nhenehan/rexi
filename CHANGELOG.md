@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.3.1 - 2026-11-14
+
+Nothing in this release breaks code written for 0.3.0.
+
+- Schema-informed fragments ([EXI 8.5.2](https://www.w3.org/TR/exi/#informedFragGrammars)):
+  set `ExiOptions::fragment` (or `with_fragment(true)`) to encode and decode a run
+  of root elements, each one any element the schema declares, global or local.
+  `rexi-xml` reads several roots when the option is set, `parse_fragment_events`
+  parses a fragment on its own, and the `rexi` tool takes `--fragment`. A name
+  declared twice with different types or `nillable` needs EXI's relaxed element
+  grammar at the top of a fragment; that name is refused there with the new
+  `Feature::RelaxedElementGrammar`. `Feature::Fragment` is no longer used. The C
+  API does not have the option yet: adding a field to `RexiOptions` would change
+  its size for C programs built against 0.3.0.
+- New pages: the README, the docs.rs front page of every crate, `CONTRIBUTING.md`
+  (the build and test notes that were in the README) and `AGENTS.md` (for coding
+  agents). The user guide is published at https://nhenehan.github.io/rexi/.
+- The release workflow skips crates whose version is already on crates.io, so a
+  publish that stops partway can be finished with "Re-run failed jobs".
+- `xsi:type` that names no type in the schema is no longer an error. The name is
+  written, and the element keeps the grammar it has
+  ([EXI 8.5.4.4.2](https://www.w3.org/TR/exi/#addingProductionsStrict)); decoding
+  does the same. In `rexi-xml`, an `xsi:type` value whose prefix is not declared
+  gives uri `""` and the whole value as the local name
+  ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)). Both match EXIficient.
+- `scripts/w3c-declared.py` runs the W3C test suite's declaredProductions group
+  in CI, with EXIficient 1.0.7 as the reference: 42 of the 80 cases give the same
+  bytes and events, bit-packed and byte-aligned. The others need wildcards,
+  Preserve options, non-strict mode or fragment references.
+- Correction: earlier notes (0.1.0, and the README until 0.3.0) said the W3C test
+  suite's declaredProductions group passes. That was never checked for rexi until
+  this release, and 38 of its 80 cases do not pass.
+
 ## 0.3.0 - 2026-11-10
 
 The first release on crates.io. These changes break code written for 0.2.0:
