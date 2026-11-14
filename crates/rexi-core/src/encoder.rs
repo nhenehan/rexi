@@ -499,9 +499,9 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
     /// # Errors
     ///
     /// Fails with [`ExiError::Grammar`] when `xsi:type` is not allowed here (it must
-    /// come right after the start tag, on an element whose type can be cast), and
-    /// with [`ExiError::Schema`] when the tables have no type of that name. On a
-    /// write error, [`ExiError::Io`].
+    /// come right after the start tag, on an element whose type can be cast). On a
+    /// write error, [`ExiError::Io`]. A name that is not a type in the tables is
+    /// written all the same, and the element keeps its grammar.
     pub fn xsi_type(&mut self, uri: &str, local: &str) -> ExiResult<()> {
         self.flush_chars(false)?;
         let frame = self.top()?;
@@ -517,10 +517,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
             .strings
             .write_qname(&self.tables, &mut self.out, uri, local)?;
         let Some(type_idx) = self.tables.find_type(qname) else {
-            return Err(ExiError::Schema(format!(
-                "xsi:type names unknown type {}",
-                crate::event::QName::new(uri, local)
-            )));
+            // The schema has no type of that name: the element keeps the grammar
+            // it has ([EXI 8.5.4.4.2](https://www.w3.org/TR/exi/#addingProductionsStrict)
+            // switches only to a type that exists). EXIficient does the same.
+            return Ok(());
         };
         let Some(decl) = self.tables.type_decl(type_idx) else {
             return Err(ExiError::Internal("dangling type index"));

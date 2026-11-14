@@ -366,11 +366,8 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
         if Some(code2) == frame.xsi_type_code() {
             let qname = self.strings.read_qname(&self.tables, &mut self.inp)?;
             let Some(type_idx) = self.tables.find_type(qname) else {
-                let (uri, local) = self.strings.qname(&self.tables, qname).unwrap_or(("", ""));
-                return Err(ExiError::Schema(format!(
-                    "xsi:type names unknown type {}",
-                    QName::new(uri, local)
-                )));
+                // No type of that name: keep the grammar, as the encoder does.
+                return Ok(Step::XsiType(qname));
             };
             let Some(decl) = self.tables.type_decl(type_idx) else {
                 return Err(ExiError::Internal("dangling type index"));

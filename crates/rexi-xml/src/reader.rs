@@ -352,7 +352,8 @@ fn read_start_tag(
 ///
 /// An attribute with no prefix is in no namespace. The `xsi:type` value is a
 /// qname, a name that may have a prefix. Its prefix is resolved the same way as
-/// an element name's, so a name with no prefix takes the default namespace.
+/// an element name's, so a name with no prefix takes the default namespace. A
+/// prefix that is not declared gives uri `""` and the whole value as local name.
 /// `xsi:nil` accepts `true`, `1`, `false` and `0`, with surrounding whitespace
 /// allowed.
 fn push_attributes(
@@ -385,7 +386,11 @@ fn push_attributes(
                 "type" => {
                     let value = &buf[a.value.clone()];
                     let qname = value.trim_matches([' ', '\t', '\n', '\r']);
-                    let (uri, local) = ns.element(qname)?;
+                    // A prefix with no namespace in scope is not an error here: the
+                    // uri is "" and the local name is the whole value, prefix and
+                    // all ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)).
+                    // EXIficient does the same.
+                    let (uri, local) = ns.element(qname).unwrap_or(("", qname));
                     // The local name is the end of the qname, kept as a place in
                     // `buf` because `buf` still grows below.
                     let end = a.value.start + value.trim_end_matches([' ', '\t', '\n', '\r']).len();
