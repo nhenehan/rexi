@@ -97,8 +97,9 @@ Test results from rexi's CI (the `exificient` job, with the exip judges required
 | Re-encode the decoded events | the same | Same bytes |
 | exip's decoder (exipd) reads rexi's output | strict bit-packed; strict byte-aligned | Accepted |
 | exip's own unit tests, cloned in `rexi-tests/tests/exip_clones.rs` | as in exip | Pass |
+| W3C EXI test suite, declaredProductions group (80 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 42 of 80 the same. The other 38 need wildcards (17), Preserve options (15), non-strict mode (2) or a fragment reference the oracle cannot make yet (4) |
 
-rexi does not run the W3C EXI test suite in CI, so it makes no claim about it.
+From the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`), so it makes no claim about the rest.
 
 [rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and JExi encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
 

@@ -93,6 +93,18 @@ scripts/fetch-third-party.sh --update exip   # on purpose: re-pin to remote HEAD
 
 Tests that need exipd or exip's test data skip when the cache is empty. Set `REXI_REQUIRE_JUDGES=1` to make them required.
 
+## W3C declaredProductions
+
+`scripts/w3c-declared.py` runs the W3C test suite's declaredProductions group from the cached exi-testsuite. For each case, on bit-packed and byte-aligned, EXIficient (the oracle jar) makes the reference stream and its events; rexi's encode must give the same bytes, its decode the same events, and decode then encode the same bytes again. The references are made at run time under `target/w3c-declared/`; nothing from the suite is committed.
+
+```bash
+cargo build --release -p rexi-xml --bin rexi
+scripts/w3c-declared.py                      # compare with scripts/w3c-declared.expected
+scripts/w3c-declared.py --update             # on purpose: accept the new results
+```
+
+The run fails when a result differs from `scripts/w3c-declared.expected`, both when a case stops passing and when one starts. When a change makes cases pass, run `--update`, check the diff, and update the README's conformance row. CI runs it in the `exificient` job.
+
 ## Releasing
 
 1. Bump the version in `[workspace.package]` and in the rexi entries of `[workspace.dependencies]` in `Cargo.toml`, and add a `## X.Y.Z - YYYY-MM-DD` section to `CHANGELOG.md`.

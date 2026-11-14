@@ -93,7 +93,7 @@ Important constraints:
 
 Check the README's feature tables and the user guide before relying on a particular feature.
 
-The W3C specification, implementation support and conformance test results are separate things. Do not claim full EXI conformance based on individual passing tests. Report only what tests show; rexi does not run the W3C EXI test suite.
+The W3C specification, implementation support and conformance test results are separate things. Do not claim full EXI conformance based on individual passing tests. Report only what tests show; of the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`, expected results in `scripts/w3c-declared.expected`).
 
 ## no_std and memory usage
 
