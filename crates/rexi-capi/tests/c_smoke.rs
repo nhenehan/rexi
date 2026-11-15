@@ -25,6 +25,18 @@ fn run(cmd: &mut Command) -> String {
     text
 }
 
+/// The path of `librexi.a` in Cargo's `compiler-artifact` messages (one JSON
+/// object per line, `"filenames":["…/librexi.a", …]`). A plain text search is
+/// enough here and needs no JSON crate: on Linux and macOS a path holds no `"`.
+fn staticlib_path(messages: &str) -> Option<std::path::PathBuf> {
+    messages
+        .lines()
+        .filter(|l| l.contains(r#""reason":"compiler-artifact""#))
+        .flat_map(|l| l.split('"'))
+        .find(|s| s.ends_with("/librexi.a"))
+        .map(std::path::PathBuf::from)
+}
+
 #[test]
 fn c_smoke_test() {
     if !have("cmake") || !have("cc") {
@@ -37,26 +49,25 @@ fn c_smoke_test() {
     }
     let crate_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     // `cargo test` links integration tests against the rlib only, so build the
-    // staticlib explicitly (the build lock is free while tests run).
-    // target/<profile>/deps/<test> → target/<profile>/librexi.a
-    let exe = std::env::current_exe().unwrap_or_else(|e| panic!("{e}"));
-    let profile_dir = exe
-        .parent()
-        .and_then(Path::parent)
-        .map(Path::to_path_buf)
-        .unwrap_or_default();
+    // staticlib explicitly (the build lock is free while tests run). Cargo says
+    // where it wrote librexi.a in its JSON messages; the path is not worked out
+    // from this test's own path, because Cargo's directory layout changes
+    // between versions (Rust 1.100 moved test binaries).
     let mut build_lib = Command::new(env!("CARGO"));
     build_lib
         .args(["build", "-q", "-p", "rexi-capi", "--lib"])
+        .args(["--message-format", "json-render-diagnostics"])
         .current_dir(crate_dir);
-    if profile_dir.file_name().is_some_and(|n| n == "release") {
+    if !cfg!(debug_assertions) {
         build_lib.arg("--release");
     }
-    if let Some(target_dir) = profile_dir.parent() {
+    // CARGO_TARGET_TMPDIR is <target dir>/tmp: build into the same target dir.
+    if let Some(target_dir) = Path::new(env!("CARGO_TARGET_TMPDIR")).parent() {
         build_lib.arg("--target-dir").arg(target_dir);
     }
-    run(&mut build_lib);
-    let lib = profile_dir.join("librexi.a");
+    let messages = run(&mut build_lib);
+    let lib = staticlib_path(&messages)
+        .unwrap_or_else(|| panic!("cargo reported no librexi.a:\n{messages}"));
     assert!(lib.is_file(), "staticlib not found at {}", lib.display());
     let build = Path::new(env!("CARGO_TARGET_TMPDIR")).join("capi-smoke");
     let fixtures = crate_dir.join("../rexi-tests/fixtures/interop");
