@@ -2,11 +2,16 @@
 
 ## Unreleased
 
+- A decoded enumeration value comes out in the standard form of its base
+  type, as EXIficient gives it: a float the schema lists as `1.0` decodes as
+  `1E0`, not `1.0` ([EXI 7.2](https://www.w3.org/TR/exi/#encodingEnumerations)
+  says only that the value is an index). The bytes do not change. Enumerations
+  of strings keep the schema's text. Found by the W3C case enumeration.valid-02.
 - For developers: `scripts/w3c-strict.py` replaces `scripts/w3c-declared.py`. It
   runs the W3C test suite's whole strict group (schemaValidDatatypes and
   declaredProductions, 219 cases), not only declaredProductions, and the
   fragment cases now get an EXIficient reference (exip's oracle has `--fragment`
-  since exip `fd43178`). 160 of 219 cases give EXIficient's bytes and events.
+  since exip `fd43178`). 161 of 219 cases give EXIficient's bytes and events.
   EXIFormat.jl runs the same script.
 
 ## 0.3.1 - 2026-11-14

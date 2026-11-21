@@ -118,8 +118,8 @@ enumeration.valid-00 bit-packed pass
 enumeration.valid-00 byte-aligned pass
 enumeration.valid-01 bit-packed pass
 enumeration.valid-01 byte-aligned pass
-enumeration.valid-02 bit-packed fail  # decode: event 3 is `CH 1.0`, EXIficient `CH 1E0`
-enumeration.valid-02 byte-aligned fail  # decode: event 3 is `CH 1.0`, EXIficient `CH 1E0`
+enumeration.valid-02 bit-packed pass
+enumeration.valid-02 byte-aligned pass
 enumeration.valid-03 bit-packed unsupported  # Preserve.prefixes
 enumeration.valid-03 byte-aligned unsupported  # Preserve.prefixes
 enumeration.valid-04 bit-packed pass
