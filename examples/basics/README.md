@@ -2,7 +2,7 @@
 
 Small programs, one idea each, in the order the [user guide](../../guide/src/introduction.md)
 uses. Most have a Julia twin in `examples/basics` of
-[JExi](https://github.com/nhenehan/jexi) that prints exactly the same output, so
+[EXIFormat](https://github.com/nhenehan/EXIFormat.jl) that prints exactly the same output, so
 you can compare the two side by side.
 
 | # | Rust | Julia | Shows |
@@ -19,16 +19,16 @@ you can compare the two side by side.
 All of them use [`data/order.xml`](data/order.xml) and [`data/order.xsd`](data/order.xsd).
 
 ```bash
-cargo run --bin roundtrip     # one example
-./run-all.sh [--c]            # all of them; --c adds the C example (needs cmake)
-./compare.sh path/to/jexi     # run each Rust/Julia pair and diff the output
+cargo run --bin roundtrip            # one example
+./run-all.sh [--c]                   # all of them; --c adds the C example (needs cmake)
+./compare.sh path/to/EXIFormat.jl    # run each Rust/Julia pair and diff the output
 ```
 
-`compare.sh` needs Julia and a JExi checkout. Pass its path, or set `JEXI`:
+`compare.sh` needs Julia and an EXIFormat.jl checkout. Pass its path, or set `EXIFORMAT`:
 
 ```bash
-git clone https://github.com/nhenehan/jexi ~/jexi
-./compare.sh ~/jexi        # or: JEXI=~/jexi ./compare.sh
+git clone https://github.com/nhenehan/EXIFormat.jl ~/EXIFormat.jl
+./compare.sh ~/EXIFormat.jl   # or: EXIFORMAT=~/EXIFormat.jl ./compare.sh
 ```
 
 `src/order_tables.rs` is made by `rexi-schema-gen`. See `prebuilt_tables.rs` for

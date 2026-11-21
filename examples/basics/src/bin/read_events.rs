@@ -5,7 +5,7 @@
 //! because the schema says what type each value has
 //! ([EXI 7](https://www.w3.org/TR/exi/#encodingDatatypes)).
 //!
-//! Julia version: `jexi/examples/basics/read_events.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/read_events.jl`.
 
 use rexi_basics::data;
 use rexi_core::{Decoder, Event, ExiOptions, HeaderConfig, Value};

@@ -1,6 +1,6 @@
 # Small examples of the rexi API, one program each in src/bin. Its own workspace,
 # so the rexi workspace build never compiles it (the root Cargo.toml excludes
-# examples/). The same examples in Julia are in jexi/examples/basics.
+# examples/). The same examples in Julia are in EXIFormat.jl/examples/basics.
 [workspace]
 
 [package]

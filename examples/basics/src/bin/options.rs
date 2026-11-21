@@ -6,7 +6,7 @@
 //! options some other way ("out of band"). The options are listed in
 //! [EXI 5.4](https://www.w3.org/TR/exi/#options).
 //!
-//! Julia version: `jexi/examples/basics/options.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/options.jl`.
 
 use rexi_basics::{data, hex_start};
 use rexi_core::{Alignment, ExiError, ExiOptions, HeaderConfig};

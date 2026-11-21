@@ -4,7 +4,7 @@
 //! says, and in the schema's order. `Option` is an optional item and `Vec` is a
 //! repeated one. The full rules are in the `rexi-serde` crate docs.
 //!
-//! Julia version: `jexi/examples/basics/structs.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/structs.jl`.
 
 use rexi_basics::data;
 use rexi_core::{ExiOptions, HeaderConfig};

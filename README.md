@@ -52,7 +52,7 @@ rexi needs Rust 1.88 or newer.
 
 - **[The user guide](https://nhenehan.github.io/rexi/)** works through one small program per idea, from a first round trip to `no_std` and C. To read it offline, build it with `mdbook-mermaid install guide && mdbook serve guide` (you need `mdbook` and `mdbook-mermaid`).
 - **[API documentation](https://docs.rs/rexi)** on docs.rs.
-- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** contains the programs from the guide. Each has a Julia twin in JExi that prints the same output.
+- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** contains the programs from the guide. Each has a Julia twin in EXIFormat that prints the same output.
 - **[`examples/mqtt-todo`](https://github.com/nhenehan/rexi/blob/main/examples/mqtt-todo/README.md)** is a todo list over MQTT, with a Rust server and Rust, C (rexi C API), Java (EXIficient) and C# (Nagasena for .NET) clients.
 - **The C API** is defined in one header, [`crates/rexi-capi/include/rexi.h`](https://github.com/nhenehan/rexi/blob/main/crates/rexi-capi/include/rexi.h), for `librexi.a` or `librexi.so`. It has exip-style encoder calls and a callback decoder.
 
@@ -101,7 +101,7 @@ Test results from rexi's CI (the `exificient` job, with the exip judges required
 
 From the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`), so it makes no claim about the rest.
 
-[rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and JExi encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
+[rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and EXIFormat encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
 
 ## Rust library features
 
@@ -128,7 +128,7 @@ See the guide's [Untrusted input](https://nhenehan.github.io/rexi/untrusted-inpu
 
 ## Thanks
 
-EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly, with solid open libraries behind it. That work is what got this project started. rexi and JExi are my effort to take EXI further, to more languages and more places.
+EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly, with solid open libraries behind it. That work is what got this project started. rexi and EXIFormat are my effort to take EXI further, to more languages and more places.
 
 - **Rumen Kyusakov** wrote [exip](https://exip.sourceforge.net/), a compact C implementation of EXI, and co-edited the Second Edition of the [EXI specification](https://www.w3.org/TR/exi/). exip's decoder is one of the checks rexi's output must pass.
 - **Daniel Peintner** wrote [EXIficient](https://exificient.github.io/) with Richard Kuntschke at Siemens, co-edited the Second Edition, and edited the [EXI Primer](https://www.w3.org/TR/exi-primer/). rexi's bytes are checked against EXIficient's.

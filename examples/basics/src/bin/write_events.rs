@@ -5,7 +5,7 @@
 //! ([EXI 4](https://www.w3.org/TR/exi/#eventTypes)). The encoder checks every
 //! call against the schema and fails if it is not allowed at that point.
 //!
-//! Julia version: `jexi/examples/basics/write_events.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/write_events.jl`.
 
 use rexi_basics::data;
 use rexi_core::{Encoder, ExiOptions, HeaderConfig, Int, Value};
