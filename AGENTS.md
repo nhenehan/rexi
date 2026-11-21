@@ -76,6 +76,8 @@ Every build regenerates `rexi.h` with cbindgen. Commit the regenerated header to
 
 The implemented profile is EXI 1.0 (Second Edition), schema-informed and strict, for documents and fragments.
 
+Wildcards (`xs:any`, `xs:anyAttribute`) are supported only with the `wildcard` Cargo feature, which is off by default. Optional features like it must not change a build that leaves them off: put their code under `#[cfg(feature = "...")]`, and test the gate's feature runs (`scripts/gate.sh`) as well as the default build.
+
 Supported encoding modes:
 
 - Bit-packed.

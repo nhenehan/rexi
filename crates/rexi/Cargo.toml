@@ -27,6 +27,8 @@ schema = ["std", "dep:rexi-schema"]
 xml = ["schema", "dep:rexi-xml"]
 # rexi::serde: your own Rust types to EXI and back (works without std).
 serde = ["dep:rexi-serde"]
+# Wildcards with declared names in strict mode (EXI 8.5.4.1.6); see rexi-core.
+wildcard = ["rexi-core/wildcard"]
 
 [dependencies]
 rexi-core.workspace = true

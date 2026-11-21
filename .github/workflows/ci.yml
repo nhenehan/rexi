@@ -45,6 +45,7 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets --no-deps -- -D warnings
           cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --all-targets --no-deps --no-default-features -- -D warnings
+          cargo clippy --workspace --all-targets --no-deps --features rexi-xml/wildcard -- -D warnings
       - name: rustdoc
         run: cargo doc --workspace --no-deps
         env:
@@ -53,9 +54,11 @@ jobs:
         run: |
           cargo test --workspace
           cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --no-default-features
+          cargo test --workspace --features rexi-xml/wildcard
       - name: no_std build (thumbv7em-none-eabihf)
         run: |
           cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf
+          cargo build -p rexi-nostd-check --features rexi-core/wildcard --target thumbv7em-none-eabihf
           cargo build -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
       - name: generated tables
         run: scripts/gen-tables.sh --check
@@ -113,7 +116,7 @@ jobs:
           REXI_REQUIRE_JUDGES: "1"
       - name: W3C strict group, compared with EXIficient
         run: |
-          cargo build --release -p rexi-xml --bin rexi
+          cargo build --release -p rexi-xml --bin rexi --features wildcard
           scripts/w3c-strict.py
 
   ci-ok:

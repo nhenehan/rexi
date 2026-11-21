@@ -23,6 +23,10 @@ crate-type = ["cdylib", "staticlib"]
 # Its documentation is the C header, include/rexi.h.
 doc = false
 
+[features]
+# Wildcards with declared names in strict mode (EXI 8.5.4.1.6); see rexi-core.
+wildcard = ["rexi-core/wildcard"]
+
 [dependencies]
 rexi-core = { workspace = true, features = ["std"] }
 rexi-schema.workspace = true

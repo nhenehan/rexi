@@ -296,14 +296,14 @@ schemaInformed.declared.complexType-03 bit-packed pass
 schemaInformed.declared.complexType-03 byte-aligned pass
 schemaInformed.declared.complexType-04 bit-packed pass
 schemaInformed.declared.complexType-04 byte-aligned pass
-schemaInformed.declared.complexType-05 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-05 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-06 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-06 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-07 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-07 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-17 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-17 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-05 bit-packed pass
+schemaInformed.declared.complexType-05 byte-aligned pass
+schemaInformed.declared.complexType-06 bit-packed pass
+schemaInformed.declared.complexType-06 byte-aligned pass
+schemaInformed.declared.complexType-07 bit-packed pass
+schemaInformed.declared.complexType-07 byte-aligned pass
+schemaInformed.declared.complexType-17 bit-packed pass
+schemaInformed.declared.complexType-17 byte-aligned pass
 schemaInformed.declared.complexType-18 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
 schemaInformed.declared.complexType-18 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
 schemaInformed.declared.complexType-20 bit-packed pass
@@ -314,18 +314,18 @@ schemaInformed.declared.complexType-22 bit-packed pass
 schemaInformed.declared.complexType-22 byte-aligned pass
 schemaInformed.declared.complexType-23 bit-packed pass
 schemaInformed.declared.complexType-23 byte-aligned pass
-schemaInformed.declared.complexType-24 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-24 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-25 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-25 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-26 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-26 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-27 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexType-27 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-24 bit-packed pass
+schemaInformed.declared.complexType-24 byte-aligned pass
+schemaInformed.declared.complexType-25 bit-packed pass
+schemaInformed.declared.complexType-25 byte-aligned pass
+schemaInformed.declared.complexType-26 bit-packed pass
+schemaInformed.declared.complexType-26 byte-aligned pass
+schemaInformed.declared.complexType-27 bit-packed pass
+schemaInformed.declared.complexType-27 byte-aligned pass
 schemaInformed.declared.complexType-28 bit-packed pass
 schemaInformed.declared.complexType-28 byte-aligned pass
-schemaInformed.declared.complexUrType-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexUrType-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-01 bit-packed pass
+schemaInformed.declared.complexUrType-01 byte-aligned pass
 schemaInformed.declared.complexUrType-02 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
 schemaInformed.declared.complexUrType-02 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
 schemaInformed.declared.complexUrType-03 bit-packed pass
@@ -336,10 +336,10 @@ schemaInformed.declared.complexUrType-05 bit-packed pass
 schemaInformed.declared.complexUrType-05 byte-aligned pass
 schemaInformed.declared.complexUrType-06 bit-packed pass
 schemaInformed.declared.complexUrType-06 byte-aligned pass
-schemaInformed.declared.complexUrType-08 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexUrType-08 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexUrType-09 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.complexUrType-09 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-08 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: built-in (schema-less) element grammars
+schemaInformed.declared.complexUrType-08 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: built-in (schema-less) element grammars
+schemaInformed.declared.complexUrType-09 bit-packed pass
+schemaInformed.declared.complexUrType-09 byte-aligned pass
 schemaInformed.declared.document-01 bit-packed unsupported  # Preserve.prefixes
 schemaInformed.declared.document-01 byte-aligned unsupported  # Preserve.prefixes
 schemaInformed.declared.document-02 bit-packed unsupported  # Preserve.dtds,pis,comments
@@ -376,8 +376,8 @@ schemaInformed.declared.elementFragment-06 bit-packed unsupported  # Preserve.dt
 schemaInformed.declared.elementFragment-06 byte-aligned unsupported  # Preserve.dtds,pis,comments
 schemaInformed.declared.elementTerm-01 bit-packed pass
 schemaInformed.declared.elementTerm-01 byte-aligned pass
-schemaInformed.declared.eventCodeAssignment-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.eventCodeAssignment-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.eventCodeAssignment-01 bit-packed pass
+schemaInformed.declared.eventCodeAssignment-01 byte-aligned pass
 schemaInformed.declared.fragment-01 bit-packed unsupported  # Preserve.dtds,pis,comments
 schemaInformed.declared.fragment-01 byte-aligned unsupported  # Preserve.dtds,pis,comments
 schemaInformed.declared.fragment-02 bit-packed unsupported  # Preserve.dtds
@@ -428,13 +428,13 @@ schemaInformed.declared.simpleType-02 bit-packed pass
 schemaInformed.declared.simpleType-02 byte-aligned pass
 schemaInformed.declared.simpleType-03 bit-packed pass
 schemaInformed.declared.simpleType-03 byte-aligned pass
-schemaInformed.declared.wildcard-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-02 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-02 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-03 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-03 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-04 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-04 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-05 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
-schemaInformed.declared.wildcard-05 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-01 bit-packed pass
+schemaInformed.declared.wildcard-01 byte-aligned pass
+schemaInformed.declared.wildcard-02 bit-packed pass
+schemaInformed.declared.wildcard-02 byte-aligned pass
+schemaInformed.declared.wildcard-03 bit-packed pass
+schemaInformed.declared.wildcard-03 byte-aligned pass
+schemaInformed.declared.wildcard-04 bit-packed pass
+schemaInformed.declared.wildcard-04 byte-aligned pass
+schemaInformed.declared.wildcard-05 bit-packed pass
+schemaInformed.declared.wildcard-05 byte-aligned pass

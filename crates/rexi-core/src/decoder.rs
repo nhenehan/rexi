@@ -346,16 +346,71 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
                 }
                 Ok(Step::Ee)
             }
-            Terminal::SeAny
-            | Terminal::SeNs(_)
-            | Terminal::AtAny
-            | Terminal::AtNs(_)
-            | Terminal::AtAnyUntyped => Err(ExiError::Unsupported(Feature::Wildcard)),
+            #[cfg(feature = "wildcard")]
+            Terminal::SeAny | Terminal::SeNs(_) => self.wildcard_element(prod),
+            #[cfg(feature = "wildcard")]
+            Terminal::AtAny | Terminal::AtNs(_) => self.wildcard_attribute(prod),
+            #[cfg(not(feature = "wildcard"))]
+            Terminal::SeAny | Terminal::SeNs(_) | Terminal::AtAny | Terminal::AtNs(_) => {
+                Err(ExiError::Unsupported(Feature::Wildcard))
+            }
+            // AT(*) with an untyped value appears only in non-strict grammars.
+            Terminal::AtAnyUntyped => Err(ExiError::Unsupported(Feature::Wildcard)),
             other => Err(ExiError::Grammar {
                 expected: "a strict schema-informed production".into(),
                 got: format!("{other:?}"),
             }),
         }
+    }
+
+    /// Reads the name after a wildcard production: the whole QName after `SE(*)` /
+    /// `AT(*)`, only the local name after `SE(uri:*)` / `AT(uri:*)`
+    /// ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)).
+    #[cfg(feature = "wildcard")]
+    fn read_wildcard_name(&mut self, terminal: Terminal) -> ExiResult<QNameId> {
+        match terminal {
+            Terminal::SeNs(u) | Terminal::AtNs(u) => {
+                let l = self
+                    .strings
+                    .read_local_name(&self.tables, &mut self.inp, u)?;
+                Ok(QNameId::new(u, l))
+            }
+            _ => self.strings.read_qname(&self.tables, &mut self.inp),
+        }
+    }
+
+    /// `SE(*)` or `SE(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the name, then the element's global declaration's grammar, as EXIficient
+    /// does. A name with no global declaration would need a built-in grammar.
+    #[cfg(feature = "wildcard")]
+    fn wildcard_element(&mut self, prod: crate::grammar::ir::Production) -> ExiResult<Step> {
+        let qname = self.read_wildcard_name(prod.terminal)?;
+        let Some(elem) = self.tables.find_global_element(qname) else {
+            return Err(ExiError::Unsupported(Feature::BuiltInElementGrammar));
+        };
+        self.top_mut()?.rule = prod.next;
+        self.push_element(elem)?;
+        Ok(Step::Se(qname))
+    }
+
+    /// `AT(*)` or `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the name, then the value in the type of the attribute's global declaration,
+    /// or as a string when there is none, as EXIficient does.
+    #[cfg(feature = "wildcard")]
+    fn wildcard_attribute(&mut self, prod: crate::grammar::ir::Production) -> ExiResult<Step> {
+        let frame = self.top()?;
+        let qname = self.read_wildcard_name(prod.terminal)?;
+        let global = self
+            .tables
+            .global_attributes()
+            .iter()
+            .find(|a| a.qname == qname)
+            .map(|a| a.type_idx);
+        let kind = global.map_or(DatatypeKind::Untyped, |t| self.tables.datatype(t));
+        self.last_type = Some(global.unwrap_or(TypeIdx::NONE));
+        self.read_value_in_place(kind, qname)?;
+        self.top_mut()?.rule = frame.after_attribute_wildcard(prod.next);
+        Ok(Step::At(qname))
     }
 
     /// Reads the second-level code after an escape, then the `xsi:type` QName

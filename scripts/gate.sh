@@ -12,6 +12,9 @@ cd "$ROOT"
 QUICK=0
 [[ "${1:-}" == "--quick" ]] && QUICK=1
 NOSTD=(-p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi)
+# Optional library features (off by default), each tested on its own and all
+# together. Today there is one, so the two are the same run.
+FEATURES=(--features rexi-xml/wildcard)
 
 step() { printf '\n== %s\n' "$*"; }
 
@@ -24,6 +27,7 @@ cargo fmt --all --check
 step "clippy"
 cargo clippy --workspace --all-targets --no-deps -- -D warnings
 cargo clippy "${NOSTD[@]}" --all-targets --no-deps --no-default-features -- -D warnings
+cargo clippy --workspace --all-targets --no-deps "${FEATURES[@]}" -- -D warnings
 
 step "rustdoc (no warnings, every public item documented)"
 RUSTDOCFLAGS="-D warnings" cargo doc -q --workspace --no-deps
@@ -31,6 +35,7 @@ RUSTDOCFLAGS="-D warnings" cargo doc -q --workspace --no-deps
 step "tests"
 cargo test --workspace -q
 cargo test "${NOSTD[@]}" -q --no-default-features
+cargo test --workspace -q "${FEATURES[@]}"
 
 step "tests on the oldest supported Rust (1.88)"
 # Own target directory, so the two compilers do not rebuild each other's files.
@@ -39,6 +44,7 @@ CARGO_TARGET_DIR=target/msrv cargo +1.88 test --workspace -q \
 
 step "no_std build (thumbv7em-none-eabihf)"
 cargo build -q -p rexi-nostd-check --target thumbv7em-none-eabihf
+cargo build -q -p rexi-nostd-check --features rexi-core/wildcard --target thumbv7em-none-eabihf
 cargo build -q -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
 
 step "generated tables"

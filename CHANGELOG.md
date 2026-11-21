@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Wildcards, behind the new `wildcard` Cargo feature (off by default):
+  `xs:any` and `xs:anyAttribute` in strict mode, `SE(*)`, `SE(uri:*)`, `AT(*)`
+  and `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)). An
+  element follows its global declaration's grammar; one with no declaration
+  still needs a built-in grammar and is refused. An attribute takes its global
+  declaration's type, or is a string. The W3C wildcard cases give EXIficient's
+  bytes and events (16 of 17; the last needs a built-in grammar): 177 of 219 in
+  all with the feature on. Without the feature nothing changes.
 - A decoded enumeration value comes out in the standard form of its base
   type, as EXIficient gives it: a float the schema lists as `1.0` decodes as
   `1E0`, not `1.0` ([EXI 7.2](https://www.w3.org/TR/exi/#encodingEnumerations)

@@ -67,3 +67,21 @@ let back = rexi::xml::decode_to_xml(&exi[..], &tables, Some(options))?;
 The `rexi` tool takes `--fragment` for the same thing. One case is refused: when
 two local elements share a name but have different types, EXI would read that
 name at the top of a fragment with a looser grammar that rexi does not build.
+
+## Wildcards
+
+`xs:any` and `xs:anyAttribute` let a document put elements and attributes the
+schema does not list in place ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)).
+rexi encodes and decodes them when it is built with the `wildcard` feature,
+which is off by default so that small builds do not carry the code:
+
+```toml
+rexi = { version = "0.3", features = ["wildcard"] }
+```
+
+Each such element or attribute costs its name in the stream. An element needs
+a global declaration in the schema, whose grammar it then follows. An element
+with no declaration at all would need a built-in grammar, which rexi does not
+have yet, so it is refused. An attribute is written in the type of its global
+declaration, or as a string when it has none. Without the feature, the stream
+is refused with `Unsupported(Wildcard)`.
