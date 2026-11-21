@@ -97,9 +97,9 @@ Test results from rexi's CI (the `exificient` job, with the exip judges required
 | Re-encode the decoded events | the same | Same bytes |
 | exip's decoder (exipd) reads rexi's output | strict bit-packed; strict byte-aligned | Accepted |
 | exip's own unit tests, cloned in `rexi-tests/tests/exip_clones.rs` | as in exip | Pass |
-| W3C EXI test suite, declaredProductions group (80 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 42 of 80 the same. The other 38 need wildcards (17), Preserve options (15), non-strict mode (2) or a fragment reference the oracle cannot make yet (4) |
+| W3C EXI test suite, strict group (219 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 160 of 219 the same. schemaValidDatatypes: 118 of 139; the others need schema-less streams (16), Preserve.prefixes (2) or non-strict mode (2), and in one (enumeration.valid-02) rexi decodes an enumerated float as the schema writes it, `1.0`, where EXIficient gives `1E0`. declaredProductions: 42 of 80; the others need wildcards (17), Preserve options (15), the element fragment grammar (4) or non-strict mode (2) |
 
-From the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`), so it makes no claim about the rest.
+From the W3C EXI test suite, rexi runs only the strict group (`scripts/w3c-strict.py`), so it makes no claim about the rest.
 
 [rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and EXIFormat encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
 

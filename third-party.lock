@@ -10,5 +10,5 @@
 # EXIficient is not cloned: the oracle (exip utils/xsd2exip) takes 1.0.7 from
 # Maven Central.
 
-exip https://github.com/nhenehan/exip.git b2870c106f0cc88fd199208f724ce575df150444
+exip https://github.com/nhenehan/exip.git fd43178f32d480535b08861d07700d106a3f31d7
 exi-testsuite https://github.com/w3c/exi-testsuite.git 23d5f587ba3ec281f1a6a8182c1450cb870b469e

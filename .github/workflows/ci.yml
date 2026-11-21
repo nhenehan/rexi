@@ -111,10 +111,10 @@ jobs:
         run: cargo test --workspace
         env:
           REXI_REQUIRE_JUDGES: "1"
-      - name: W3C declaredProductions, compared with EXIficient
+      - name: W3C strict group, compared with EXIficient
         run: |
           cargo build --release -p rexi-xml --bin rexi
-          scripts/w3c-declared.py
+          scripts/w3c-strict.py
 
   ci-ok:
     name: ci-ok

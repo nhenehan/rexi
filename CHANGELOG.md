@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- For developers: `scripts/w3c-strict.py` replaces `scripts/w3c-declared.py`. It
+  runs the W3C test suite's whole strict group (schemaValidDatatypes and
+  declaredProductions, 219 cases), not only declaredProductions, and the
+  fragment cases now get an EXIficient reference (exip's oracle has `--fragment`
+  since exip `fd43178`). 160 of 219 cases give EXIficient's bytes and events.
+  EXIFormat.jl runs the same script.
+
 ## 0.3.1 - 2026-11-14
 
 Nothing in this release breaks code written for 0.3.0.

@@ -1,0 +1,440 @@
+# Expected results of scripts/w3c-strict.py for rexi: <case> <alignment> <status>.
+# Rewrite with scripts/w3c-strict.py --update, after checking the change.
+string.literal-01 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-01 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-02 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-02 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-03 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-03 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-04 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-04 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-05 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-05 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-06 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-06 byte-aligned unsupported  # schema-less (built-in grammars)
+string.literal-07 bit-packed unsupported  # schema-less (built-in grammars)
+string.literal-07 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-01 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-01 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-02 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-02 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-03 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-03 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-04 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-04 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-05 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-05 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-06 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-06 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-07 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-07 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-08 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-08 byte-aligned unsupported  # schema-less (built-in grammars)
+string.indexed-09 bit-packed unsupported  # schema-less (built-in grammars)
+string.indexed-09 byte-aligned unsupported  # schema-less (built-in grammars)
+base64.valid-00 bit-packed pass
+base64.valid-00 byte-aligned pass
+base64.valid-01 bit-packed pass
+base64.valid-01 byte-aligned pass
+base64.valid-02 bit-packed pass
+base64.valid-02 byte-aligned pass
+base64.valid-03 bit-packed pass
+base64.valid-03 byte-aligned pass
+base64.valid-04 bit-packed pass
+base64.valid-04 byte-aligned pass
+base64.valid-05 bit-packed pass
+base64.valid-05 byte-aligned pass
+hex.valid-00 bit-packed pass
+hex.valid-00 byte-aligned pass
+boolean.valid-00 bit-packed pass
+boolean.valid-00 byte-aligned pass
+boolean.valid-01 bit-packed pass
+boolean.valid-01 byte-aligned pass
+boolean.valid-02 bit-packed pass
+boolean.valid-02 byte-aligned pass
+boolean.valid-03 bit-packed pass
+boolean.valid-03 byte-aligned pass
+boolean.valid-04 bit-packed pass
+boolean.valid-04 byte-aligned pass
+boolean.valid-05 bit-packed pass
+boolean.valid-05 byte-aligned pass
+dateTime.valid-00 bit-packed pass
+dateTime.valid-00 byte-aligned pass
+dateTime.valid-01 bit-packed pass
+dateTime.valid-01 byte-aligned pass
+dateTime.valid-02 bit-packed pass
+dateTime.valid-02 byte-aligned pass
+dateTime.valid-03 bit-packed pass
+dateTime.valid-03 byte-aligned pass
+dateTime.valid-04 bit-packed pass
+dateTime.valid-04 byte-aligned pass
+dateTime.valid-05 bit-packed pass
+dateTime.valid-05 byte-aligned pass
+dateTime.valid-06 bit-packed pass
+dateTime.valid-06 byte-aligned pass
+dateTime.valid-07 bit-packed pass
+dateTime.valid-07 byte-aligned pass
+dateTime.valid-08 bit-packed pass
+dateTime.valid-08 byte-aligned pass
+dateTime.valid-08-1 bit-packed pass
+dateTime.valid-08-1 byte-aligned pass
+dateTime.valid-09 bit-packed pass
+dateTime.valid-09 byte-aligned pass
+dateTime.valid-10 bit-packed pass
+dateTime.valid-10 byte-aligned pass
+dateTime.valid-11 bit-packed pass
+dateTime.valid-11 byte-aligned pass
+dateTime.valid-12 bit-packed pass
+dateTime.valid-12 byte-aligned pass
+dateTime.valid-13 bit-packed pass
+dateTime.valid-13 byte-aligned pass
+dateTime.valid-14 bit-packed pass
+dateTime.valid-14 byte-aligned pass
+dateTime.valid-14-1 bit-packed pass
+dateTime.valid-14-1 byte-aligned pass
+dateTime.valid-15 bit-packed pass
+dateTime.valid-15 byte-aligned pass
+dateTime.valid-15-1 bit-packed pass
+dateTime.valid-15-1 byte-aligned pass
+dateTime.valid-15-2 bit-packed pass
+dateTime.valid-15-2 byte-aligned pass
+dateTime.valid-15-3 bit-packed pass
+dateTime.valid-15-3 byte-aligned pass
+decimal.valid-00 bit-packed pass
+decimal.valid-00 byte-aligned pass
+decimal.valid-01 bit-packed pass
+decimal.valid-01 byte-aligned pass
+decimal.valid-02 bit-packed pass
+decimal.valid-02 byte-aligned pass
+decimal.valid-03 bit-packed pass
+decimal.valid-03 byte-aligned pass
+decimal.valid-04 bit-packed pass
+decimal.valid-04 byte-aligned pass
+decimal.valid-05 bit-packed pass
+decimal.valid-05 byte-aligned pass
+decimal.valid-06 bit-packed pass
+decimal.valid-06 byte-aligned pass
+enumeration.valid-00 bit-packed pass
+enumeration.valid-00 byte-aligned pass
+enumeration.valid-01 bit-packed pass
+enumeration.valid-01 byte-aligned pass
+enumeration.valid-02 bit-packed fail  # decode: event 3 is `CH 1.0`, EXIficient `CH 1E0`
+enumeration.valid-02 byte-aligned fail  # decode: event 3 is `CH 1.0`, EXIficient `CH 1E0`
+enumeration.valid-03 bit-packed unsupported  # Preserve.prefixes
+enumeration.valid-03 byte-aligned unsupported  # Preserve.prefixes
+enumeration.valid-04 bit-packed pass
+enumeration.valid-04 byte-aligned pass
+float.valid-00 bit-packed pass
+float.valid-00 byte-aligned pass
+float.valid-01 bit-packed pass
+float.valid-01 byte-aligned pass
+float.valid-02 bit-packed pass
+float.valid-02 byte-aligned pass
+float.valid-03 bit-packed pass
+float.valid-03 byte-aligned pass
+float.valid-04 bit-packed pass
+float.valid-04 byte-aligned pass
+float.valid-05 bit-packed pass
+float.valid-05 byte-aligned pass
+float.valid-06 bit-packed pass
+float.valid-06 byte-aligned pass
+float.valid-07 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+float.valid-07 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+float.valid-08 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+float.valid-08 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+list.valid-00 bit-packed pass
+list.valid-00 byte-aligned pass
+list.valid-01 bit-packed pass
+list.valid-01 byte-aligned pass
+list.valid-02 bit-packed pass
+list.valid-02 byte-aligned pass
+list.valid-03 bit-packed pass
+list.valid-03 byte-aligned pass
+list.valid-04 bit-packed pass
+list.valid-04 byte-aligned pass
+qname.valid-00 bit-packed unsupported  # Preserve.prefixes
+qname.valid-00 byte-aligned unsupported  # Preserve.prefixes
+nbitInteger-valid-00 bit-packed pass
+nbitInteger-valid-00 byte-aligned pass
+nbitInteger-valid-01 bit-packed pass
+nbitInteger-valid-01 byte-aligned pass
+nbitInteger-valid-02 bit-packed pass
+nbitInteger-valid-02 byte-aligned pass
+nbitInteger-valid-03 bit-packed pass
+nbitInteger-valid-03 byte-aligned pass
+nbitInteger-valid-04 bit-packed pass
+nbitInteger-valid-04 byte-aligned pass
+nbitInteger-valid-05 bit-packed pass
+nbitInteger-valid-05 byte-aligned pass
+nbitInteger-valid-08 bit-packed pass
+nbitInteger-valid-08 byte-aligned pass
+nbitInteger-valid-09 bit-packed pass
+nbitInteger-valid-09 byte-aligned pass
+nbitInteger-valid-10 bit-packed pass
+nbitInteger-valid-10 byte-aligned pass
+nbitInteger-valid-11 bit-packed pass
+nbitInteger-valid-11 byte-aligned pass
+unsignedInteger-valid-00 bit-packed pass
+unsignedInteger-valid-00 byte-aligned pass
+unsignedInteger-valid-01 bit-packed pass
+unsignedInteger-valid-01 byte-aligned pass
+unsignedInteger-valid-02 bit-packed pass
+unsignedInteger-valid-02 byte-aligned pass
+unsignedInteger-valid-03 bit-packed pass
+unsignedInteger-valid-03 byte-aligned pass
+unsignedInteger-valid-04 bit-packed pass
+unsignedInteger-valid-04 byte-aligned pass
+unsignedInteger-valid-05 bit-packed pass
+unsignedInteger-valid-05 byte-aligned pass
+unsignedInteger-valid-06 bit-packed pass
+unsignedInteger-valid-06 byte-aligned pass
+unsignedInteger-valid-07 bit-packed pass
+unsignedInteger-valid-07 byte-aligned pass
+unsignedInteger-valid-08 bit-packed pass
+unsignedInteger-valid-08 byte-aligned pass
+unsignedInteger-valid-09 bit-packed pass
+unsignedInteger-valid-09 byte-aligned pass
+unsignedInteger-valid-10 bit-packed pass
+unsignedInteger-valid-10 byte-aligned pass
+unsignedInteger-valid-11 bit-packed pass
+unsignedInteger-valid-11 byte-aligned pass
+unsignedInteger-valid-12 bit-packed pass
+unsignedInteger-valid-12 byte-aligned pass
+unsignedInteger-valid-13 bit-packed pass
+unsignedInteger-valid-13 byte-aligned pass
+integer-valid-00 bit-packed pass
+integer-valid-00 byte-aligned pass
+integer-valid-01 bit-packed pass
+integer-valid-01 byte-aligned pass
+integer-valid-02 bit-packed pass
+integer-valid-02 byte-aligned pass
+integer-valid-03 bit-packed pass
+integer-valid-03 byte-aligned pass
+integer-valid-04 bit-packed pass
+integer-valid-04 byte-aligned pass
+integer-valid-05 bit-packed pass
+integer-valid-05 byte-aligned pass
+integer-valid-06 bit-packed pass
+integer-valid-06 byte-aligned pass
+integer-valid-07 bit-packed pass
+integer-valid-07 byte-aligned pass
+integer-valid-08 bit-packed pass
+integer-valid-08 byte-aligned pass
+integer-valid-09 bit-packed pass
+integer-valid-09 byte-aligned pass
+integer-valid-10 bit-packed pass
+integer-valid-10 byte-aligned pass
+restrictedCharacterSets-charClassLm-00 bit-packed pass
+restrictedCharacterSets-charClassLm-00 byte-aligned pass
+restrictedCharacterSets-charClassLm-01 bit-packed pass
+restrictedCharacterSets-charClassLm-01 byte-aligned pass
+restrictedCharacterSets-charClassLm-02 bit-packed pass
+restrictedCharacterSets-charClassLm-02 byte-aligned pass
+restrictedCharacterSets-charClassLm-03 bit-packed pass
+restrictedCharacterSets-charClassLm-03 byte-aligned pass
+restrictedCharacterSets-charClassNd-00 bit-packed pass
+restrictedCharacterSets-charClassNd-00 byte-aligned pass
+restrictedCharacterSets-charClassNd-01 bit-packed pass
+restrictedCharacterSets-charClassNd-01 byte-aligned pass
+restrictedCharacterSets-charClassNd-02 bit-packed pass
+restrictedCharacterSets-charClassNd-02 byte-aligned pass
+restrictedCharacterSets-range1-00 bit-packed pass
+restrictedCharacterSets-range1-00 byte-aligned pass
+restrictedCharacterSets-range1-01 bit-packed pass
+restrictedCharacterSets-range1-01 byte-aligned pass
+restrictedCharacterSets-range2-00 bit-packed pass
+restrictedCharacterSets-range2-00 byte-aligned pass
+restrictedCharacterSets-range2-01 bit-packed pass
+restrictedCharacterSets-range2-01 byte-aligned pass
+restrictedCharacterSets-range2-02 bit-packed pass
+restrictedCharacterSets-range2-02 byte-aligned pass
+restrictedCharacterSets-range2-03 bit-packed pass
+restrictedCharacterSets-range2-03 byte-aligned pass
+restrictedCharacterSets-ssn-00 bit-packed pass
+restrictedCharacterSets-ssn-00 byte-aligned pass
+restrictedCharacterSets-ssn-01 bit-packed pass
+restrictedCharacterSets-ssn-01 byte-aligned pass
+restrictedCharacterSets-ssn-02 bit-packed pass
+restrictedCharacterSets-ssn-02 byte-aligned pass
+restrictedCharacterSets-test1-00 bit-packed pass
+restrictedCharacterSets-test1-00 byte-aligned pass
+restrictedCharacterSets-test1-01 bit-packed pass
+restrictedCharacterSets-test1-01 byte-aligned pass
+restrictedCharacterSets-test1-02 bit-packed pass
+restrictedCharacterSets-test1-02 byte-aligned pass
+restrictedCharacterSets-test2-00 bit-packed pass
+restrictedCharacterSets-test2-00 byte-aligned pass
+Additional_w3c.xml.patterns bit-packed pass
+Additional_w3c.xml.patterns byte-aligned pass
+DataTypes_w3c.xml.patterns bit-packed pass
+DataTypes_w3c.xml.patterns byte-aligned pass
+ElemDecl.testSet.patterns bit-packed pass
+ElemDecl.testSet.patterns byte-aligned pass
+Element_w3c.xml.patterns bit-packed pass
+Element_w3c.xml.patterns byte-aligned pass
+NISTXMLSchemaDatatypes.testSet.patterns bit-packed pass
+NISTXMLSchemaDatatypes.testSet.patterns byte-aligned pass
+SimpleType_w3c.xml.patterns bit-packed pass
+SimpleType_w3c.xml.patterns byte-aligned pass
+SType.testSet.patterns bit-packed pass
+SType.testSet.patterns byte-aligned pass
+schemaInformed.declared.all-01 bit-packed pass
+schemaInformed.declared.all-01 byte-aligned pass
+schemaInformed.declared.all-02 bit-packed pass
+schemaInformed.declared.all-02 byte-aligned pass
+schemaInformed.declared.all-03 bit-packed pass
+schemaInformed.declared.all-03 byte-aligned pass
+schemaInformed.declared.choice-01 bit-packed pass
+schemaInformed.declared.choice-01 byte-aligned pass
+schemaInformed.declared.choice-02 bit-packed pass
+schemaInformed.declared.choice-02 byte-aligned pass
+schemaInformed.declared.complexType-01 bit-packed pass
+schemaInformed.declared.complexType-01 byte-aligned pass
+schemaInformed.declared.complexType-02 bit-packed pass
+schemaInformed.declared.complexType-02 byte-aligned pass
+schemaInformed.declared.complexType-03 bit-packed pass
+schemaInformed.declared.complexType-03 byte-aligned pass
+schemaInformed.declared.complexType-04 bit-packed pass
+schemaInformed.declared.complexType-04 byte-aligned pass
+schemaInformed.declared.complexType-05 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-05 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-06 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-06 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-07 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-07 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-17 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-17 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-18 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+schemaInformed.declared.complexType-18 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+schemaInformed.declared.complexType-20 bit-packed pass
+schemaInformed.declared.complexType-20 byte-aligned pass
+schemaInformed.declared.complexType-21 bit-packed pass
+schemaInformed.declared.complexType-21 byte-aligned pass
+schemaInformed.declared.complexType-22 bit-packed pass
+schemaInformed.declared.complexType-22 byte-aligned pass
+schemaInformed.declared.complexType-23 bit-packed pass
+schemaInformed.declared.complexType-23 byte-aligned pass
+schemaInformed.declared.complexType-24 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-24 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-25 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-25 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-26 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-26 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-27 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-27 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexType-28 bit-packed pass
+schemaInformed.declared.complexType-28 byte-aligned pass
+schemaInformed.declared.complexUrType-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-02 bit-packed unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+schemaInformed.declared.complexUrType-02 byte-aligned unsupported  # rexi: --no-strict: non-strict (schema-informed with deviations) encoding is not supported yet
+schemaInformed.declared.complexUrType-03 bit-packed pass
+schemaInformed.declared.complexUrType-03 byte-aligned pass
+schemaInformed.declared.complexUrType-04 bit-packed pass
+schemaInformed.declared.complexUrType-04 byte-aligned pass
+schemaInformed.declared.complexUrType-05 bit-packed pass
+schemaInformed.declared.complexUrType-05 byte-aligned pass
+schemaInformed.declared.complexUrType-06 bit-packed pass
+schemaInformed.declared.complexUrType-06 byte-aligned pass
+schemaInformed.declared.complexUrType-08 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-08 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-09 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.complexUrType-09 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.document-01 bit-packed unsupported  # Preserve.prefixes
+schemaInformed.declared.document-01 byte-aligned unsupported  # Preserve.prefixes
+schemaInformed.declared.document-02 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-02 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-03 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-03 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-04 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-04 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-05 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-05 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-06 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-06 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-07 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.document-07 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.duplicateTerminals-01 bit-packed pass
+schemaInformed.declared.duplicateTerminals-01 byte-aligned pass
+schemaInformed.declared.duplicateTerminals-02 bit-packed pass
+schemaInformed.declared.duplicateTerminals-02 byte-aligned pass
+schemaInformed.declared.element-01 bit-packed pass
+schemaInformed.declared.element-01 byte-aligned pass
+schemaInformed.declared.element-02 bit-packed pass
+schemaInformed.declared.element-02 byte-aligned pass
+schemaInformed.declared.elementFragment-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-02 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-02 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-03 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-03 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-04 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-04 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: relaxed element grammars (fragments)
+schemaInformed.declared.elementFragment-05 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.elementFragment-05 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.elementFragment-06 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.elementFragment-06 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.elementTerm-01 bit-packed pass
+schemaInformed.declared.elementTerm-01 byte-aligned pass
+schemaInformed.declared.eventCodeAssignment-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.eventCodeAssignment-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.fragment-01 bit-packed unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.fragment-01 byte-aligned unsupported  # Preserve.dtds,pis,comments
+schemaInformed.declared.fragment-02 bit-packed unsupported  # Preserve.dtds
+schemaInformed.declared.fragment-02 byte-aligned unsupported  # Preserve.dtds
+schemaInformed.declared.fragment-03 bit-packed unsupported  # Preserve.pis
+schemaInformed.declared.fragment-03 byte-aligned unsupported  # Preserve.pis
+schemaInformed.declared.fragment-04 bit-packed unsupported  # Preserve.pis
+schemaInformed.declared.fragment-04 byte-aligned unsupported  # Preserve.pis
+schemaInformed.declared.fragment-05 bit-packed unsupported  # Preserve.pis
+schemaInformed.declared.fragment-05 byte-aligned unsupported  # Preserve.pis
+schemaInformed.declared.fragment-06 bit-packed unsupported  # Preserve.pis
+schemaInformed.declared.fragment-06 byte-aligned unsupported  # Preserve.pis
+schemaInformed.declared.particle-01 bit-packed pass
+schemaInformed.declared.particle-01 byte-aligned pass
+schemaInformed.declared.particle-02 bit-packed pass
+schemaInformed.declared.particle-02 byte-aligned pass
+schemaInformed.declared.particle-03 bit-packed pass
+schemaInformed.declared.particle-03 byte-aligned pass
+schemaInformed.declared.particle-04 bit-packed pass
+schemaInformed.declared.particle-04 byte-aligned pass
+schemaInformed.declared.particle-05 bit-packed pass
+schemaInformed.declared.particle-05 byte-aligned pass
+schemaInformed.declared.particle-06 bit-packed pass
+schemaInformed.declared.particle-06 byte-aligned pass
+schemaInformed.declared.particle-07 bit-packed pass
+schemaInformed.declared.particle-07 byte-aligned pass
+schemaInformed.declared.particle-08 bit-packed pass
+schemaInformed.declared.particle-08 byte-aligned pass
+schemaInformed.declared.particle-09 bit-packed pass
+schemaInformed.declared.particle-09 byte-aligned pass
+schemaInformed.declared.particle-10 bit-packed pass
+schemaInformed.declared.particle-10 byte-aligned pass
+schemaInformed.declared.particle-11 bit-packed pass
+schemaInformed.declared.particle-11 byte-aligned pass
+schemaInformed.declared.particle-12 bit-packed pass
+schemaInformed.declared.particle-12 byte-aligned pass
+schemaInformed.declared.particle-13 bit-packed pass
+schemaInformed.declared.particle-13 byte-aligned pass
+schemaInformed.declared.particle-14 bit-packed pass
+schemaInformed.declared.particle-14 byte-aligned pass
+schemaInformed.declared.sequence-01 bit-packed pass
+schemaInformed.declared.sequence-01 byte-aligned pass
+schemaInformed.declared.sequence-02 bit-packed pass
+schemaInformed.declared.sequence-02 byte-aligned pass
+schemaInformed.declared.simpleType-01 bit-packed pass
+schemaInformed.declared.simpleType-01 byte-aligned pass
+schemaInformed.declared.simpleType-02 bit-packed pass
+schemaInformed.declared.simpleType-02 byte-aligned pass
+schemaInformed.declared.simpleType-03 bit-packed pass
+schemaInformed.declared.simpleType-03 byte-aligned pass
+schemaInformed.declared.wildcard-01 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-01 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-02 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-02 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-03 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-03 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-04 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-04 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-05 bit-packed unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
+schemaInformed.declared.wildcard-05 byte-aligned unsupported  # rexi: EXI error: unsupported EXI feature: wildcards (xs:any, xs:anyAttribute)
