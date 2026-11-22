@@ -75,7 +75,7 @@ What the codec can encode and decode.
 | Compression | Not supported | |
 | Pre-compression | Not supported | |
 | Wildcards | Supported, with the `wildcard` feature | `xs:any`, `xs:anyAttribute`: elements with a global declaration, and any attribute (typed by its global declaration, or a string). Off by default; an element with no global declaration needs a built-in grammar and is refused |
-| `Preserve.lexicalValues` | Not supported | |
+| `Preserve.lexicalValues` | Supported, with the `lexical-values` feature | Values sent as their exact text (EXI Table 7-2). Off by default. `xsi:type` can then name only a type in no namespace, as in EXIficient |
 | `datatypeRepresentationMap` | Not supported | Uses standard datatype representations |
 | Preserve comments, PIs, DTD, prefixes | Not allowed in strict mode | EXI forbids them together with `strict` ([EXI 5.4](https://www.w3.org/TR/exi/#options)) |
 | `selfContained` | Not allowed in strict mode | Same rule |
@@ -98,6 +98,7 @@ Test results from rexi's CI (the `exificient` job, with the exip judges required
 | exip's decoder (exipd) reads rexi's output | strict bit-packed; strict byte-aligned | Accepted |
 | exip's own unit tests, cloned in `rexi-tests/tests/exip_clones.rs` | as in exip | Pass |
 | W3C EXI test suite, strict group (219 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 177 of 219 the same, with the `wildcard` feature on (161 without it). schemaValidDatatypes: 119 of 139; the others need schema-less streams (16), Preserve.prefixes (2) or non-strict mode (2). declaredProductions: 58 of 80; the others need Preserve options (15), the element fragment grammar (4), non-strict mode (2) or a built-in grammar for a wildcard element with no declaration (1) |
+| The same 219 cases with Preserve.lexicalValues on (`--lexical-values`), compared with EXIficient 1.0.7 | strict bit-packed, lexicalValues; strict byte-aligned, lexicalValues | 173 of 219 the same, with both features on. Of the others, EXIficient refuses 5 (a prefixed `xsi:type`) and the rest need the same features as without the option |
 
 From the W3C EXI test suite, rexi runs only the strict group (`scripts/w3c-strict.py`), so it makes no claim about the rest.
 
@@ -118,6 +119,7 @@ From the W3C EXI test suite, rexi runs only the strict group (`scripts/w3c-stric
 | Fixed-buffer output | `rexi-core` | Write into a fixed buffer, without a growable output buffer |
 | CLI | `rexi-xml` | Command-line encoding and decoding |
 | `wildcard` (off by default) | `rexi-core`, and forwarded by `rexi`, `rexi-xml`, `rexi-capi` | Encode and decode `xs:any` / `xs:anyAttribute`; without it they are refused and their code is not compiled in |
+| `lexical-values` (off by default) | `rexi-core`, and forwarded by `rexi`, `rexi-xml`, `rexi-capi` | `Preserve.lexicalValues`; without it the option is refused and its code is not compiled in. The C API has no field for it yet |
 
 ## Safe with untrusted data
 

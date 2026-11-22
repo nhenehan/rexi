@@ -85,3 +85,35 @@ with no declaration at all would need a built-in grammar, which rexi does not
 have yet, so it is refused. An attribute is written in the type of its global
 declaration, or as a string when it has none. Without the feature, the stream
 is refused with `Unsupported(Wildcard)`.
+
+## Exact values: `Preserve.lexicalValues`
+
+Normally a value is sent in its type's compact form, so it decodes to the
+type's standard text: `<price>1.50</price>` comes back as `1.5`, and `+05` as
+`5`. When the exact text matters, for a signature over the XML or an audit
+trail, turn on `Preserve.lexicalValues`
+([EXI 6.3](https://www.w3.org/TR/exi/#fidelityOptions)). It is the one Preserve
+option strict mode allows. rexi has it when built with the `lexical-values`
+feature, which is off by default:
+
+```toml
+rexi = { version = "0.3", features = ["lexical-values"] }
+```
+
+```rust,ignore
+let mut options = ExiOptions::strict();
+options.preserve.lexical_values = true;
+```
+
+Each value is then its text, written with a small alphabet chosen by its type
+(digits and signs for numbers, for example; EXI Table 7-2), and repeated values
+still go through the string table. The messages are a little larger than
+without the option. The text is kept as it is, spaces included, and so is
+whitespace between elements where the schema allows text.
+
+`xsi:type` is text as well, and a prefix in it would mean nothing to the
+decoder, since strict mode does not send namespace prefixes. So with this
+option `xsi:type` can only name a type in no namespace; `xsi:type="xs:int"` is
+refused with `Unsupported(PreservePrefixes)`. EXIficient refuses it too.
+Without the feature, the option is refused with
+`Unsupported(PreserveLexicalValues)`.

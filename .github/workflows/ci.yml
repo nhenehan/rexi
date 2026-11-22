@@ -45,7 +45,9 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets --no-deps -- -D warnings
           cargo clippy -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --all-targets --no-deps --no-default-features -- -D warnings
-          cargo clippy --workspace --all-targets --no-deps --features rexi-xml/wildcard -- -D warnings
+          for f in rexi-xml/wildcard rexi-xml/lexical-values rexi-xml/wildcard,rexi-xml/lexical-values; do
+            cargo clippy --workspace --all-targets --no-deps --features "$f" -- -D warnings
+          done
       - name: rustdoc
         run: cargo doc --workspace --no-deps
         env:
@@ -54,11 +56,15 @@ jobs:
         run: |
           cargo test --workspace
           cargo test -p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi --no-default-features
-          cargo test --workspace --features rexi-xml/wildcard
+          for f in rexi-xml/wildcard rexi-xml/lexical-values rexi-xml/wildcard,rexi-xml/lexical-values; do
+            cargo test --workspace --features "$f"
+          done
       - name: no_std build (thumbv7em-none-eabihf)
         run: |
           cargo build -p rexi-nostd-check --target thumbv7em-none-eabihf
-          cargo build -p rexi-nostd-check --features rexi-core/wildcard --target thumbv7em-none-eabihf
+          for f in rexi-core/wildcard rexi-core/lexical-values rexi-core/wildcard,rexi-core/lexical-values; do
+            cargo build -p rexi-nostd-check --features "$f" --target thumbv7em-none-eabihf
+          done
           cargo build -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
       - name: generated tables
         run: scripts/gen-tables.sh --check
@@ -116,8 +122,9 @@ jobs:
           REXI_REQUIRE_JUDGES: "1"
       - name: W3C strict group, compared with EXIficient
         run: |
-          cargo build --release -p rexi-xml --bin rexi --features wildcard
+          cargo build --release -p rexi-xml --bin rexi --features wildcard,lexical-values
           scripts/w3c-strict.py
+          scripts/w3c-strict.py --lexical-values
 
   ci-ok:
     name: ci-ok

@@ -2,7 +2,7 @@
 """Run this repository's EXI tool against the W3C EXI test suite's "strict"
 group, with EXIficient 1.0.7 as the reference.
 
-    scripts/w3c-strict.py [--tool PATH] [--jobs N] [--update] [--report FILE]
+    scripts/w3c-strict.py [--tool PATH] [--jobs N] [--lexical-values] [--update] [--report FILE]
 
 The same file is in rexi (it drives `rexi`) and in EXIFormat.jl (it drives
 `bin/exiformat`, which takes rexi's command line); it finds out which from the
@@ -33,6 +33,11 @@ needs an option the tool does not have), fail (anything else), skip (no
 reference can be made). The results are compared with scripts/w3c-strict.expected,
 and the run fails on any difference, so a regression fails and so does a case
 that passes without being listed as passing. --update rewrites that file instead.
+
+--lexical-values runs the whole group again with Preserve.lexicalValues on
+(`--preserve lexicalValues` for both EXIficient and the tool), so every value is
+sent as text with the character sets of EXI Table 7-2. The suite has no such
+cases of its own. Its results go in scripts/w3c-strict-lexical.expected.
 """
 
 import argparse
@@ -51,6 +56,7 @@ P = "org.w3c.exi.ttf."
 XI = "{http://www.w3.org/2001/XInclude}include"
 ALIGNMENTS = ("bit-packed", "byte-aligned")
 EXPECTED = os.path.join(HERE, "w3c-strict.expected")
+EXPECTED_LEXICAL = os.path.join(HERE, "w3c-strict-lexical.expected")
 
 if os.path.exists(os.path.join(ROOT, "Cargo.toml")):
     TOOL_NAME = "rexi"
@@ -118,6 +124,12 @@ def last_line(text):
     return lines[-1][:200] if lines else ""
 
 
+def java_error(err):
+    """The cause of a Java failure: its last "Caused by:" line, else the last line."""
+    causes = [line for line in err.splitlines() if line.startswith("Caused by:")]
+    return causes[-1][:200] if causes else last_line(err)
+
+
 def tool_error(err):
     """("unsupported" or "fail", the message) for a failed tool command."""
     msg = last_line(err)
@@ -142,6 +154,8 @@ def one(a, name, tp, alignment):
     xsd = tp[P + "schemaLocation"]
     xml = tp["japex.inputFile"]
     opts = [strict, "--alignment", alignment]
+    if a.lexical_values:
+        opts += ["--preserve", "lexicalValues"]
     if fragment:
         opts.append("--fragment")
     for param, flag in (
@@ -168,7 +182,7 @@ def one(a, name, tp, alignment):
         ]
     )
     if code != 0:
-        return "skip", "EXIficient refuses the XML: " + last_line(err)
+        return "skip", "EXIficient refuses the XML: " + java_error(err)
     code, want, err = run(
         [
             "java",
@@ -183,7 +197,7 @@ def one(a, name, tp, alignment):
         ]
     )
     if code != 0:
-        return "skip", "EXIficient cannot read its own stream: " + last_line(err)
+        return "skip", "EXIficient cannot read its own stream: " + java_error(err)
     ref = open(w + ".ref.exi", "rb").read()
     if fragment and not a.tool_fragment:
         return "unsupported", "fragment: %s has no --fragment" % TOOL_NAME
@@ -231,11 +245,11 @@ def one(a, name, tp, alignment):
     return "pass", ""
 
 
-def read_expected():
+def read_expected(path):
     out = {}
-    if not os.path.exists(EXPECTED):
+    if not os.path.exists(path):
         return out
-    for line in open(EXPECTED):
+    for line in open(path):
         line = line.split("#", 1)[0].strip()
         if line:
             name, alignment, status = line.split()
@@ -243,12 +257,12 @@ def read_expected():
     return out
 
 
-def write_expected(results):
-    with open(EXPECTED, "w") as f:
+def write_expected(path, results, flag):
+    with open(path, "w") as f:
         f.write(
-            "# Expected results of scripts/w3c-strict.py for %s: <case> <alignment> <status>.\n"
-            "# Rewrite with scripts/w3c-strict.py --update, after checking the change.\n"
-            % TOOL_NAME
+            "# Expected results of scripts/w3c-strict.py%s for %s: <case> <alignment> <status>.\n"
+            "# Rewrite with scripts/w3c-strict.py%s --update, after checking the change.\n"
+            % (flag, TOOL_NAME, flag)
         )
         for (name, alignment), (status, note) in results.items():
             line = "%s %s %s" % (name, alignment, status)
@@ -280,7 +294,12 @@ def main():
         help="cases run at once",
     )
     ap.add_argument(
-        "--update", action="store_true", help="rewrite scripts/w3c-strict.expected"
+        "--lexical-values",
+        action="store_true",
+        help="run with Preserve.lexicalValues on (expected: w3c-strict-lexical.expected)",
+    )
+    ap.add_argument(
+        "--update", action="store_true", help="rewrite the expected file"
     )
     ap.add_argument(
         "--report", metavar="FILE", help="also write a Markdown table of every result"
@@ -309,7 +328,9 @@ def main():
             )
     a.oracle_fragment = help_has(["java", "-jar", a.oracle, "--help"], "--fragment")
     a.tool_fragment = help_has([a.tool, "encode", "--help"], "--fragment")
-    a.work = WORK
+    a.work = os.path.join(WORK, "lexical") if a.lexical_values else WORK
+    expected_path = EXPECTED_LEXICAL if a.lexical_values else EXPECTED
+    flag = " --lexical-values" if a.lexical_values else ""
     os.makedirs(a.work, exist_ok=True)
 
     missing = []
@@ -330,8 +351,8 @@ def main():
         n for n in names if all(results[(n, al)][0] == "pass" for al in ALIGNMENTS)
     ]
     print(
-        "W3C strict group (%s): %d of %d cases give EXIficient's bytes and events"
-        % (TOOL_NAME, len(passing), len(names))
+        "W3C strict group (%s%s): %d of %d cases give EXIficient's bytes and events"
+        % (TOOL_NAME, ", Preserve.lexicalValues" if a.lexical_values else "", len(passing), len(names))
     )
     for part, prefix in (
         ("schemaValidDatatypes", None),
@@ -368,11 +389,12 @@ def main():
                 )
 
     if a.update:
-        write_expected(results)
-        print("wrote " + os.path.relpath(EXPECTED, ROOT))
+        write_expected(expected_path, results, flag)
+        print("wrote " + os.path.relpath(expected_path, ROOT))
         return 0
 
-    expected = read_expected()
+    expected = read_expected(expected_path)
+    name = os.path.relpath(expected_path, ROOT)
     diffs = []
     for key, (status, note) in results.items():
         want = expected.get(key, "<missing>")
@@ -386,11 +408,11 @@ def main():
             % (key[0], key[1], expected[key])
         )
     if diffs:
-        print("results differ from scripts/w3c-strict.expected:")
+        print("results differ from %s:" % name)
         print("\n".join(diffs))
-        print("If the change is right, run scripts/w3c-strict.py --update.")
+        print("If the change is right, run scripts/w3c-strict.py%s --update." % flag)
         return 1
-    print("results match scripts/w3c-strict.expected")
+    print("results match %s" % name)
     return 0
 
 

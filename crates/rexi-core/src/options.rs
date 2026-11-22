@@ -206,6 +206,7 @@ impl ExiOptions {
         if self.preserve.pis {
             return Err(ExiError::Unsupported(Feature::PreservePis));
         }
+        #[cfg(not(feature = "lexical-values"))]
         if self.preserve.lexical_values {
             return Err(ExiError::Unsupported(Feature::PreserveLexicalValues));
         }

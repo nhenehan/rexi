@@ -12,9 +12,13 @@ cd "$ROOT"
 QUICK=0
 [[ "${1:-}" == "--quick" ]] && QUICK=1
 NOSTD=(-p rexi-core -p rexi-serde -p rexi-nostd-check -p rexi)
-# Optional library features (off by default), each tested on its own and all
-# together. Today there is one, so the two are the same run.
-FEATURES=(--features rexi-xml/wildcard)
+# Optional library features (off by default), each tested on its own and then
+# all together.
+FEATURE_RUNS=(
+    rexi-xml/wildcard
+    rexi-xml/lexical-values
+    rexi-xml/wildcard,rexi-xml/lexical-values
+)
 
 step() { printf '\n== %s\n' "$*"; }
 
@@ -27,7 +31,9 @@ cargo fmt --all --check
 step "clippy"
 cargo clippy --workspace --all-targets --no-deps -- -D warnings
 cargo clippy "${NOSTD[@]}" --all-targets --no-deps --no-default-features -- -D warnings
-cargo clippy --workspace --all-targets --no-deps "${FEATURES[@]}" -- -D warnings
+for f in "${FEATURE_RUNS[@]}"; do
+    cargo clippy --workspace --all-targets --no-deps --features "$f" -- -D warnings
+done
 
 step "rustdoc (no warnings, every public item documented)"
 RUSTDOCFLAGS="-D warnings" cargo doc -q --workspace --no-deps
@@ -35,7 +41,9 @@ RUSTDOCFLAGS="-D warnings" cargo doc -q --workspace --no-deps
 step "tests"
 cargo test --workspace -q
 cargo test "${NOSTD[@]}" -q --no-default-features
-cargo test --workspace -q "${FEATURES[@]}"
+for f in "${FEATURE_RUNS[@]}"; do
+    cargo test --workspace -q --features "$f"
+done
 
 step "tests on the oldest supported Rust (1.88)"
 # Own target directory, so the two compilers do not rebuild each other's files.
@@ -44,7 +52,9 @@ CARGO_TARGET_DIR=target/msrv cargo +1.88 test --workspace -q \
 
 step "no_std build (thumbv7em-none-eabihf)"
 cargo build -q -p rexi-nostd-check --target thumbv7em-none-eabihf
-cargo build -q -p rexi-nostd-check --features rexi-core/wildcard --target thumbv7em-none-eabihf
+for f in rexi-core/wildcard rexi-core/lexical-values rexi-core/wildcard,rexi-core/lexical-values; do
+    cargo build -q -p rexi-nostd-check --features "$f" --target thumbv7em-none-eabihf
+done
 cargo build -q -p rexi --no-default-features --features serde --target thumbv7em-none-eabihf
 
 step "generated tables"

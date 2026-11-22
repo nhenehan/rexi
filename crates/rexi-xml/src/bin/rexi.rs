@@ -33,6 +33,8 @@ the stream carries none):
   --strict | --no-strict            strict schema-informed mode (default: strict)
   --alignment bit-packed|byte-aligned
   --fragment                        the body is a fragment: any number of root elements
+  --preserve lexicalValues          keep each value's exact text (needs the
+                                    lexical-values feature)
   --include-options                 write the EXI options document into the header
   --cookie                          write the $EXI cookie
   --schema-id ID | --schema-id-nil  schemaId option (default: absent); --schema-id also
@@ -71,6 +73,7 @@ struct Args {
     strict: Option<bool>,
     alignment: Option<Alignment>,
     fragment: bool,
+    lexical_values: bool,
     include_options: bool,
     cookie: bool,
     schema_id: Option<SchemaId>,
@@ -126,6 +129,14 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
                 });
             }
             "--fragment" => out.fragment = true,
+            "--preserve" => match value_of("--preserve")?.as_str() {
+                "lexicalValues" => out.lexical_values = true,
+                other => {
+                    return Err(format!(
+                        "--preserve: only lexicalValues is allowed in strict mode, got {other:?}"
+                    ));
+                }
+            },
             "--include-options" => out.include_options = true,
             "--cookie" => out.cookie = true,
             "--schema-id" => out.schema_id = Some(SchemaId::Id(value_of("--schema-id")?.clone())),
@@ -192,6 +203,7 @@ fn options_of(args: &Args) -> Result<ExiOptions, String> {
     let mut options = ExiOptions::strict();
     options.alignment = args.alignment.unwrap_or_default();
     options.fragment = args.fragment;
+    options.preserve.lexical_values = args.lexical_values;
     options.value_max_length = args.value_max_length;
     options.value_partition_capacity = args.value_partition_capacity;
     options.schema_id = args.schema_id.clone().unwrap_or_default();

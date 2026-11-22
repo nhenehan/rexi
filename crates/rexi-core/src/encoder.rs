@@ -38,6 +38,8 @@ use crate::io::{BitWriter, ceil_log2};
 use crate::options::{ExiOptions, HeaderConfig};
 use crate::string_table::StringTable;
 use crate::value::Value;
+#[cfg(feature = "lexical-values")]
+use datatype::lexical_values::{XSI_NIL, XSI_TYPE};
 
 /// One event code that was written, as recorded with the `trace` feature.
 #[cfg(feature = "trace")]
@@ -646,8 +648,27 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         let Some(escape) = frame.escape_code(&self.tables) else {
             return Err(self.mismatch("AT(xsi:type)"));
         };
+        // Checked before any bits are written.
+        #[cfg(feature = "lexical-values")]
+        let lexical_name = if self.options.preserve.lexical_values {
+            Some(self.xsi_type_lexical_name(uri, local)?)
+        } else {
+            None
+        };
         self.emit_code("escape", escape, frame.first_level_width(&self.tables))?;
         self.emit_code("xsi:type", u64::from(code2), frame.second_level_width())?;
+        #[cfg(feature = "lexical-values")]
+        let qname = match lexical_name {
+            Some(qname) => {
+                // The value is the type's name as text, a plain String.
+                self.strings.write_value(&mut self.out, XSI_TYPE, local)?;
+                qname
+            }
+            None => self
+                .strings
+                .write_qname(&self.tables, &mut self.out, uri, local)?,
+        };
+        #[cfg(not(feature = "lexical-values"))]
         let qname = self
             .strings
             .write_qname(&self.tables, &mut self.out, uri, local)?;
@@ -680,6 +701,29 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         Ok(())
     }
 
+    /// With Preserve.lexicalValues, `xsi:type` is a String, the type's name as
+    /// written in the XML ([EXI 7.1](https://www.w3.org/TR/exi/#encodingDatatypes),
+    /// Table 7-1: QName is used only when the option is off). A prefix in that
+    /// text means nothing to a decoder unless Preserve.prefixes is on, which
+    /// strict mode forbids, so only a name with no namespace can be read back.
+    /// EXIficient refuses a prefixed name the same way ("Preserve lexicalValues
+    /// requires prefixes preserved as well"). The name must also be one the
+    /// string table knows, so that the decoder can name the type.
+    #[cfg(feature = "lexical-values")]
+    fn xsi_type_lexical_name(&self, uri: &str, local: &str) -> ExiResult<QNameId> {
+        if !uri.is_empty() {
+            return Err(ExiError::Unsupported(Feature::PreservePrefixes));
+        }
+        self.strings
+            .qname_id(&self.tables, "", local)
+            .ok_or_else(|| {
+                ExiError::value(
+                    "xsi:type",
+                    format!("with Preserve.lexicalValues, {local} must be a name the schema uses"),
+                )
+            })
+    }
+
     /// Encodes `xsi:nil`: the escape code, the second-level code, then the value as
     /// a Boolean ([EXI 7.1.2](https://www.w3.org/TR/exi/#encodingBoolean)). When it is
     /// true, the element switches to its type's `TypeEmpty` grammar, which allows
@@ -702,6 +746,21 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         };
         self.emit_code("escape", escape, frame.first_level_width(&self.tables))?;
         self.emit_code("xsi:nil", u64::from(code2), frame.second_level_width())?;
+        // With Preserve.lexicalValues, the value is text with the Boolean set
+        // (EXI 7, Table 7-2), under the xsi:nil name in the string table.
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            let text = if nil { "true" } else { "false" };
+            self.strings.write_value_restricted(
+                &mut self.out,
+                XSI_NIL,
+                text,
+                datatype::lexical_values::NIL_SET,
+            )?;
+        } else {
+            self.out.write_bool(nil)?;
+        }
+        #[cfg(not(feature = "lexical-values"))]
         self.out.write_bool(nil)?;
         if nil {
             let Some(decl) = self.tables.type_decl(frame.type_idx) else {
@@ -849,6 +908,11 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
                 Some(Terminal::Ch(_))
             );
             let simple_data = self.after_start_tag && before_end_tag;
+            // With Preserve.lexicalValues, EXIficient keeps every text a CH can
+            // take (`checkPendingCharacters` skips its pruning when
+            // `preserveLexicalValues` is set).
+            #[cfg(feature = "lexical-values")]
+            let simple_data = simple_data || self.options.preserve.lexical_values;
             if !typed_first && !simple_data && !self.space_preserved() {
                 return Ok(());
             }
@@ -896,6 +960,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         value: &Value<'_>,
         context: QNameId,
     ) -> ExiResult<()> {
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            return self.write_lexical_value(kind, value, context);
+        }
         match kind {
             // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
             // refused before the string table is touched.
@@ -963,6 +1031,35 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
             }
             DatatypeKind::QName => Err(ExiError::Internal("QName values are encoded by the codec")),
             _ => datatype::write_scalar(&mut self.out, kind, value, &self.tables),
+        }
+    }
+
+    /// Writes one value with Preserve.lexicalValues: its text as it was given (no
+    /// whitespace facet), as a String with the restricted character set of its
+    /// built-in type, through the string table
+    /// ([EXI 7](https://www.w3.org/TR/exi/#encodingDatatypes), Table 7-2). A typed
+    /// value is written in its standard text form.
+    #[cfg(feature = "lexical-values")]
+    fn write_lexical_value(
+        &mut self,
+        kind: DatatypeKind,
+        value: &Value<'_>,
+        context: QNameId,
+    ) -> ExiResult<()> {
+        let formatted;
+        let text = match value {
+            Value::Lexical(s) | Value::String(s) => *s,
+            other => {
+                formatted = lexical::format_value(kind, other, &self.tables)?;
+                formatted.as_str()
+            }
+        };
+        match datatype::lexical_values::alphabet(kind, &self.tables) {
+            Some(alphabet) => {
+                self.strings
+                    .write_value_restricted(&mut self.out, context, text, alphabet)
+            }
+            None => self.strings.write_value(&mut self.out, context, text),
         }
     }
 

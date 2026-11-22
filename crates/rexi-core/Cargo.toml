@@ -26,6 +26,10 @@ trace = []
 # Wildcards with declared names in strict mode: SE(*), SE(uri:*), AT(*), AT(uri:*)
 # (EXI 8.5.4.1.6). Off by default; without it those productions are refused.
 wildcard = []
+# Preserve.lexicalValues (EXI 6.3): values sent as their text, with the
+# restricted character sets of Table 7-2. Off by default; without it the option
+# is refused.
+lexical-values = []
 
 [dependencies]
 

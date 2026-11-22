@@ -98,8 +98,9 @@ Tests that need exipd or exip's test data skip when the cache is empty. Set `REX
 `scripts/w3c-strict.py` runs the W3C test suite's strict group (`config/testCases-interop/strict.xml`: schemaValidDatatypes and declaredProductions, 219 cases) from the cached exi-testsuite. EXIFormat.jl has the same script, which drives `bin/exiformat`: keep the two copies the same. For each case, on bit-packed and byte-aligned, EXIficient (the oracle jar) makes the reference stream and its events; rexi's encode must give the same bytes, its decode the same events, and decode then encode the same bytes again. The references are made at run time under `target/w3c-strict/`; nothing from the suite is committed.
 
 ```bash
-cargo build --release -p rexi-xml --bin rexi --features wildcard
+cargo build --release -p rexi-xml --bin rexi --features wildcard,lexical-values
 scripts/w3c-strict.py                        # compare with scripts/w3c-strict.expected
+scripts/w3c-strict.py --lexical-values       # the same with Preserve.lexicalValues on
 scripts/w3c-strict.py --update               # on purpose: accept the new results
 scripts/w3c-strict.py --report r.md          # also a table of every result
 ```

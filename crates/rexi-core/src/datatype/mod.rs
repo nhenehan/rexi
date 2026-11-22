@@ -23,6 +23,8 @@ pub(crate) mod decimal;
 pub(crate) mod float;
 pub(crate) mod integer;
 pub(crate) mod lexical;
+#[cfg(feature = "lexical-values")]
+pub(crate) mod lexical_values;
 pub(crate) mod string;
 pub(crate) mod unsigned;
 
