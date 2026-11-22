@@ -107,6 +107,21 @@ impl Frame {
         }
     }
 
+    /// The rule after `AT(*)` / `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the production loops to the rule it is in (`Element_i,j : AT(*) Element_i,j`).
+    /// The tables send the start rule's `AT(*)` to a copy of it without the
+    /// `xsi:type` / `xsi:nil` escapes; staying on the start rule keeps them, as
+    /// EXIficient does (its first start-tag grammar's `AT(*)` leads back to itself;
+    /// W3C complexType-05).
+    #[cfg(feature = "wildcard")]
+    pub fn after_attribute_wildcard(&self, next: crate::ids::RuleIdx) -> crate::ids::RuleIdx {
+        if self.rule == self.start_rule {
+            self.start_rule
+        } else {
+            next
+        }
+    }
+
     /// Width in bits of the first-level event code in the current rule. The escapes
     /// share one extra first-level value, so they add 1 to the count at most.
     pub fn first_level_width(&self, tables: &impl GrammarTables) -> u8 {

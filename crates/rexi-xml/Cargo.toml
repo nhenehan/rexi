@@ -17,6 +17,12 @@ description = "XML <-> EXI event front-end and the rexi command line tool"
 name = "rexi"
 path = "src/bin/rexi.rs"
 
+[features]
+# Wildcards with declared names in strict mode (EXI 8.5.4.1.6); see rexi-core.
+wildcard = ["rexi-core/wildcard"]
+# Preserve.lexicalValues (EXI 6.3): values kept as their exact text; see rexi-core.
+lexical-values = ["rexi-core/lexical-values"]
+
 [dependencies]
 rexi-core = { workspace = true, features = ["std"] }
 rexi-schema.workspace = true

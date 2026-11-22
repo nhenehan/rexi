@@ -1,7 +1,7 @@
 //! String types whose patterns give a restricted character set
 //! ([EXI 7.1.10.1](https://www.w3.org/TR/exi/#restrictedCharSet)): each character
 //! of a string-table miss is an n-bit index into the set, or the escape index and
-//! the code point. The bytes are EXIficient 1.0.7's, and the same as JExi's
+//! the code point. The bytes are EXIficient 1.0.7's, and the same as EXIFormat's
 //! (`test/schema.jl` there has the same vectors). A pattern rexi cannot read has
 //! no known set, so its values are refused with `Unsupported(RestrictedCharacterSet)`.
 //! Patterns with a large alphabet keep the plain string form, byte for byte.

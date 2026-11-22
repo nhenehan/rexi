@@ -60,6 +60,13 @@
 //!   `schema`.
 //! - `serde`: `rexi::serde`, your own Rust types to EXI and back. Works without
 //!   `std`.
+//! - `wildcard`: encode and decode `xs:any` and `xs:anyAttribute` (`SE(*)`,
+//!   `SE(uri:*)`, `AT(*)`, `AT(uri:*)`). Off by default, so builds that do not
+//!   need it stay as small as before; without it those streams are refused with
+//!   `Feature::Wildcard`.
+//! - `lexical-values`: the `Preserve.lexicalValues` option, which sends each
+//!   value as its exact text. Off by default; without it the option is refused
+//!   with `Feature::PreserveLexicalValues`.
 //!
 //! On a small device without `std`, turn the default features off. That leaves
 //! rexi-core (and rexi-serde, if you ask for it), which need only `alloc`:

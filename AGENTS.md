@@ -76,6 +76,8 @@ Every build regenerates `rexi.h` with cbindgen. Commit the regenerated header to
 
 The implemented profile is EXI 1.0 (Second Edition), schema-informed and strict, for documents and fragments.
 
+Wildcards (`xs:any`, `xs:anyAttribute`) are supported only with the `wildcard` Cargo feature, and `Preserve.lexicalValues` only with the `lexical-values` feature; both are off by default. Optional features like it must not change a build that leaves them off: put their code under `#[cfg(feature = "...")]`, and test the gate's feature runs (`scripts/gate.sh`) as well as the default build.
+
 Supported encoding modes:
 
 - Bit-packed.
@@ -93,7 +95,7 @@ Important constraints:
 
 Check the README's feature tables and the user guide before relying on a particular feature.
 
-The W3C specification, implementation support and conformance test results are separate things. Do not claim full EXI conformance based on individual passing tests. Report only what tests show; of the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`, expected results in `scripts/w3c-declared.expected`).
+The W3C specification, implementation support and conformance test results are separate things. Do not claim full EXI conformance based on individual passing tests. Report only what tests show; of the W3C EXI test suite, rexi runs only the strict group (`scripts/w3c-strict.py`, expected results in `scripts/w3c-strict.expected`).
 
 ## no_std and memory usage
 

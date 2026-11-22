@@ -1,7 +1,7 @@
 # Thanks
 
 EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly,
-with solid open libraries behind it. That work is what got this project started. rexi and JExi are
+with solid open libraries behind it. That work is what got this project started. rexi and EXIFormat are
 my effort to take EXI further, to more languages and more places.
 
 - **Rumen Kyusakov** wrote [exip](https://exip.sourceforge.net/), a compact C implementation of EXI,

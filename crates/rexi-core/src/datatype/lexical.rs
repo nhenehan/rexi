@@ -247,12 +247,21 @@ pub fn format_value(
             _ => Err(mismatch(kind, value)),
         },
         Value::Enum(ordinal) => match kind {
-            DatatypeKind::Enumeration { set, .. } => types
-                .enum_value(set, *ordinal as usize)
-                .map(str::to_string)
-                .ok_or_else(|| {
+            DatatypeKind::Enumeration { set, item } => {
+                let text = types.enum_value(set, *ordinal as usize).ok_or_else(|| {
                     ExiError::value(kind.name(), format!("ordinal {ordinal} out of range"))
-                }),
+                })?;
+                // The value in the standard form of its base type, as EXIficient
+                // gives it: a float listed as "1.0" comes out as "1E0"
+                // (https://www.w3.org/TR/exi/#encodingEnumerations). The same form
+                // `enum_ordinal` matches on. String-like bases have no other form,
+                // so their text comes out as the schema writes it.
+                let item_kind = types.datatype(item);
+                Ok(parse_lexical(item_kind, text, types)
+                    .ok()
+                    .and_then(|owned| format_value(item_kind, &owned.to_value(), types).ok())
+                    .unwrap_or_else(|| text.to_string()))
+            }
             _ => Err(mismatch(kind, value)),
         },
         Value::List(items) => {
@@ -487,6 +496,7 @@ mod tests {
     const COLOURS: [&str; 3] = ["red", "green", "blue"];
     const NUMBERS: [&str; 4] = ["1", "2", "3", "10"];
     const DECIMALS: [&str; 2] = ["1.0", "2.5"];
+    const FLOATS: [&str; 2] = ["1.0", "0.250e2"];
 
     impl TypeResolver for Mock {
         fn datatype(&self, t: TypeIdx) -> DatatypeKind {
@@ -517,6 +527,7 @@ mod tests {
             match set {
                 EnumSetIdx(0) => COLOURS.len(),
                 EnumSetIdx(1) => NUMBERS.len(),
+                EnumSetIdx(3) => FLOATS.len(),
                 _ => DECIMALS.len(),
             }
         }
@@ -524,6 +535,7 @@ mod tests {
             match set {
                 EnumSetIdx(0) => COLOURS.get(ordinal).copied(),
                 EnumSetIdx(1) => NUMBERS.get(ordinal).copied(),
+                EnumSetIdx(3) => FLOATS.get(ordinal).copied(),
                 _ => DECIMALS.get(ordinal).copied(),
             }
         }
@@ -1013,5 +1025,43 @@ mod tests {
             dec(false, D::DateTime(DateTimeKind::DateTime), &bytes),
             Ok(OwnedValue::DateTime(DateTimeKind::DateTime, dt))
         );
+    }
+
+    /// A decoded enumeration value comes out in the standard form of its base
+    /// type, as EXIficient gives it (W3C enumeration.valid-02): the float listed
+    /// as "1.0" is "1E0". Strings keep the schema's text.
+    #[test]
+    fn enum_values_come_out_in_standard_form() {
+        use DatatypeKind as D;
+        let floats = D::Enumeration {
+            set: EnumSetIdx(3),
+            item: TypeIdx(2),
+        };
+        assert_eq!(
+            format_value(floats, &Value::Enum(0), &Mock),
+            Ok("1E0".into())
+        );
+        assert_eq!(
+            format_value(floats, &Value::Enum(1), &Mock),
+            format_value(D::Float, &Value::Lexical("0.250e2"), &Mock)
+        );
+        let decimals = D::Enumeration {
+            set: EnumSetIdx(2),
+            item: TypeIdx(3),
+        };
+        assert_eq!(
+            format_value(decimals, &Value::Enum(1), &Mock),
+            format_value(D::Decimal, &Value::Lexical("2.5"), &Mock)
+        );
+        let colours = D::Enumeration {
+            set: EnumSetIdx(0),
+            item: TypeIdx(1),
+        };
+        assert_eq!(
+            format_value(colours, &Value::Enum(2), &Mock),
+            Ok("blue".into())
+        );
+        // The encoder finds the same ordinal from the standard form.
+        assert_eq!(parse_lexical(floats, "1E0", &Mock), Ok(OwnedValue::Enum(0)));
     }
 }

@@ -24,6 +24,8 @@ use crate::limits::{DecodeLimits, Limit};
 use crate::options::ExiOptions;
 use crate::string_table::StringTable;
 use crate::value::OwnedValue;
+#[cfg(feature = "lexical-values")]
+use datatype::lexical_values::{XSI_NIL, XSI_TYPE};
 
 /// What the last `step` produced. It is turned into an [`Event`] afterwards, so the
 /// event can borrow strings from the decoder.
@@ -346,16 +348,71 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
                 }
                 Ok(Step::Ee)
             }
-            Terminal::SeAny
-            | Terminal::SeNs(_)
-            | Terminal::AtAny
-            | Terminal::AtNs(_)
-            | Terminal::AtAnyUntyped => Err(ExiError::Unsupported(Feature::Wildcard)),
+            #[cfg(feature = "wildcard")]
+            Terminal::SeAny | Terminal::SeNs(_) => self.wildcard_element(prod),
+            #[cfg(feature = "wildcard")]
+            Terminal::AtAny | Terminal::AtNs(_) => self.wildcard_attribute(prod),
+            #[cfg(not(feature = "wildcard"))]
+            Terminal::SeAny | Terminal::SeNs(_) | Terminal::AtAny | Terminal::AtNs(_) => {
+                Err(ExiError::Unsupported(Feature::Wildcard))
+            }
+            // AT(*) with an untyped value appears only in non-strict grammars.
+            Terminal::AtAnyUntyped => Err(ExiError::Unsupported(Feature::Wildcard)),
             other => Err(ExiError::Grammar {
                 expected: "a strict schema-informed production".into(),
                 got: format!("{other:?}"),
             }),
         }
+    }
+
+    /// Reads the name after a wildcard production: the whole QName after `SE(*)` /
+    /// `AT(*)`, only the local name after `SE(uri:*)` / `AT(uri:*)`
+    /// ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)).
+    #[cfg(feature = "wildcard")]
+    fn read_wildcard_name(&mut self, terminal: Terminal) -> ExiResult<QNameId> {
+        match terminal {
+            Terminal::SeNs(u) | Terminal::AtNs(u) => {
+                let l = self
+                    .strings
+                    .read_local_name(&self.tables, &mut self.inp, u)?;
+                Ok(QNameId::new(u, l))
+            }
+            _ => self.strings.read_qname(&self.tables, &mut self.inp),
+        }
+    }
+
+    /// `SE(*)` or `SE(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the name, then the element's global declaration's grammar, as EXIficient
+    /// does. A name with no global declaration would need a built-in grammar.
+    #[cfg(feature = "wildcard")]
+    fn wildcard_element(&mut self, prod: crate::grammar::ir::Production) -> ExiResult<Step> {
+        let qname = self.read_wildcard_name(prod.terminal)?;
+        let Some(elem) = self.tables.find_global_element(qname) else {
+            return Err(ExiError::Unsupported(Feature::BuiltInElementGrammar));
+        };
+        self.top_mut()?.rule = prod.next;
+        self.push_element(elem)?;
+        Ok(Step::Se(qname))
+    }
+
+    /// `AT(*)` or `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the name, then the value in the type of the attribute's global declaration,
+    /// or as a string when there is none, as EXIficient does.
+    #[cfg(feature = "wildcard")]
+    fn wildcard_attribute(&mut self, prod: crate::grammar::ir::Production) -> ExiResult<Step> {
+        let frame = self.top()?;
+        let qname = self.read_wildcard_name(prod.terminal)?;
+        let global = self
+            .tables
+            .global_attributes()
+            .iter()
+            .find(|a| a.qname == qname)
+            .map(|a| a.type_idx);
+        let kind = global.map_or(DatatypeKind::Untyped, |t| self.tables.datatype(t));
+        self.last_type = Some(global.unwrap_or(TypeIdx::NONE));
+        self.read_value_in_place(kind, qname)?;
+        self.top_mut()?.rule = frame.after_attribute_wildcard(prod.next);
+        Ok(Step::At(qname))
     }
 
     /// Reads the second-level code after an escape, then the `xsi:type` QName
@@ -364,6 +421,13 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
     fn step_escape(&mut self, frame: Frame) -> ExiResult<Step> {
         let code2 = self.inp.read_nbit_unsigned(frame.second_level_width())? as u32;
         if Some(code2) == frame.xsi_type_code() {
+            #[cfg(feature = "lexical-values")]
+            let qname = if self.options.preserve.lexical_values {
+                self.read_xsi_type_text()?
+            } else {
+                self.strings.read_qname(&self.tables, &mut self.inp)?
+            };
+            #[cfg(not(feature = "lexical-values"))]
             let qname = self.strings.read_qname(&self.tables, &mut self.inp)?;
             let Some(type_idx) = self.tables.find_type(qname) else {
                 // No type of that name: keep the grammar, as the encoder does.
@@ -384,6 +448,16 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             top.nillable = false;
             Ok(Step::XsiType(qname))
         } else if Some(code2) == frame.xsi_nil_code() {
+            #[cfg(feature = "lexical-values")]
+            let nil = if self.options.preserve.lexical_values {
+                let text = self.read_text(XSI_NIL, Some(datatype::lexical_values::NIL_SET))?;
+                let nil = datatype::boolean::parse_boolean(&text);
+                self.text = text;
+                nil.ok_or_else(|| ExiError::value("xsi:nil", "not a boolean"))?
+            } else {
+                self.inp.read_bool()?
+            };
+            #[cfg(not(feature = "lexical-values"))]
             let nil = self.inp.read_bool()?;
             if nil {
                 let Some(decl) = self.tables.type_decl(frame.type_idx) else {
@@ -405,10 +479,35 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
         }
     }
 
+    /// Reads an `xsi:type` written as text (Preserve.lexicalValues; see
+    /// `Encoder::xsi_type_lexical_name`): a name with no prefix, in no namespace.
+    #[cfg(feature = "lexical-values")]
+    fn read_xsi_type_text(&mut self) -> ExiResult<QNameId> {
+        let text = self.read_text(XSI_TYPE, None)?;
+        let found = if text.contains(':') {
+            // A prefix, and no way to know its namespace in strict mode.
+            Err(ExiError::Unsupported(Feature::PreservePrefixes))
+        } else {
+            self.strings
+                .qname_id(&self.tables, "", &text)
+                .ok_or_else(|| {
+                    ExiError::value("xsi:type", format!("{text} is not a name the schema uses"))
+                })
+        };
+        self.text = text;
+        found
+    }
+
     /// Reads one value of `kind` into `self.value`. A string goes straight into
     /// the string already there, keeping its capacity, with no copy of
     /// the value afterwards.
     fn read_value_in_place(&mut self, kind: DatatypeKind, context: QNameId) -> ExiResult<()> {
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            let v = self.read_value(kind, context)?;
+            self.keep_buffer(v);
+            return Ok(());
+        }
         if kind.is_string_like() {
             if !matches!(self.value, OwnedValue::String(_)) {
                 let s = OwnedValue::String(core::mem::take(&mut self.text));
@@ -448,6 +547,11 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
 
     /// Reads one value in the datatype `kind`; the reverse of `Encoder::write_value`.
     fn read_value(&mut self, kind: DatatypeKind, context: QNameId) -> ExiResult<OwnedValue> {
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            let alphabet = datatype::lexical_values::alphabet(kind, &self.tables);
+            return self.read_text(context, alphabet).map(OwnedValue::String);
+        }
         match kind {
             // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
             // refused before the string table is touched.
@@ -502,6 +606,25 @@ impl<R: ByteSource, G: GrammarTables> Decoder<R, G> {
             DatatypeKind::QName => Err(ExiError::Internal("QName values are decoded by the codec")),
             _ => datatype::read_scalar(&mut self.inp, kind, &self.tables),
         }
+    }
+
+    /// Reads a String value under `context`, with the restricted character set
+    /// `alphabet` if there is one, into the spare string buffer: the reverse of
+    /// `Encoder::write_lexical_value`.
+    #[cfg(feature = "lexical-values")]
+    fn read_text(&mut self, context: QNameId, alphabet: Option<&str>) -> ExiResult<String> {
+        let mut buf = match core::mem::replace(&mut self.value, OwnedValue::Boolean(false)) {
+            OwnedValue::String(s) => s,
+            _ => core::mem::take(&mut self.text),
+        };
+        match alphabet {
+            Some(a) => self
+                .strings
+                .read_value_restricted(&mut self.inp, context, &mut buf, a)?,
+            None => self.strings.read_value(&mut self.inp, context, &mut buf)?,
+        }
+        self.count_string_bytes(buf.len())?;
+        Ok(buf)
     }
 
     /// Adds `n` bytes of a decoded string value to the running total, and fails

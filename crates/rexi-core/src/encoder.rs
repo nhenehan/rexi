@@ -38,6 +38,8 @@ use crate::io::{BitWriter, ceil_log2};
 use crate::options::{ExiOptions, HeaderConfig};
 use crate::string_table::StringTable;
 use crate::value::Value;
+#[cfg(feature = "lexical-values")]
+use datatype::lexical_values::{XSI_NIL, XSI_TYPE};
 
 /// One event code that was written, as recorded with the `trace` feature.
 #[cfg(feature = "trace")]
@@ -409,12 +411,136 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
                     matches!(t, Terminal::SeAny | Terminal::SeNs(_))
                 });
                 if wildcard.is_some() {
-                    Err(ExiError::Unsupported(Feature::Wildcard))
-                } else {
-                    Err(self.mismatch(&format!("SE({})", self.qname_text(qname, names))))
+                    #[cfg(feature = "wildcard")]
+                    return self.start_wildcard_element(frame, qname, names);
+                    #[cfg(not(feature = "wildcard"))]
+                    return Err(ExiError::Unsupported(Feature::Wildcard));
                 }
+                Err(self.mismatch(&format!("SE({})", self.qname_text(qname, names))))
             }
         }
+    }
+
+    /// The element's name as text: `names` when the caller gave them, or the
+    /// tables' text for `qname`.
+    #[cfg(feature = "wildcard")]
+    fn owned_names(&self, qname: Option<QNameId>, names: Option<(&str, &str)>) -> (String, String) {
+        match (names, qname) {
+            (Some((u, l)), _) => (u.to_string(), l.to_string()),
+            (None, Some(q)) => (
+                self.tables.uri_str(q.uri).unwrap_or("").to_string(),
+                self.tables.local_name_str(q).unwrap_or("").to_string(),
+            ),
+            (None, None) => (String::new(), String::new()),
+        }
+    }
+
+    /// The first `SE(uri:*)` / `SE(*)` (or, for an attribute, `AT(uri:*)` /
+    /// `AT(*)`) production of `rule` that takes a name in namespace `uri`
+    /// ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)). Productions are
+    /// in event-code order, so a `uri:*` that matches comes before `*`.
+    #[cfg(feature = "wildcard")]
+    fn find_wildcard(
+        &self,
+        rule: crate::ids::RuleIdx,
+        uri: &str,
+        attribute: bool,
+    ) -> Option<(usize, Production)> {
+        let uri_id = self
+            .tables
+            .uris()
+            .iter()
+            .position(|u| self.tables.string(u.uri) == uri)
+            .map(|i| crate::ids::UriId::new(i as u32));
+        find_production(&self.tables, rule, |t| match (t, attribute) {
+            (Terminal::SeAny, false) | (Terminal::AtAny, true) => true,
+            (Terminal::SeNs(u), false) | (Terminal::AtNs(u), true) => Some(*u) == uri_id,
+            _ => false,
+        })
+    }
+
+    /// Writes the name a wildcard production matched: the whole QName after
+    /// `SE(*)` / `AT(*)`, only the local name after `SE(uri:*)` / `AT(uri:*)`, where
+    /// the URI is known ([EXI 7.1.7](https://www.w3.org/TR/exi/#encodingQName)).
+    #[cfg(feature = "wildcard")]
+    fn write_wildcard_name(
+        &mut self,
+        terminal: Terminal,
+        uri: &str,
+        local: &str,
+    ) -> ExiResult<QNameId> {
+        match terminal {
+            Terminal::SeNs(u) | Terminal::AtNs(u) => {
+                let l = self
+                    .strings
+                    .write_local_name(&self.tables, &mut self.out, u, local)?;
+                Ok(QNameId::new(u, l))
+            }
+            _ => self
+                .strings
+                .write_qname(&self.tables, &mut self.out, uri, local),
+        }
+    }
+
+    /// `SE(*)` or `SE(uri:*)` inside an element
+    /// ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)): the event code,
+    /// the name, then the element goes on with its global declaration's grammar,
+    /// as EXIficient does. An element with no global declaration would need a
+    /// built-in grammar, which is refused before anything is written.
+    #[cfg(feature = "wildcard")]
+    fn start_wildcard_element(
+        &mut self,
+        frame: Frame,
+        qname: Option<QNameId>,
+        names: Option<(&str, &str)>,
+    ) -> ExiResult<()> {
+        let (uri, local) = self.owned_names(qname, names);
+        let Some((idx, prod)) = self.find_wildcard(frame.rule, &uri, false) else {
+            return Err(self.mismatch(&format!("SE({})", self.qname_text(qname, names))));
+        };
+        let elem = self
+            .tables
+            .find_qname(&uri, &local)
+            .and_then(|q| self.tables.find_global_element(q));
+        let Some(elem) = elem else {
+            return Err(ExiError::Unsupported(Feature::BuiltInElementGrammar));
+        };
+        let width = frame.first_level_width(&self.tables);
+        self.emit_code("SE(*)", idx as u64, width)?;
+        let q = self.write_wildcard_name(prod.terminal, &uri, &local)?;
+        self.top_mut()?.rule = prod.next;
+        self.push_element(elem, q)
+    }
+
+    /// `AT(*)` or `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)):
+    /// the event code, the name, then the value in the type of the attribute's
+    /// global declaration, or as a string when there is none, as EXIficient does.
+    #[cfg(feature = "wildcard")]
+    fn wildcard_attribute(
+        &mut self,
+        frame: Frame,
+        qname: Option<QNameId>,
+        names: Option<(&str, &str)>,
+        value: &Value<'_>,
+    ) -> ExiResult<()> {
+        let (uri, local) = self.owned_names(qname, names);
+        let Some((idx, prod)) = self.find_wildcard(frame.rule, &uri, true) else {
+            return Err(self.mismatch(&format!("AT({})", self.qname_text(qname, names))));
+        };
+        let global = self.tables.find_qname(&uri, &local).and_then(|q| {
+            self.tables
+                .global_attributes()
+                .iter()
+                .find(|a| a.qname == q)
+                .map(|a| a.type_idx)
+        });
+        let kind = global.map_or(DatatypeKind::Untyped, |t| self.tables.datatype(t));
+        let width = frame.first_level_width(&self.tables);
+        self.emit_code("AT(*)", idx as u64, width)?;
+        let q = self.write_wildcard_name(prod.terminal, &uri, &local)?;
+        self.write_value(kind, value, q)?;
+        self.top_mut()?.rule = frame.after_attribute_wildcard(prod.next);
+        Ok(())
     }
 
     /// Encodes an attribute: the `AT(qname)` event code, then its value in the
@@ -465,11 +591,22 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
             let wildcard = find_production(&self.tables, frame.rule, |t| {
                 matches!(t, Terminal::AtAny | Terminal::AtNs(_))
             });
-            return if wildcard.is_some() {
-                Err(ExiError::Unsupported(Feature::Wildcard))
-            } else {
-                Err(self.mismatch(&format!("AT({})", self.qname_text(qname, names))))
-            };
+            if wildcard.is_some() {
+                #[cfg(feature = "wildcard")]
+                {
+                    self.wildcard_attribute(frame, qname, names, value)?;
+                    if xml_space {
+                        self.top_mut()?.space_preserve = match value {
+                            Value::Lexical(v) | Value::String(v) => Some(v.trim() == "preserve"),
+                            _ => None,
+                        };
+                    }
+                    return Ok(());
+                }
+                #[cfg(not(feature = "wildcard"))]
+                return Err(ExiError::Unsupported(Feature::Wildcard));
+            }
+            return Err(self.mismatch(&format!("AT({})", self.qname_text(qname, names))));
         };
         let Terminal::At(q, type_idx) = prod.terminal else {
             return Err(ExiError::Internal(
@@ -511,8 +648,27 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         let Some(escape) = frame.escape_code(&self.tables) else {
             return Err(self.mismatch("AT(xsi:type)"));
         };
+        // Checked before any bits are written.
+        #[cfg(feature = "lexical-values")]
+        let lexical_name = if self.options.preserve.lexical_values {
+            Some(self.xsi_type_lexical_name(uri, local)?)
+        } else {
+            None
+        };
         self.emit_code("escape", escape, frame.first_level_width(&self.tables))?;
         self.emit_code("xsi:type", u64::from(code2), frame.second_level_width())?;
+        #[cfg(feature = "lexical-values")]
+        let qname = match lexical_name {
+            Some(qname) => {
+                // The value is the type's name as text, a plain String.
+                self.strings.write_value(&mut self.out, XSI_TYPE, local)?;
+                qname
+            }
+            None => self
+                .strings
+                .write_qname(&self.tables, &mut self.out, uri, local)?,
+        };
+        #[cfg(not(feature = "lexical-values"))]
         let qname = self
             .strings
             .write_qname(&self.tables, &mut self.out, uri, local)?;
@@ -545,6 +701,29 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         Ok(())
     }
 
+    /// With Preserve.lexicalValues, `xsi:type` is a String, the type's name as
+    /// written in the XML ([EXI 7.1](https://www.w3.org/TR/exi/#encodingDatatypes),
+    /// Table 7-1: QName is used only when the option is off). A prefix in that
+    /// text means nothing to a decoder unless Preserve.prefixes is on, which
+    /// strict mode forbids, so only a name with no namespace can be read back.
+    /// EXIficient refuses a prefixed name the same way ("Preserve lexicalValues
+    /// requires prefixes preserved as well"). The name must also be one the
+    /// string table knows, so that the decoder can name the type.
+    #[cfg(feature = "lexical-values")]
+    fn xsi_type_lexical_name(&self, uri: &str, local: &str) -> ExiResult<QNameId> {
+        if !uri.is_empty() {
+            return Err(ExiError::Unsupported(Feature::PreservePrefixes));
+        }
+        self.strings
+            .qname_id(&self.tables, "", local)
+            .ok_or_else(|| {
+                ExiError::value(
+                    "xsi:type",
+                    format!("with Preserve.lexicalValues, {local} must be a name the schema uses"),
+                )
+            })
+    }
+
     /// Encodes `xsi:nil`: the escape code, the second-level code, then the value as
     /// a Boolean ([EXI 7.1.2](https://www.w3.org/TR/exi/#encodingBoolean)). When it is
     /// true, the element switches to its type's `TypeEmpty` grammar, which allows
@@ -567,6 +746,21 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         };
         self.emit_code("escape", escape, frame.first_level_width(&self.tables))?;
         self.emit_code("xsi:nil", u64::from(code2), frame.second_level_width())?;
+        // With Preserve.lexicalValues, the value is text with the Boolean set
+        // (EXI 7, Table 7-2), under the xsi:nil name in the string table.
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            let text = if nil { "true" } else { "false" };
+            self.strings.write_value_restricted(
+                &mut self.out,
+                XSI_NIL,
+                text,
+                datatype::lexical_values::NIL_SET,
+            )?;
+        } else {
+            self.out.write_bool(nil)?;
+        }
+        #[cfg(not(feature = "lexical-values"))]
         self.out.write_bool(nil)?;
         if nil {
             let Some(decl) = self.tables.type_decl(frame.type_idx) else {
@@ -714,6 +908,11 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
                 Some(Terminal::Ch(_))
             );
             let simple_data = self.after_start_tag && before_end_tag;
+            // With Preserve.lexicalValues, EXIficient keeps every text a CH can
+            // take (`checkPendingCharacters` skips its pruning when
+            // `preserveLexicalValues` is set).
+            #[cfg(feature = "lexical-values")]
+            let simple_data = simple_data || self.options.preserve.lexical_values;
             if !typed_first && !simple_data && !self.space_preserved() {
                 return Ok(());
             }
@@ -761,6 +960,10 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
         value: &Value<'_>,
         context: QNameId,
     ) -> ExiResult<()> {
+        #[cfg(feature = "lexical-values")]
+        if self.options.preserve.lexical_values {
+            return self.write_lexical_value(kind, value, context);
+        }
         match kind {
             // EXI 7.1.10.1. With no alphabet (a pattern that could not be read),
             // refused before the string table is touched.
@@ -828,6 +1031,35 @@ impl<W: ByteSink, G: GrammarTables> Encoder<W, G> {
             }
             DatatypeKind::QName => Err(ExiError::Internal("QName values are encoded by the codec")),
             _ => datatype::write_scalar(&mut self.out, kind, value, &self.tables),
+        }
+    }
+
+    /// Writes one value with Preserve.lexicalValues: its text as it was given (no
+    /// whitespace facet), as a String with the restricted character set of its
+    /// built-in type, through the string table
+    /// ([EXI 7](https://www.w3.org/TR/exi/#encodingDatatypes), Table 7-2). A typed
+    /// value is written in its standard text form.
+    #[cfg(feature = "lexical-values")]
+    fn write_lexical_value(
+        &mut self,
+        kind: DatatypeKind,
+        value: &Value<'_>,
+        context: QNameId,
+    ) -> ExiResult<()> {
+        let formatted;
+        let text = match value {
+            Value::Lexical(s) | Value::String(s) => *s,
+            other => {
+                formatted = lexical::format_value(kind, other, &self.tables)?;
+                formatted.as_str()
+            }
+        };
+        match datatype::lexical_values::alphabet(kind, &self.tables) {
+            Some(alphabet) => {
+                self.strings
+                    .write_value_restricted(&mut self.out, context, text, alphabet)
+            }
+            None => self.strings.write_value(&mut self.out, context, text),
         }
     }
 

@@ -4,7 +4,7 @@
 //! can leave out names and types that both sides already know
 //! ([EXI 8.5](https://www.w3.org/TR/exi/#informedGrammars)).
 //!
-//! Julia version: `jexi/examples/basics/roundtrip.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/roundtrip.jl`.
 
 use rexi_basics::{data, hex_lines};
 use rexi_core::{ExiOptions, HeaderConfig};

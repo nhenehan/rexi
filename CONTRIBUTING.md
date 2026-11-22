@@ -93,17 +93,19 @@ scripts/fetch-third-party.sh --update exip   # on purpose: re-pin to remote HEAD
 
 Tests that need exipd or exip's test data skip when the cache is empty. Set `REXI_REQUIRE_JUDGES=1` to make them required.
 
-## W3C declaredProductions
+## W3C strict group
 
-`scripts/w3c-declared.py` runs the W3C test suite's declaredProductions group from the cached exi-testsuite. For each case, on bit-packed and byte-aligned, EXIficient (the oracle jar) makes the reference stream and its events; rexi's encode must give the same bytes, its decode the same events, and decode then encode the same bytes again. The references are made at run time under `target/w3c-declared/`; nothing from the suite is committed.
+`scripts/w3c-strict.py` runs the W3C test suite's strict group (`config/testCases-interop/strict.xml`: schemaValidDatatypes and declaredProductions, 219 cases) from the cached exi-testsuite. EXIFormat.jl has the same script, which drives `bin/exiformat`: keep the two copies the same. For each case, on bit-packed and byte-aligned, EXIficient (the oracle jar) makes the reference stream and its events; rexi's encode must give the same bytes, its decode the same events, and decode then encode the same bytes again. The references are made at run time under `target/w3c-strict/`; nothing from the suite is committed.
 
 ```bash
-cargo build --release -p rexi-xml --bin rexi
-scripts/w3c-declared.py                      # compare with scripts/w3c-declared.expected
-scripts/w3c-declared.py --update             # on purpose: accept the new results
+cargo build --release -p rexi-xml --bin rexi --features wildcard,lexical-values
+scripts/w3c-strict.py                        # compare with scripts/w3c-strict.expected
+scripts/w3c-strict.py --lexical-values       # the same with Preserve.lexicalValues on
+scripts/w3c-strict.py --update               # on purpose: accept the new results
+scripts/w3c-strict.py --report r.md          # also a table of every result
 ```
 
-The run fails when a result differs from `scripts/w3c-declared.expected`, both when a case stops passing and when one starts. When a change makes cases pass, run `--update`, check the diff, and update the README's conformance row. CI runs it in the `exificient` job.
+The run fails when a result differs from `scripts/w3c-strict.expected`, both when a case stops passing and when one starts. When a change makes cases pass, run `--update`, check the diff, and update the README's conformance row. CI runs it in the `exificient` job.
 
 ## Releasing
 

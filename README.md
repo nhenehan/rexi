@@ -52,7 +52,7 @@ rexi needs Rust 1.88 or newer.
 
 - **[The user guide](https://nhenehan.github.io/rexi/)** works through one small program per idea, from a first round trip to `no_std` and C. To read it offline, build it with `mdbook-mermaid install guide && mdbook serve guide` (you need `mdbook` and `mdbook-mermaid`).
 - **[API documentation](https://docs.rs/rexi)** on docs.rs.
-- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** contains the programs from the guide. Each has a Julia twin in JExi that prints the same output.
+- **[`examples/basics`](https://github.com/nhenehan/rexi/blob/main/examples/basics/README.md)** contains the programs from the guide. Each has a Julia twin in EXIFormat that prints the same output.
 - **[`examples/mqtt-todo`](https://github.com/nhenehan/rexi/blob/main/examples/mqtt-todo/README.md)** is a todo list over MQTT, with a Rust server and Rust, C (rexi C API), Java (EXIficient) and C# (Nagasena for .NET) clients.
 - **The C API** is defined in one header, [`crates/rexi-capi/include/rexi.h`](https://github.com/nhenehan/rexi/blob/main/crates/rexi-capi/include/rexi.h), for `librexi.a` or `librexi.so`. It has exip-style encoder calls and a callback decoder.
 
@@ -74,8 +74,8 @@ What the codec can encode and decode.
 | Non-strict mode | Not supported | |
 | Compression | Not supported | |
 | Pre-compression | Not supported | |
-| Wildcards | Not supported | `xs:any`, `xs:anyAttribute` |
-| `Preserve.lexicalValues` | Not supported | |
+| Wildcards | Supported, with the `wildcard` feature | `xs:any`, `xs:anyAttribute`: elements with a global declaration, and any attribute (typed by its global declaration, or a string). Off by default; an element with no global declaration needs a built-in grammar and is refused |
+| `Preserve.lexicalValues` | Supported, with the `lexical-values` feature | Values sent as their exact text (EXI Table 7-2). Off by default. `xsi:type` can then name only a type in no namespace, as in EXIficient |
 | `datatypeRepresentationMap` | Not supported | Uses standard datatype representations |
 | Preserve comments, PIs, DTD, prefixes | Not allowed in strict mode | EXI forbids them together with `strict` ([EXI 5.4](https://www.w3.org/TR/exi/#options)) |
 | `selfContained` | Not allowed in strict mode | Same rule |
@@ -97,11 +97,12 @@ Test results from rexi's CI (the `exificient` job, with the exip judges required
 | Re-encode the decoded events | the same | Same bytes |
 | exip's decoder (exipd) reads rexi's output | strict bit-packed; strict byte-aligned | Accepted |
 | exip's own unit tests, cloned in `rexi-tests/tests/exip_clones.rs` | as in exip | Pass |
-| W3C EXI test suite, declaredProductions group (80 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 42 of 80 the same. The other 38 need wildcards (17), Preserve options (15), non-strict mode (2) or a fragment reference the oracle cannot make yet (4) |
+| W3C EXI test suite, strict group (219 cases): encode, decode and re-encode, compared with EXIficient 1.0.7 | strict bit-packed; strict byte-aligned | 177 of 219 the same, with the `wildcard` feature on (161 without it). schemaValidDatatypes: 119 of 139; the others need schema-less streams (16), Preserve.prefixes (2) or non-strict mode (2). declaredProductions: 58 of 80; the others need Preserve options (15), the element fragment grammar (4), non-strict mode (2) or a built-in grammar for a wildcard element with no declaration (1) |
+| The same 219 cases with Preserve.lexicalValues on (`--lexical-values`), compared with EXIficient 1.0.7 | strict bit-packed, lexicalValues; strict byte-aligned, lexicalValues | 173 of 219 the same, with both features on. Of the others, EXIficient refuses 5 (a prefixed `xsi:type`) and the rest need the same features as without the option |
 
-From the W3C EXI test suite, rexi runs only the declaredProductions group (`scripts/w3c-declared.py`), so it makes no claim about the rest.
+From the W3C EXI test suite, rexi runs only the strict group (`scripts/w3c-strict.py`), so it makes no claim about the rest.
 
-[rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and JExi encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
+[rexi-interop](https://github.com/nhenehan/rexi-interop) is a separate matrix, run by hand, where EXIficient, Nagasena, Nagasena for .NET, exip, rexi and EXIFormat encode and decode each other's streams on 15 documents. Its `reports/latest.md` has the results and timings.
 
 ## Rust library features
 
@@ -117,6 +118,8 @@ From the W3C EXI test suite, rexi runs only the declaredProductions group (`scri
 | `no_std` | `rexi-core`, `rexi-serde` | Need only `alloc` |
 | Fixed-buffer output | `rexi-core` | Write into a fixed buffer, without a growable output buffer |
 | CLI | `rexi-xml` | Command-line encoding and decoding |
+| `wildcard` (off by default) | `rexi-core`, and forwarded by `rexi`, `rexi-xml`, `rexi-capi` | Encode and decode `xs:any` / `xs:anyAttribute`; without it they are refused and their code is not compiled in |
+| `lexical-values` (off by default) | `rexi-core`, and forwarded by `rexi`, `rexi-xml`, `rexi-capi` | `Preserve.lexicalValues`; without it the option is refused and its code is not compiled in. The C API has no field for it yet |
 
 ## Safe with untrusted data
 
@@ -128,7 +131,7 @@ See the guide's [Untrusted input](https://nhenehan.github.io/rexi/untrusted-inpu
 
 ## Thanks
 
-EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly, with solid open libraries behind it. That work is what got this project started. rexi and JExi are my effort to take EXI further, to more languages and more places.
+EXI is a W3C Recommendation, and it is a really good one: a careful design, written up clearly, with solid open libraries behind it. That work is what got this project started. rexi and EXIFormat are my effort to take EXI further, to more languages and more places.
 
 - **Rumen Kyusakov** wrote [exip](https://exip.sourceforge.net/), a compact C implementation of EXI, and co-edited the Second Edition of the [EXI specification](https://www.w3.org/TR/exi/). exip's decoder is one of the checks rexi's output must pass.
 - **Daniel Peintner** wrote [EXIficient](https://exificient.github.io/) with Richard Kuntschke at Siemens, co-edited the Second Edition, and edited the [EXI Primer](https://www.w3.org/TR/exi-primer/). rexi's bytes are checked against EXIficient's.

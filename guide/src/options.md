@@ -67,3 +67,53 @@ let back = rexi::xml::decode_to_xml(&exi[..], &tables, Some(options))?;
 The `rexi` tool takes `--fragment` for the same thing. One case is refused: when
 two local elements share a name but have different types, EXI would read that
 name at the top of a fragment with a looser grammar that rexi does not build.
+
+## Wildcards
+
+`xs:any` and `xs:anyAttribute` let a document put elements and attributes the
+schema does not list in place ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)).
+rexi encodes and decodes them when it is built with the `wildcard` feature,
+which is off by default so that small builds do not carry the code:
+
+```toml
+rexi = { version = "0.3", features = ["wildcard"] }
+```
+
+Each such element or attribute costs its name in the stream. An element needs
+a global declaration in the schema, whose grammar it then follows. An element
+with no declaration at all would need a built-in grammar, which rexi does not
+have yet, so it is refused. An attribute is written in the type of its global
+declaration, or as a string when it has none. Without the feature, the stream
+is refused with `Unsupported(Wildcard)`.
+
+## Exact values: `Preserve.lexicalValues`
+
+Normally a value is sent in its type's compact form, so it decodes to the
+type's standard text: `<price>1.50</price>` comes back as `1.5`, and `+05` as
+`5`. When the exact text matters, for a signature over the XML or an audit
+trail, turn on `Preserve.lexicalValues`
+([EXI 6.3](https://www.w3.org/TR/exi/#fidelityOptions)). It is the one Preserve
+option strict mode allows. rexi has it when built with the `lexical-values`
+feature, which is off by default:
+
+```toml
+rexi = { version = "0.3", features = ["lexical-values"] }
+```
+
+```rust,ignore
+let mut options = ExiOptions::strict();
+options.preserve.lexical_values = true;
+```
+
+Each value is then its text, written with a small alphabet chosen by its type
+(digits and signs for numbers, for example; EXI Table 7-2), and repeated values
+still go through the string table. The messages are a little larger than
+without the option. The text is kept as it is, spaces included, and so is
+whitespace between elements where the schema allows text.
+
+`xsi:type` is text as well, and a prefix in it would mean nothing to the
+decoder, since strict mode does not send namespace prefixes. So with this
+option `xsi:type` can only name a type in no namespace; `xsi:type="xs:int"` is
+refused with `Unsupported(PreservePrefixes)`. EXIficient refuses it too.
+Without the feature, the option is refused with
+`Unsupported(PreserveLexicalValues)`.

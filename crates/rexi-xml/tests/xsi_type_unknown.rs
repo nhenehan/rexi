@@ -6,7 +6,7 @@
 //! local name (EXI 7.1.7). EXIficient does both of these the same way.
 //!
 //! The W3C test suite's declaredProductions cases complexUrType-04 and -05 check
-//! the same thing against EXIficient (scripts/w3c-declared.py).
+//! the same thing against EXIficient (scripts/w3c-strict.py).
 
 use rexi_core::{Alignment, ExiOptions, GrammarSetBuf, HeaderConfig, OwnedEvent};
 use rexi_xml::{decode_events, decode_to_xml, encode_xml, parse_events};

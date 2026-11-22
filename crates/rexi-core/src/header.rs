@@ -80,7 +80,7 @@ pub fn write_header_bits<W: ByteSink>(w: &mut BitWriter<W>, header: HeaderConfig
 ///   exactly that string. Tables with no id are refused, because a stream that
 ///   names its schema cannot be checked against tables that do not.
 ///
-/// JExi applies the same rule (`check_schema_id`).
+/// EXIFormat applies the same rule (`check_schema_id`).
 pub fn check_schema_id(stream: &SchemaId, tables: Option<&str>) -> ExiResult<()> {
     let claimed = match stream {
         SchemaId::Absent => return Ok(()),

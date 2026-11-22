@@ -39,8 +39,8 @@ hardest:
 7. **Small devices**: writing into a fixed buffer, with no `std`.
 8. **C**: the same ideas through the C API.
 
-Every example has a Julia twin in JExi that prints exactly the same output, so
-you can read the two languages side by side.
+Every example has a Julia twin in EXIFormat that prints exactly the same
+output, so you can read the two languages side by side.
 
 ## What rexi doesn't do (yet)
 

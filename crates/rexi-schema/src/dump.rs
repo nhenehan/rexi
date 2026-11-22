@@ -248,7 +248,7 @@ impl<T: GrammarTables> Dumper<'_, T> {
                     whitespace_name(ws)
                 )
             }
-            // Printed as a plain string, the same as JExi's dump.
+            // Printed as a plain string, the same as EXIFormat's dump.
             DatatypeKind::RestrictedString { whitespace, .. } => format!(
                 "[STRING schema-type={st} id=exi_string ws={}]",
                 whitespace_name(whitespace)

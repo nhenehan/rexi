@@ -160,7 +160,7 @@ fn bad_headers() {
     );
 }
 
-/// The schemaId rule, case by case. JExi's `test/header.jl` has the same table.
+/// The schemaId rule, case by case. EXIFormat's `test/header.jl` has the same table.
 #[test]
 fn schema_id_is_checked_against_the_tables() {
     use rexi_core::header::check_schema_id;

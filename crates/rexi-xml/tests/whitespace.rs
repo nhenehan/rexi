@@ -84,8 +84,8 @@ fn list_items_split_on_xml_spaces_only() {
 
 /// A literal CR LF in an attribute value is one line end, so it becomes one
 /// space (XML 1.0 sections 2.11 and 3.3.3). rexi used to turn each of the two
-/// characters into a space (found by jexi, the Julia port, which follows the
-/// spec). Bytes: EXIficient 1.0.7 `encode-xml --strict`.
+/// characters into a space (found by EXIFormat, the Julia port, then called
+/// JExi, which follows the spec). Bytes: EXIficient 1.0.7 `encode-xml --strict`.
 #[test]
 fn attribute_cr_lf_is_one_space_as_exificient() {
     const XSD: &str = r#"<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"

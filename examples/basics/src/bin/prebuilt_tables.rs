@@ -13,7 +13,7 @@
 //! suits small devices. The file also has a `QNameId` constant for every name,
 //! such as `LN_ORDER`, for `Encoder::start_element_id`.
 //!
-//! Julia version: `jexi/examples/basics/prebuilt_tables.jl`.
+//! Julia version: `EXIFormat.jl/examples/basics/prebuilt_tables.jl`.
 
 use std::time::Instant;
 

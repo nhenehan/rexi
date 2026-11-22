@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased
+
+- `Preserve.lexicalValues`, behind the new `lexical-values` Cargo feature (off
+  by default; [EXI 6.3](https://www.w3.org/TR/exi/#fidelityOptions)), the one
+  Preserve option strict mode allows. Every value is sent as its text, with the
+  restricted character set of its built-in type
+  ([EXI 7](https://www.w3.org/TR/exi/#encodingDatatypes), Table 7-2), so it
+  decodes to exactly what was encoded: `1.50` stays `1.50`. A list uses its
+  item type's set and an enumeration its base type's. Text is not changed by
+  the whitespace facet, and whitespace between elements is kept wherever a `CH`
+  can take it, as EXIficient does. `xsi:type` is text too, so it can name only
+  a type in no namespace: a prefixed name needs Preserve.prefixes, which strict
+  mode forbids, and is refused (EXIficient refuses it the same way). The `rexi`
+  tool takes `--preserve lexicalValues`. Checked by running the whole W3C
+  strict group again with the option on: 173 of 219 give EXIficient's bytes and
+  events; EXIficient itself refuses 5 more (prefixed `xsi:type`), and the rest
+  need the same features as without the option. Without the feature nothing
+  changes.
+- Wildcards, behind the new `wildcard` Cargo feature (off by default):
+  `xs:any` and `xs:anyAttribute` in strict mode, `SE(*)`, `SE(uri:*)`, `AT(*)`
+  and `AT(uri:*)` ([EXI 8.5.4.1.6](https://www.w3.org/TR/exi/#elementTerms)). An
+  element follows its global declaration's grammar; one with no declaration
+  still needs a built-in grammar and is refused. An attribute takes its global
+  declaration's type, or is a string. The W3C wildcard cases give EXIficient's
+  bytes and events (16 of 17; the last needs a built-in grammar): 177 of 219 in
+  all with the feature on. Without the feature nothing changes.
+- A decoded enumeration value comes out in the standard form of its base
+  type, as EXIficient gives it: a float the schema lists as `1.0` decodes as
+  `1E0`, not `1.0` ([EXI 7.2](https://www.w3.org/TR/exi/#encodingEnumerations)
+  says only that the value is an index). The bytes do not change. Enumerations
+  of strings keep the schema's text. Found by the W3C case enumeration.valid-02.
+- For developers: `scripts/w3c-strict.py` replaces `scripts/w3c-declared.py`. It
+  runs the W3C test suite's whole strict group (schemaValidDatatypes and
+  declaredProductions, 219 cases), not only declaredProductions, and the
+  fragment cases now get an EXIficient reference (exip's oracle has `--fragment`
+  since exip `fd43178`). 161 of 219 cases give EXIficient's bytes and events.
+  EXIFormat.jl runs the same script.
+
 ## 0.3.1 - 2026-11-14
 
 Nothing in this release breaks code written for 0.3.0.
