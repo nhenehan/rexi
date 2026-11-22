@@ -96,8 +96,10 @@ build() {
     # Older exip code treats warnings as errors; newer compilers surface more.
     # Only exipd is needed: skip exip's own tests (they need the "check" library).
     # "|| return 1" on each step, because set -e is off inside "build || ...".
+    # exip is C99 and names a variable `bool`, a keyword in C23, which gcc 15
+    # (ubuntu-26.04 runners) uses by default: ask for C99 with GNU extensions.
     cmake -S "$exip" -B "$exip/build" -DEXIP_BUILD_TESTS=OFF \
-        -DCMAKE_C_FLAGS="-Wno-error=type-limits" >/dev/null || return 1
+        -DCMAKE_C_STANDARD=99 -DCMAKE_C_FLAGS="-Wno-error=type-limits" >/dev/null || return 1
     cmake --build "$exip/build" --target exipd || return 1
     echo "building the EXIficient oracle (exip utils/xsd2exip)"
     command -v mvn >/dev/null || { echo "missing required command: mvn" >&2; return 1; }
